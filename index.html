@@ -141,6 +141,7 @@
     .derived-box .db-label { color: var(--muted); }
     .derived-box .db-value { font-weight: 600; font-family: monospace; }
     .derived-box .db-value.generic { color: #c084fc; }
+    .derived-box .db-value.cat { color: #f59e0b; }
     
     .table-wrapper { overflow-x: auto; margin-top: 16px; border-radius: 8px; border: 1px solid var(--border); }
     .scan-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 1100px; }
@@ -158,6 +159,7 @@
     .scan-table .col-article { font-family: monospace; }
     .scan-table .col-brand { font-weight: 600; color: #f59e0b; }
     .scan-table .col-season { font-weight: 600; color: #10b981; }
+    .scan-table .col-cat { font-weight: 700; color: #f59e0b; font-size: 0.9rem; }
     .scan-table .col-date { color: var(--muted); font-size: 0.78rem; }
     .actions-cell { display: flex; gap: 6px; }
     .btn-sm { padding: 4px 10px; font-size: 0.7rem; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; transition: opacity 0.2s; }
@@ -373,13 +375,9 @@
   let scanDataArray = [];
 
   // ═══════════════════════════════════════════════════════════════
-  // HELPER: Extract SIZE US & GENERIC dari Article
+  // HELPER FUNCTIONS
   // ═══════════════════════════════════════════════════════════════
   
-  /**
-   * Ambil 3 digit terakhir dari Article sebagai SIZE US
-   * Contoh: 207068201N080 → "080"
-   */
   function extractSizeUS(article) {
     if (!article) return '';
     const str = String(article).trim();
@@ -390,29 +388,17 @@
   /**
    * Buat GENERIC dari Article dengan menghilangkan 3 digit SIZE US terakhir
    * Contoh: 207068201N080 → "207068201N"
-   *         1011824003N100 → "1011824003N"
-   *         301181001015   → "301181001" (tidak ada huruf, hilangkan 3 digit terakhir)
    */
   function extractGeneric(article) {
     if (!article) return '';
     const str = String(article).trim();
     const sizeUS = extractSizeUS(str);
-    if (!sizeUS) return str; // fallback
-    
-    // Cari posisi terakhir 3 digit size
+    if (!sizeUS) return str;
     const lastIndex = str.lastIndexOf(sizeUS);
-    if (lastIndex > 0) {
-      return str.substring(0, lastIndex);
-    }
-    
-    // Fallback: hapus 3 karakter terakhir
+    if (lastIndex > 0) return str.substring(0, lastIndex);
     return str.substring(0, str.length - 3);
   }
 
-  /**
-   * Tentukan Gender dari digit pertama Article
-   * 1 = Laki-laki, 2 = Perempuan, 3 = Anak-anak
-   */
   function extractGender(article) {
     if (!article) return { code: '', label: '' };
     const str = String(article).trim();
@@ -423,6 +409,20 @@
       case '3': return { code: '3', label: 'Anak-anak' };
       default: return { code: firstDigit, label: 'Unknown' };
     }
+  }
+
+  /**
+   * Ekstrak CAT dari Merch_Cat
+   * Contoh: "BE0111" → ambil karakter ke-2 → "E"
+   *         "BF0208" → ambil karakter ke-2 → "F"
+   */
+  function extractCat(merchCat) {
+    if (!merchCat) return '';
+    const str = String(merchCat).trim();
+    if (str.length >= 2) {
+      return str.charAt(1); // Karakter kedua (index 1)
+    }
+    return str;
   }
 
   async function findSizeUK(usSize, genderLabel) {
@@ -450,32 +450,30 @@
   }
 
   /**
-   * Cari Brand_Name & Season_Yr_ dari MASTER_PRODUK menggunakan GENERIC
-   * MASTER_PRODUK menyimpan data per GENERIC (tanpa 3 digit size)
-   * Contoh: Article "207068201N080" → cari Generic "207068201N" di MASTER_PRODUK
+   * Cari info produk dari MASTER_PRODUK menggunakan GENERIC
+   * Mengambil: Brand_Name, Season_Yr_, Merch_Cat
+   * CAT diambil dari karakter ke-2 Merch_Cat
    */
   async function findProductInfoByGeneric(generic) {
-    if (!db || !generic) return { brandName: '', seasonYr: '' };
+    if (!db || !generic) return { brandName: '', seasonYr: '', cat: '', merchCat: '' };
     try {
-      // Cari di MASTER_PRODUK dimana Article = generic
       const q = query(collection(db, 'MASTER_PRODUK'), where('Article', '==', generic));
       const snapshot = await getDocs(q);
       
       if (!snapshot.empty) {
         const data = snapshot.docs[0].data();
+        const merchCat = data.Merch_Cat || data['Merch Cat'] || data.MerchCat || '';
+        const cat = extractCat(merchCat);
+        
         return {
           brandName: data.Brand_Name || data['Brand Name'] || data.BrandName || data.Brand || '',
-          seasonYr: data.Season_Yr_ || data['Season Yr'] || data.SeasonYr || data.Season_Yr || data.Season || ''
+          seasonYr: data.Season_Yr_ || data['Season Yr'] || data.SeasonYr || data.Season_Yr || data.Season || '',
+          merchCat: merchCat,
+          cat: cat  // Karakter ke-2 dari Merch_Cat
         };
       }
-      
-      // Fallback: coba cari dengan awalan yang sama (prefix search tidak didukung Firestore)
-      // Jadi kita coba beberapa variasi
-      console.log(`MASTER_PRODUK: Generic "${generic}" tidak ditemukan`);
-    } catch(e) { 
-      console.warn('findProductInfoByGeneric error:', e.message); 
-    }
-    return { brandName: '', seasonYr: '' };
+    } catch(e) { console.warn('findProductInfoByGeneric error:', e.message); }
+    return { brandName: '', seasonYr: '', cat: '', merchCat: '' };
   }
 
   async function searchInCollection(collectionName, fieldName, value) {
@@ -642,7 +640,7 @@
         // Cari SIZE UK dari SIZE sheet
         const sizeUK = await findSizeUK(sizeUS, gender.label);
         
-        // Cari Brand & Season dari MASTER_PRODUK menggunakan GENERIC
+        // Cari Brand, Season, CAT dari MASTER_PRODUK menggunakan GENERIC
         const productInfo = await findProductInfoByGeneric(generic);
         
         // Tampilkan info derivasi
@@ -650,6 +648,8 @@
           <div class="db-item"><span class="db-label">Article:</span><span class="db-value">${article}</span></div>
           <div class="db-item"><span class="db-label">→ Generic:</span><span class="db-value generic">${generic}</span></div>
           <div class="db-item"><span class="db-label">→ Size US:</span><span class="db-value">${sizeUS}</span></div>
+          <div class="db-item"><span class="db-label">→ Merch_Cat:</span><span class="db-value">${productInfo.merchCat || '?'}</span></div>
+          <div class="db-item"><span class="db-label">→ CAT:</span><span class="db-value cat">${productInfo.cat || '?'}</span></div>
           <div class="db-item"><span class="db-label">→ Brand:</span><span class="db-value">${productInfo.brandName || '?'}</span></div>
           <div class="db-item"><span class="db-label">→ Season:</span><span class="db-value">${productInfo.seasonYr || '?'}</span></div>
         `;
@@ -657,50 +657,49 @@
         
         searchStatus.className = 'search-status found';
         searchSpinner.style.display = 'none';
-        searchStatusText.textContent = `✅ Ditemukan | Generic: ${generic} | Brand: ${productInfo.brandName || '?'} | Season: ${productInfo.seasonYr || '?'}`;
+        searchStatusText.textContent = `✅ Ditemukan | CAT: ${productInfo.cat || '?'} | Brand: ${productInfo.brandName || '?'} | Season: ${productInfo.seasonYr || '?'}`;
         
         return { 
           found: true, 
           data: { 
             ...result.data, 
-            _derived: { sizeUS, sizeUK, gender, generic, brandName: productInfo.brandName, seasonYr: productInfo.seasonYr, article } 
+            _derived: { sizeUS, sizeUK, gender, generic, ...productInfo, article } 
           }, 
           source: 'MASTER_BARCODE' 
         };
       }
 
-      // Step 2: Jika tidak ditemukan di MASTER_BARCODE, coba interpretasikan barcode sebagai Article
-      // Cari SIZE US & GENERIC dari barcode langsung
+      // Step 2: Interpretasi barcode sebagai Article, cari via Generic
       const sizeUS = extractSizeUS(barcode);
       const gender = extractGender(barcode);
       const generic = extractGeneric(barcode);
       
-      // Cari di MASTER_PRODUK menggunakan GENERIC
       const productInfo = await findProductInfoByGeneric(generic);
       
-      if (productInfo.brandName || productInfo.seasonYr) {
-        // Ditemukan di MASTER_PRODUK via Generic
+      if (productInfo.brandName || productInfo.seasonYr || productInfo.cat) {
         const sizeUK = await findSizeUK(sizeUS, gender.label);
         
         derivedContent.innerHTML = `
           <div class="db-item"><span class="db-label">Barcode:</span><span class="db-value">${barcode}</span></div>
           <div class="db-item"><span class="db-label">→ Generic:</span><span class="db-value generic">${generic}</span></div>
           <div class="db-item"><span class="db-label">→ Size US:</span><span class="db-value">${sizeUS}</span></div>
-          <div class="db-item"><span class="db-label">→ Brand:</span><span class="db-value">${productInfo.brandName}</span></div>
-          <div class="db-item"><span class="db-label">→ Season:</span><span class="db-value">${productInfo.seasonYr}</span></div>
+          <div class="db-item"><span class="db-label">→ Merch_Cat:</span><span class="db-value">${productInfo.merchCat || '?'}</span></div>
+          <div class="db-item"><span class="db-label">→ CAT:</span><span class="db-value cat">${productInfo.cat || '?'}</span></div>
+          <div class="db-item"><span class="db-label">→ Brand:</span><span class="db-value">${productInfo.brandName || '?'}</span></div>
+          <div class="db-item"><span class="db-label">→ Season:</span><span class="db-value">${productInfo.seasonYr || '?'}</span></div>
         `;
         derivedBox.classList.add('show');
         
         searchStatus.className = 'search-status found';
         searchSpinner.style.display = 'none';
-        searchStatusText.textContent = `✅ MASTER_PRODUK via Generic: ${generic} | Brand: ${productInfo.brandName} | Season: ${productInfo.seasonYr}`;
+        searchStatusText.textContent = `✅ MASTER_PRODUK | CAT: ${productInfo.cat} | Brand: ${productInfo.brandName} | Season: ${productInfo.seasonYr}`;
         
         return {
           found: true,
           data: {
             Barcode: barcode,
             Article: barcode,
-            _derived: { sizeUS, sizeUK, gender, generic, brandName: productInfo.brandName, seasonYr: productInfo.seasonYr, article: barcode }
+            _derived: { sizeUS, sizeUK, gender, generic, ...productInfo, article: barcode }
           },
           source: 'MASTER_PRODUK'
         };
@@ -773,15 +772,16 @@
         SIZE_US: d.sizeUS || extractSizeUS(barcode),
         SIZE_UK: d.sizeUK || '',
         DESCRIPTION: md.Description || md.description || md.DESCRIPTION || '',
-        BRAND: d.brandName || '',   // dari Brand_Name MASTER_PRODUK via Generic
-        CAT: md.Category || md.category || md.CAT || md.Cat || 'F',
-        SEASON: d.seasonYr || '',   // dari Season_Yr_ MASTER_PRODUK via Generic
+        BRAND: d.brandName || '',        // Brand_Name dari MASTER_PRODUK
+        CAT: d.cat || '',                // Karakter ke-2 dari Merch_Cat MASTER_PRODUK
+        SEASON: d.seasonYr || '',        // Season_Yr_ dari MASTER_PRODUK
         DATE: getTodayDate(),
         USER: user,
         GENERIC: d.generic || '',
+        MERCH_CAT: d.merchCat || '',
         timestamp: now.toISOString()
       };
-      showToast(`✅ Brand: ${d.brandName || '?'} | Season: ${d.seasonYr || '?'}`, 'success');
+      showToast(`✅ CAT: ${d.cat || '?'} | Brand: ${d.brandName || '?'} | Season: ${d.seasonYr || '?'}`, 'success');
     } else {
       const sizeUS = extractSizeUS(barcode);
       const generic = extractGeneric(barcode);
@@ -796,11 +796,12 @@
         SIZE_UK: '',
         DESCRIPTION: '',
         BRAND: '',
-        CAT: 'F',
+        CAT: '',
         SEASON: String(now.getFullYear()),
         DATE: getTodayDate(),
         USER: user,
         GENERIC: generic,
+        MERCH_CAT: '',
         timestamp: now.toISOString()
       };
       showToast('⚠️ Tidak ditemukan di Master Data', 'error');
@@ -861,7 +862,7 @@
   function updateScanStats() {
     const total = scanDataArray.length;
     const uniqueBarcodes = new Set(scanDataArray.map(r => r.BARCODE)).size;
-    const fromMaster = scanDataArray.filter(r => r.BRAND !== '').length;
+    const fromMaster = scanDataArray.filter(r => r.BRAND !== '' || r.CAT !== '').length;
     const today = getTodayDate();
     const todayData = scanDataArray.filter(r => r.DATE === today);
     document.getElementById('statTotal').textContent = total.toLocaleString();
@@ -892,7 +893,7 @@
         <td style="color:var(--accent2);font-weight:600;" onclick="editScanCell('${row.id}','SIZE_UK')" title="Klik untuk edit">${row.SIZE_UK || '-'}</td>
         <td onclick="editScanCell('${row.id}','DESCRIPTION')" title="Klik untuk edit">${row.DESCRIPTION || '-'}</td>
         <td class="col-brand" onclick="editScanCell('${row.id}','BRAND')" title="Klik untuk edit">${row.BRAND || '-'}</td>
-        <td onclick="editScanCell('${row.id}','CAT')" title="Klik untuk edit">${row.CAT || '-'}</td>
+        <td class="col-cat" onclick="editScanCell('${row.id}','CAT')" title="Klik untuk edit">${row.CAT || '-'}</td>
         <td class="col-season" onclick="editScanCell('${row.id}','SEASON')" title="Klik untuk edit">${row.SEASON || '-'}</td>
         <td class="col-date">${row.DATE}</td>
         <td>${row.USER}</td>
@@ -933,7 +934,7 @@
             BARCODE: row.BARCODE, LOKASI: row.LOKASI, ARTICLE: row.ARTICLE || '',
             BIN: row.BIN || '', SIZE_US: row.SIZE_US || '', SIZE_UK: row.SIZE_UK || '',
             GENERIC: row.GENERIC || '', DESCRIPTION: row.DESCRIPTION || '',
-            BRAND: row.BRAND || '', CAT: row.CAT || 'F', SEASON: row.SEASON || '',
+            BRAND: row.BRAND || '', CAT: row.CAT || '', SEASON: row.SEASON || '',
             DATE: row.DATE, USER: row.USER, scanned_at: row.timestamp
           });
         });
