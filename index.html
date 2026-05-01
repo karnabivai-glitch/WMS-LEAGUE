@@ -163,6 +163,99 @@
     .scan-input-group select {
       cursor: pointer;
     }
+    
+    /* Product Info Card */
+    .product-info-card {
+      background: var(--bg);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-top: 16px;
+      display: none;
+      animation: fadeIn 0.3s ease-out;
+    }
+    .product-info-card.show {
+      display: block;
+    }
+    .product-info-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .product-info-header h3 {
+      font-size: 1.1rem;
+      color: var(--accent);
+    }
+    .product-info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    .product-info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .product-info-item .label {
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .product-info-item .value {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .product-info-item .value.highlight {
+      color: var(--accent);
+      font-size: 1.1rem;
+    }
+    
+    /* Search Status */
+    .search-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      margin-top: 8px;
+    }
+    .search-status.searching {
+      background: #1e3a5f33;
+      border: 1px solid #1d4ed8;
+      color: var(--accent2);
+    }
+    .search-status.found {
+      background: #14532d33;
+      border: 1px solid #166534;
+      color: var(--green);
+    }
+    .search-status.not-found {
+      background: #7f1d1d33;
+      border: 1px solid #991b1b;
+      color: var(--red);
+    }
+    
+    /* Spinner */
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid transparent;
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
     .scan-stats {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -233,8 +326,11 @@
     .scan-table tbody tr.new-row {
       animation: highlightRow 1.5s ease-out;
     }
+    .scan-table tbody tr.from-master {
+      border-left: 3px solid var(--accent);
+    }
     @keyframes highlightRow {
-      0% { background: rgba(34, 197, 94, 0.2); }
+      0% { background: rgba(34, 197, 94, 0.3); }
       100% { background: transparent; }
     }
     .scan-table .col-barcode { font-family: monospace; font-weight: 500; color: var(--accent); }
@@ -242,7 +338,26 @@
     .scan-table .col-article { font-family: monospace; }
     .scan-table .col-bin { font-weight: 600; }
     .scan-table .col-date { color: var(--muted); font-size: 0.78rem; }
-    .scan-table .actions-cell {
+    .scan-table .source-badge {
+      display: inline-block;
+      font-size: 0.6rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .source-badge.master {
+      background: #c2410c33;
+      color: #fed7aa;
+      border: 1px solid #c2410c;
+    }
+    .source-badge.manual {
+      background: #1d4ed833;
+      color: #bfdbfe;
+      border: 1px solid #1d4ed8;
+    }
+    .actions-cell {
       display: flex;
       gap: 6px;
     }
@@ -375,7 +490,7 @@
   <div class="container">
     <header>
       <h1>📱 SCAN <span>DATA</span></h1>
-      <p>Input barcode hasil scanning dan kelola data scan</p>
+      <p>Scan barcode & auto-search dari Master Data Firestore</p>
     </header>
 
     <!-- Scan Input Card -->
@@ -389,7 +504,7 @@
             id="scanBarcode" 
             placeholder="Scan atau ketik barcode di sini..." 
             autofocus
-            onkeydown="if(event.key==='Enter')addScanData()"
+            onkeydown="handleBarcodeKeydown(event)"
           />
         </div>
         <div class="scan-input-group" style="flex: 1;">
@@ -415,13 +530,31 @@
         </button>
       </div>
       
+      <!-- Search Status -->
+      <div class="search-status" id="searchStatus" style="display: none;">
+        <span class="spinner" id="searchSpinner" style="display: none;"></span>
+        <span id="searchStatusText"></span>
+      </div>
+      
+      <!-- Product Info from Master -->
+      <div class="product-info-card" id="productInfoCard">
+        <div class="product-info-header">
+          <h3>📦 Data dari Master</h3>
+          <span class="badge badge-orange" id="productDataSource">MASTER_BARCODE</span>
+        </div>
+        <div class="product-info-grid" id="productInfoGrid"></div>
+      </div>
+      
       <!-- Quick Info -->
       <div style="margin-top: 12px; display: flex; gap: 12px; align-items: center;">
         <span style="font-size: 0.75rem; color: var(--muted);">
-          💡 Tekan <strong>Enter</strong> setelah scan untuk menambah otomatis
+          💡 Tekan <strong>Enter</strong> untuk scan & cari otomatis dari Master Data
         </span>
         <span style="font-size: 0.75rem; color: var(--muted);">
           | Total hari ini: <strong id="todayCount">0</strong> scan
+        </span>
+        <span style="font-size: 0.75rem; color: var(--muted);">
+          | Status DB: <strong id="firestoreStatus">-</strong>
         </span>
       </div>
     </div>
@@ -441,8 +574,8 @@
         <div class="stat-lbl">Hari Ini</div>
       </div>
       <div class="stat-box">
-        <div class="stat-val" id="statLastScan">-</div>
-        <div class="stat-lbl">Scan Terakhir</div>
+        <div class="stat-val" id="statFromMaster">0</div>
+        <div class="stat-lbl">Dari Master</div>
       </div>
     </div>
 
@@ -480,12 +613,13 @@
               <th>SEASON</th>
               <th>DATE</th>
               <th>USER</th>
+              <th>SUMBER</th>
               <th>AKSI</th>
             </tr>
           </thead>
           <tbody id="scanTableBody">
             <tr class="empty-state">
-              <td colspan="14">
+              <td colspan="15">
                 <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                 </svg>
@@ -515,15 +649,19 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import {
     getFirestore, collection, writeBatch,
-    doc, getDocs, addDoc, Timestamp
+    doc, getDocs, addDoc, Timestamp, query, where, getDoc
   } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
   const PROJECT_ID = "wms-league";
   const BATCH_SIZE = 200;
+  
+  // Master collections to search
+  const MASTER_COLLECTIONS = ['MASTER_BARCODE', 'MASTER_PRODUK', 'SIZE'];
 
   let db = null;
   let parsedSheets = {};
   let scanDataArray = [];
+  let lastFoundProduct = null; // Store last found product for reuse
 
   // ─── Page Navigation ──────────────────────────────────────────
   window.switchPage = function(page) {
@@ -538,6 +676,7 @@
       document.getElementById('page-scan').classList.add('active');
       document.getElementById('scanBarcode')?.focus();
       updateScanStats();
+      updateFirestoreStatus();
     }
   };
 
@@ -625,6 +764,7 @@
 
   function setStatus(msg, cls) {
     const el = document.getElementById('configStatus');
+    if (!el) return;
     el.textContent = msg;
     el.className = cls;
     el.style.display = 'block';
@@ -661,10 +801,20 @@
       setStatus(`✅ Terhubung & BISA MENULIS ke ${PROJECT_ID}`, 'ok');
       log('✅ TEST WRITE BERHASIL — Upload & Scan siap digunakan!', 'ok');
       showToast('✅ Firebase terhubung!', 'success');
+      updateFirestoreStatus();
     } catch (err) {
       setStatus('❌ Gagal: ' + err.message, 'err');
       log('❌ Error: ' + err.code + ' - ' + err.message, 'err');
       db = null;
+      updateFirestoreStatus();
+    }
+  }
+
+  function updateFirestoreStatus() {
+    const el = document.getElementById('firestoreStatus');
+    if (el) {
+      el.textContent = db ? '✅ Online' : '❌ Offline';
+      el.style.color = db ? 'var(--green)' : 'var(--red)';
     }
   }
 
@@ -684,6 +834,436 @@
       scanDataArray = [];
     }
   }
+
+  // ═══════════════════════════════════════════════════════════════
+  // MASTER DATA SEARCH — Cari barcode di Firestore
+  // ═══════════════════════════════════════════════════════════════
+
+  async function searchBarcodeInMaster(barcode) {
+    if (!db) {
+      return { found: false, error: 'Firebase tidak terhubung' };
+    }
+
+    const searchStatus = document.getElementById('searchStatus');
+    const searchStatusText = document.getElementById('searchStatusText');
+    const searchSpinner = document.getElementById('searchSpinner');
+    const productInfoCard = document.getElementById('productInfoCard');
+    const productInfoGrid = document.getElementById('productInfoGrid');
+    const productDataSource = document.getElementById('productDataSource');
+
+    // Show searching status
+    searchStatus.style.display = 'flex';
+    searchStatus.className = 'search-status searching';
+    searchSpinner.style.display = 'inline-block';
+    searchStatusText.textContent = `Mencari "${barcode}" di Master Data...`;
+    productInfoCard.classList.remove('show');
+
+    try {
+      // Search in MASTER_BARCODE first (by Barcode field)
+      let result = await searchInCollection('MASTER_BARCODE', 'Barcode', barcode);
+      
+      if (result.found) {
+        displayProductInfo(result.data, 'MASTER_BARCODE');
+        searchStatus.className = 'search-status found';
+        searchSpinner.style.display = 'none';
+        searchStatusText.textContent = `✅ Ditemukan di MASTER_BARCODE`;
+        return result;
+      }
+
+      // If not found, try MASTER_PRODUK (by Article field)
+      result = await searchInCollection('MASTER_PRODUK', 'Article', barcode);
+      
+      if (result.found) {
+        displayProductInfo(result.data, 'MASTER_PRODUK');
+        searchStatus.className = 'search-status found';
+        searchSpinner.style.display = 'none';
+        searchStatusText.textContent = `✅ Ditemukan di MASTER_PRODUK`;
+        return result;
+      }
+
+      // Not found in any collection
+      searchStatus.className = 'search-status not-found';
+      searchSpinner.style.display = 'none';
+      searchStatusText.textContent = `❌ "${barcode}" tidak ditemukan di Master Data`;
+      productInfoCard.classList.remove('show');
+      
+      return { found: false, data: null, source: null };
+
+    } catch (err) {
+      searchStatus.className = 'search-status not-found';
+      searchSpinner.style.display = 'none';
+      searchStatusText.textContent = `❌ Error: ${err.message}`;
+      productInfoCard.classList.remove('show');
+      
+      return { found: false, error: err.message };
+    }
+  }
+
+  async function searchInCollection(collectionName, fieldName, value) {
+    try {
+      const q = query(collection(db, collectionName), where(fieldName, '==', value));
+      const snapshot = await getDocs(q);
+      
+      if (!snapshot.empty) {
+        const doc = snapshot.docs[0];
+        return {
+          found: true,
+          data: { id: doc.id, ...doc.data() },
+          source: collectionName
+        };
+      }
+      
+      return { found: false, data: null, source: null };
+    } catch (err) {
+      console.warn(`Error searching ${collectionName}:`, err.message);
+      return { found: false, data: null, source: null };
+    }
+  }
+
+  function displayProductInfo(data, source) {
+    const card = document.getElementById('productInfoCard');
+    const grid = document.getElementById('productInfoGrid');
+    const dataSource = document.getElementById('productDataSource');
+    
+    // Determine which fields to show based on source
+    let fields = [];
+    
+    if (source === 'MASTER_BARCODE') {
+      fields = [
+        { key: 'Barcode', label: 'Barcode', highlight: true },
+        { key: 'Article', label: 'Article' },
+        { key: 'Brand', label: 'Brand' },
+        { key: 'Description', label: 'Description' },
+        { key: 'Category', label: 'Category' },
+        { key: 'Season', label: 'Season' },
+        { key: 'SIZE_US', label: 'Size US' },
+        { key: 'SIZE_UK', label: 'Size UK' },
+        { key: 'BIN', label: 'BIN' },
+        { key: 'Color', label: 'Color' },
+        { key: 'Price', label: 'Price' },
+      ];
+    } else if (source === 'MASTER_PRODUK') {
+      fields = [
+        { key: 'Article', label: 'Article', highlight: true },
+        { key: 'Brand', label: 'Brand' },
+        { key: 'Description', label: 'Description' },
+        { key: 'Category', label: 'Category' },
+        { key: 'Season', label: 'Season' },
+        { key: 'Price', label: 'Price' },
+      ];
+    }
+    
+    // Build grid HTML
+    grid.innerHTML = fields
+      .filter(f => data[f.key] !== undefined && data[f.key] !== null)
+      .map(f => `
+        <div class="product-info-item">
+          <div class="label">${f.label}</div>
+          <div class="value ${f.highlight ? 'highlight' : ''}">${data[f.key] || '-'}</div>
+        </div>
+      `).join('');
+    
+    dataSource.textContent = source;
+    card.classList.add('show');
+    
+    // Store for later use
+    lastFoundProduct = {
+      found: true,
+      data: data,
+      source: source
+    };
+  }
+
+  // ─── Scan Input Handler ───────────────────────────────────────
+  window.handleBarcodeKeydown = async function(event) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      await addScanData();
+    }
+  };
+
+  window.addScanData = async function() {
+    const barcodeInput = document.getElementById('scanBarcode');
+    const barcode = barcodeInput.value.trim();
+    const lokasi = document.getElementById('scanLokasi').value;
+    const user = document.getElementById('scanUser').value;
+    
+    if (!barcode) {
+      showToast('⚠️ Silakan input/scan barcode terlebih dahulu', 'error');
+      barcodeInput.focus();
+      return;
+    }
+
+    // Disable input while searching
+    barcodeInput.disabled = true;
+    
+    // Search in Master Data
+    const masterResult = await searchBarcodeInMaster(barcode);
+    
+    // Build new row with master data if found
+    const now = new Date();
+    let newRow;
+    
+    if (masterResult.found && masterResult.data) {
+      const md = masterResult.data;
+      
+      newRow = {
+        id: Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
+        BARCODE: barcode,
+        LOKASI: lokasi,
+        ARTICLE: md.Article || md.article || '',
+        BIN: md.BIN || md.bin || md.Bin || '',
+        SIZE_US: md.SIZE_US || md.size_us || md['US_Size'] || '',
+        SIZE_UK: md.SIZE_UK || md.size_uk || md['UK_Size'] || '',
+        DESCRIPTION: md.Description || md.description || md.DESCRIPTION || '',
+        BRAND: md.Brand || md.brand || md.BRAND || 'LEAGUE',
+        CAT: md.Category || md.category || md.CAT || md.Cat || 'F',
+        SEASON: md.Season || md.season || md.SEASON || String(now.getFullYear()),
+        DATE: getTodayDate(),
+        USER: user,
+        SOURCE: 'MASTER',
+        sourceCollection: masterResult.source,
+        timestamp: now.toISOString()
+      };
+      
+      showToast(`✅ Data dari ${masterResult.source}`, 'success');
+    } else {
+      // Manual entry (not found in master)
+      newRow = {
+        id: Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
+        BARCODE: barcode,
+        LOKASI: lokasi,
+        ARTICLE: '',
+        BIN: '',
+        SIZE_US: '',
+        SIZE_UK: '',
+        DESCRIPTION: '',
+        BRAND: 'LEAGUE',
+        CAT: 'F',
+        SEASON: String(now.getFullYear()),
+        DATE: getTodayDate(),
+        USER: user,
+        SOURCE: 'MANUAL',
+        sourceCollection: null,
+        timestamp: now.toISOString()
+      };
+      
+      if (db) {
+        showToast('⚠️ Barcode tidak ditemukan di Master Data', 'error');
+      } else {
+        showToast('ℹ️ Firebase offline — data disimpan manual', 'info');
+      }
+    }
+
+    // Add to array
+    scanDataArray.unshift(newRow);
+    saveScanData();
+    
+    // Reset input
+    barcodeInput.value = '';
+    barcodeInput.disabled = false;
+    barcodeInput.focus();
+    
+    // Update UI
+    renderScanTable();
+    updateScanStats();
+  };
+
+  // ─── Scan Data Management ─────────────────────────────────────
+  function saveScanData() {
+    localStorage.setItem('scan_data', JSON.stringify(scanDataArray));
+  }
+
+  window.deleteScanRow = function(id) {
+    if (!confirm('Hapus data ini?')) return;
+    scanDataArray = scanDataArray.filter(row => row.id !== id);
+    saveScanData();
+    renderScanTable();
+    updateScanStats();
+    showToast('🗑 Data dihapus', 'info');
+  };
+
+  window.editScanCell = function(id, field) {
+    const row = scanDataArray.find(r => r.id === id);
+    if (!row) return;
+    
+    const newValue = prompt(`Edit ${field}:`, row[field] || '');
+    if (newValue === null) return;
+    
+    row[field] = newValue;
+    saveScanData();
+    renderScanTable();
+    showToast('✅ Data diupdate', 'success');
+  };
+
+  window.clearScanData = function() {
+    if (!scanDataArray.length) {
+      showToast('📭 Tidak ada data untuk dihapus', 'info');
+      return;
+    }
+    if (!confirm(`Yakin hapus SEMUA data scan (${scanDataArray.length} row)?`)) return;
+    scanDataArray = [];
+    saveScanData();
+    renderScanTable();
+    updateScanStats();
+    showToast('🗑 Semua data dihapus', 'info');
+  };
+
+  function updateScanStats() {
+    const total = scanDataArray.length;
+    const uniqueBarcodes = new Set(scanDataArray.map(r => r.BARCODE)).size;
+    const fromMaster = scanDataArray.filter(r => r.SOURCE === 'MASTER').length;
+    
+    const today = getTodayDate();
+    const todayData = scanDataArray.filter(r => r.DATE === today);
+    
+    const lastScan = scanDataArray.length > 0 ? scanDataArray[0].DATE : '-';
+    
+    document.getElementById('statTotal').textContent = total.toLocaleString();
+    document.getElementById('statUnique').textContent = uniqueBarcodes.toLocaleString();
+    document.getElementById('statToday').textContent = todayData.length.toLocaleString();
+    document.getElementById('statFromMaster').textContent = fromMaster.toLocaleString();
+    document.getElementById('todayCount').textContent = todayData.length.toLocaleString();
+    document.getElementById('rowCount').textContent = `${total} row`;
+  }
+
+  function renderScanTable() {
+    const tbody = document.getElementById('scanTableBody');
+    
+    if (scanDataArray.length === 0) {
+      tbody.innerHTML = `
+        <tr class="empty-state">
+          <td colspan="15">
+            <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+            </svg>
+            <p>Belum ada data scan. Silakan input barcode di atas.</p>
+          </td>
+        </tr>`;
+      return;
+    }
+
+    tbody.innerHTML = scanDataArray.map((row, index) => `
+      <tr class="${row.SOURCE === 'MASTER' ? 'from-master' : ''}">
+        <td>${index + 1}</td>
+        <td class="col-barcode" onclick="editScanCell('${row.id}', 'BARCODE')" title="Klik untuk edit">${row.BARCODE}</td>
+        <td class="col-lokasi" onclick="editScanCell('${row.id}', 'LOKASI')" title="Klik untuk edit">${row.LOKASI}</td>
+        <td class="col-article" onclick="editScanCell('${row.id}', 'ARTICLE')" title="Klik untuk edit">${row.ARTICLE || '-'}</td>
+        <td class="col-bin" onclick="editScanCell('${row.id}', 'BIN')" title="Klik untuk edit">${row.BIN || '-'}</td>
+        <td onclick="editScanCell('${row.id}', 'SIZE_US')" title="Klik untuk edit">${row.SIZE_US || '-'}</td>
+        <td onclick="editScanCell('${row.id}', 'SIZE_UK')" title="Klik untuk edit">${row.SIZE_UK || '-'}</td>
+        <td onclick="editScanCell('${row.id}', 'DESCRIPTION')" title="Klik untuk edit">${row.DESCRIPTION || '-'}</td>
+        <td onclick="editScanCell('${row.id}', 'BRAND')" title="Klik untuk edit">${row.BRAND}</td>
+        <td onclick="editScanCell('${row.id}', 'CAT')" title="Klik untuk edit">${row.CAT}</td>
+        <td onclick="editScanCell('${row.id}', 'SEASON')" title="Klik untuk edit">${row.SEASON}</td>
+        <td class="col-date">${row.DATE}</td>
+        <td>${row.USER}</td>
+        <td>
+          <span class="source-badge ${row.SOURCE === 'MASTER' ? 'master' : 'manual'}">
+            ${row.SOURCE === 'MASTER' ? '📦 MASTER' : '✏️ MANUAL'}
+          </span>
+        </td>
+        <td>
+          <div class="actions-cell">
+            <button class="btn-sm btn-sm-delete" onclick="deleteScanRow('${row.id}')" title="Hapus">🗑</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  window.exportScanToExcel = function() {
+    if (!scanDataArray.length) {
+      showToast('📭 Tidak ada data untuk diexport', 'error');
+      return;
+    }
+
+    const exportData = scanDataArray.map(row => ({
+      BARCODE: row.BARCODE,
+      LOKASI: row.LOKASI,
+      ARTICLE: row.ARTICLE,
+      BIN: row.BIN,
+      'SIZE US': row.SIZE_US,
+      'SIZE UK': row.SIZE_UK,
+      DESCRIPTION: row.DESCRIPTION,
+      BRAND: row.BRAND,
+      CAT: row.CAT,
+      SEASON: row.SEASON,
+      DATE: row.DATE,
+      USER: row.USER,
+      SOURCE: row.SOURCE
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "SCAN_DATA");
+    
+    const fileName = `SCAN_DATA_${getTodayDate().replace(/\//g, '-')}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    showToast(`📥 Data diexport ke ${fileName}`, 'success');
+  };
+
+  window.uploadScanToFirebase = async function() {
+    if (!db) {
+      showToast('❌ Firebase belum terhubung! Sambungkan dulu di tab Master Data.', 'error');
+      log('❌ Firebase belum terhubung.', 'err', 'scanLogBox');
+      return;
+    }
+    if (!scanDataArray.length) {
+      showToast('📭 Tidak ada data scan untuk diupload', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('btnUploadScan');
+    btn.disabled = true;
+    btn.textContent = '⏳ Mengupload...';
+
+    log(`⬆ Mulai upload ${scanDataArray.length} data scan ke SCAN_DATA...`, 'info', 'scanLogBox');
+
+    try {
+      let uploaded = 0;
+      for (let i = 0; i < scanDataArray.length; i += BATCH_SIZE) {
+        const batch = writeBatch(db);
+        const chunk = scanDataArray.slice(i, i + BATCH_SIZE);
+        
+        chunk.forEach(row => {
+          const docData = {
+            BARCODE: row.BARCODE,
+            LOKASI: row.LOKASI,
+            ARTICLE: row.ARTICLE || '',
+            BIN: row.BIN || '',
+            SIZE_US: row.SIZE_US || '',
+            SIZE_UK: row.SIZE_UK || '',
+            DESCRIPTION: row.DESCRIPTION || '',
+            BRAND: row.BRAND || 'LEAGUE',
+            CAT: row.CAT || 'F',
+            SEASON: row.SEASON || '',
+            DATE: row.DATE,
+            USER: row.USER,
+            SOURCE: row.SOURCE,
+            sourceCollection: row.sourceCollection || '',
+            scanned_at: row.timestamp
+          };
+          
+          const docRef = doc(collection(db, 'SCAN_DATA'));
+          batch.set(docRef, docData);
+        });
+        
+        await batch.commit();
+        uploaded += chunk.length;
+        log(`✅ Batch ${Math.floor(i/BATCH_SIZE)+1}: ${uploaded}/${scanDataArray.length} terupload`, 'ok', 'scanLogBox');
+      }
+
+      log(`🎉 Upload selesai! ${uploaded} dokumen ke koleksi SCAN_DATA`, 'ok', 'scanLogBox');
+      showToast(`✅ ${uploaded} data berhasil diupload ke Firebase!`, 'success');
+    } catch (err) {
+      log(`❌ Error: ${err.message}`, 'err', 'scanLogBox');
+      showToast('❌ Upload gagal: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '⬆ Upload Scan Data ke Firestore';
+    }
+  };
 
   // ─── File Handling (MASTER DATA) ──────────────────────────────
   function handleDrop(e) {
@@ -812,6 +1392,8 @@
     document.getElementById('sumTime').textContent = elapsed + 's';
     document.getElementById('summaryGrid').style.display = 'grid';
     log(`🎉 Selesai! ${totalDocs.toLocaleString()} dokumen dalam ${elapsed}s`, 'ok');
+    showToast(`✅ Upload selesai!`, 'success');
+    updateFirestoreStatus();
 
     document.getElementById('btnUpload').disabled = false;
     document.getElementById('btnClear').disabled = false;
@@ -865,239 +1447,6 @@
     el.querySelector('.pct').textContent = '❌ Error';
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // SCAN DATA FUNCTIONS
-  // ═══════════════════════════════════════════════════════════════
-
-  function saveScanData() {
-    localStorage.setItem('scan_data', JSON.stringify(scanDataArray));
-  }
-
-  window.addScanData = function() {
-    const barcodeInput = document.getElementById('scanBarcode');
-    const barcode = barcodeInput.value.trim();
-    const lokasi = document.getElementById('scanLokasi').value;
-    const user = document.getElementById('scanUser').value;
-    
-    if (!barcode) {
-      showToast('⚠️ Silakan input/scan barcode terlebih dahulu', 'error');
-      barcodeInput.focus();
-      return;
-    }
-
-    const now = new Date();
-    const newRow = {
-      id: Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
-      BARCODE: barcode,
-      LOKASI: lokasi,
-      ARTICLE: '',  // Bisa diisi manual/edit nanti
-      BIN: '',
-      SIZE_US: '',
-      SIZE_UK: '',
-      DESCRIPTION: '',
-      BRAND: 'LEAGUE',
-      CAT: 'F',
-      SEASON: String(now.getFullYear()),
-      DATE: getTodayDate(),
-      USER: user,
-      timestamp: now.toISOString()
-    };
-
-    scanDataArray.unshift(newRow); // Add to beginning
-    saveScanData();
-    
-    // Reset input
-    barcodeInput.value = '';
-    barcodeInput.focus();
-    
-    // Update UI
-    renderScanTable();
-    updateScanStats();
-    showToast('✅ Data berhasil ditambahkan', 'success');
-  };
-
-  window.deleteScanRow = function(id) {
-    if (!confirm('Hapus data ini?')) return;
-    scanDataArray = scanDataArray.filter(row => row.id !== id);
-    saveScanData();
-    renderScanTable();
-    updateScanStats();
-    showToast('🗑 Data dihapus', 'info');
-  };
-
-  window.editScanCell = function(id, field) {
-    const row = scanDataArray.find(r => r.id === id);
-    if (!row) return;
-    
-    const newValue = prompt(`Edit ${field}:`, row[field] || '');
-    if (newValue === null) return;
-    
-    row[field] = newValue;
-    saveScanData();
-    renderScanTable();
-    showToast('✅ Data diupdate', 'success');
-  };
-
-  window.clearScanData = function() {
-    if (!scanDataArray.length) {
-      showToast('📭 Tidak ada data untuk dihapus', 'info');
-      return;
-    }
-    if (!confirm(`Yakin hapus SEMUA data scan (${scanDataArray.length} row)?`)) return;
-    scanDataArray = [];
-    saveScanData();
-    renderScanTable();
-    updateScanStats();
-    showToast('🗑 Semua data dihapus', 'info');
-  };
-
-  function updateScanStats() {
-    const total = scanDataArray.length;
-    const uniqueBarcodes = new Set(scanDataArray.map(r => r.BARCODE)).size;
-    
-    const today = getTodayDate();
-    const todayData = scanDataArray.filter(r => r.DATE === today);
-    
-    const lastScan = scanDataArray.length > 0 ? scanDataArray[0].DATE : '-';
-    
-    document.getElementById('statTotal').textContent = total.toLocaleString();
-    document.getElementById('statUnique').textContent = uniqueBarcodes.toLocaleString();
-    document.getElementById('statToday').textContent = todayData.length.toLocaleString();
-    document.getElementById('statLastScan').textContent = lastScan;
-    document.getElementById('todayCount').textContent = todayData.length.toLocaleString();
-    document.getElementById('rowCount').textContent = `${total} row`;
-  }
-
-  function renderScanTable() {
-    const tbody = document.getElementById('scanTableBody');
-    
-    if (scanDataArray.length === 0) {
-      tbody.innerHTML = `
-        <tr class="empty-state">
-          <td colspan="14">
-            <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-12"/>
-            </svg>
-            <p>Belum ada data scan. Silakan input barcode di atas.</p>
-          </td>
-        </tr>`;
-      return;
-    }
-
-    tbody.innerHTML = scanDataArray.map((row, index) => `
-      <tr>
-        <td>${index + 1}</td>
-        <td class="col-barcode" onclick="editScanCell('${row.id}', 'BARCODE')" title="Klik untuk edit">${row.BARCODE}</td>
-        <td class="col-lokasi" onclick="editScanCell('${row.id}', 'LOKASI')" title="Klik untuk edit">${row.LOKASI}</td>
-        <td class="col-article" onclick="editScanCell('${row.id}', 'ARTICLE')" title="Klik untuk edit">${row.ARTICLE || '-'}</td>
-        <td class="col-bin" onclick="editScanCell('${row.id}', 'BIN')" title="Klik untuk edit">${row.BIN || '-'}</td>
-        <td onclick="editScanCell('${row.id}', 'SIZE_US')" title="Klik untuk edit">${row.SIZE_US || '-'}</td>
-        <td onclick="editScanCell('${row.id}', 'SIZE_UK')" title="Klik untuk edit">${row.SIZE_UK || '-'}</td>
-        <td onclick="editScanCell('${row.id}', 'DESCRIPTION')" title="Klik untuk edit">${row.DESCRIPTION || '-'}</td>
-        <td onclick="editScanCell('${row.id}', 'BRAND')" title="Klik untuk edit">${row.BRAND}</td>
-        <td onclick="editScanCell('${row.id}', 'CAT')" title="Klik untuk edit">${row.CAT}</td>
-        <td onclick="editScanCell('${row.id}', 'SEASON')" title="Klik untuk edit">${row.SEASON}</td>
-        <td class="col-date">${row.DATE}</td>
-        <td>${row.USER}</td>
-        <td>
-          <div class="actions-cell">
-            <button class="btn-sm btn-sm-delete" onclick="deleteScanRow('${row.id}')" title="Hapus">🗑</button>
-          </div>
-        </td>
-      </tr>
-    `).join('');
-  }
-
-  window.exportScanToExcel = function() {
-    if (!scanDataArray.length) {
-      showToast('📭 Tidak ada data untuk diexport', 'error');
-      return;
-    }
-
-    const exportData = scanDataArray.map(row => ({
-      BARCODE: row.BARCODE,
-      LOKASI: row.LOKASI,
-      ARTICLE: row.ARTICLE,
-      BIN: row.BIN,
-      'SIZE US': row.SIZE_US,
-      'SIZE UK': row.SIZE_UK,
-      DESCRIPTION: row.DESCRIPTION,
-      BRAND: row.BRAND,
-      CAT: row.CAT,
-      SEASON: row.SEASON,
-      DATE: row.DATE,
-      USER: row.USER
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "SCAN_DATA");
-    
-    const fileName = `SCAN_DATA_${getTodayDate().replace(/\//g, '-')}.xlsx`;
-    XLSX.writeFile(wb, fileName);
-    showToast(`📥 Data diexport ke ${fileName}`, 'success');
-  };
-
-  window.uploadScanToFirebase = async function() {
-    if (!db) {
-      showToast('❌ Firebase belum terhubung! Sambungkan dulu di tab Master Data.', 'error');
-      log('❌ Firebase belum terhubung.', 'err', 'scanLogBox');
-      return;
-    }
-    if (!scanDataArray.length) {
-      showToast('📭 Tidak ada data scan untuk diupload', 'error');
-      return;
-    }
-
-    const btn = document.getElementById('btnUploadScan');
-    btn.disabled = true;
-    btn.textContent = '⏳ Mengupload...';
-
-    log(`⬆ Mulai upload ${scanDataArray.length} data scan ke SCAN_DATA...`, 'info', 'scanLogBox');
-
-    try {
-      let uploaded = 0;
-      for (let i = 0; i < scanDataArray.length; i += BATCH_SIZE) {
-        const batch = writeBatch(db);
-        const chunk = scanDataArray.slice(i, i + BATCH_SIZE);
-        
-        chunk.forEach(row => {
-          const docData = {
-            BARCODE: row.BARCODE,
-            LOKASI: row.LOKASI,
-            ARTICLE: row.ARTICLE || '',
-            BIN: row.BIN || '',
-            SIZE_US: row.SIZE_US || '',
-            SIZE_UK: row.SIZE_UK || '',
-            DESCRIPTION: row.DESCRIPTION || '',
-            BRAND: row.BRAND || 'LEAGUE',
-            CAT: row.CAT || 'F',
-            SEASON: row.SEASON || '',
-            DATE: row.DATE,
-            USER: row.USER,
-            scanned_at: row.timestamp
-          };
-          
-          const docRef = doc(collection(db, 'SCAN_DATA'));
-          batch.set(docRef, docData);
-        });
-        
-        await batch.commit();
-        uploaded += chunk.length;
-        log(`✅ Batch ${Math.floor(i/BATCH_SIZE)+1}: ${uploaded}/${scanDataArray.length} terupload`, 'ok', 'scanLogBox');
-      }
-
-      log(`🎉 Upload selesai! ${uploaded} dokumen ke koleksi SCAN_DATA`, 'ok', 'scanLogBox');
-      showToast(`✅ ${uploaded} data berhasil diupload ke Firebase!`, 'success');
-    } catch (err) {
-      log(`❌ Error: ${err.message}`, 'err', 'scanLogBox');
-      showToast('❌ Upload gagal: ' + err.message, 'error');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = '⬆ Upload Scan Data ke Firestore';
-    }
-  };
-
   // ─── Expose functions to window ───────────────────────────────
   window.initFirebase  = initFirebase;
   window.handleDrop    = handleDrop;
@@ -1105,14 +1454,16 @@
   window.startUpload   = startUpload;
   window.clearSelected = clearSelected;
 
-  // ─── Initialize Scan Table ────────────────────────────────────
+  // ─── Initialize ───────────────────────────────────────────────
   renderScanTable();
   updateScanStats();
+  updateFirestoreStatus();
 
   // Auto-refresh scan stats every 30 seconds
   setInterval(() => {
     if (document.getElementById('page-scan').classList.contains('active')) {
       updateScanStats();
+      updateFirestoreStatus();
     }
   }, 30000);
 </script>
