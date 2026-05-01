@@ -46,14 +46,8 @@
       background: var(--border);
       color: var(--text);
     }
-
-    /* Page containers */
-    .page {
-      display: none;
-    }
-    .page.active {
-      display: block;
-    }
+    .page { display: none; }
+    .page.active { display: block; }
 
     header{text-align:center;margin-bottom:32px;}
     header h1{font-size:1.8rem;font-weight:700;}
@@ -68,7 +62,6 @@
     .badge-orange{background:#c2410c;color:#fed7aa;}
     .badge-green{background:#166534;color:#bbf7d0;}
     
-    /* Forms & Inputs */
     .config-form{display:flex;flex-direction:column;gap:10px;}
     .config-form label{font-size:.8rem;color:var(--muted);margin-bottom:2px;display:block;}
     .config-form input{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.875rem;font-family:monospace;}
@@ -78,7 +71,6 @@
     #configStatus.err{background:#7f1d1d33;color:var(--red);border:1px solid #991b1b;}
     #configStatus.info{background:#1e3a5f33;color:var(--accent2);border:1px solid #1d4ed8;}
     
-    /* Dropzone */
     .dropzone{border:2px dashed var(--border);border-radius:10px;padding:36px 20px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;}
     .dropzone:hover,.dropzone.over{border-color:var(--accent);background:rgba(249,115,22,.06);}
     .dropzone svg{color:var(--muted);margin-bottom:10px;}
@@ -86,19 +78,16 @@
     .dropzone p strong{color:var(--text);}
     #fileInput{display:none;}
     
-    /* Sheets */
     .sheets-grid{display:none;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-top:16px;}
     .sheet-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;}
     .sheet-card .name{font-weight:600;font-size:.95rem;margin-bottom:4px;}
     .sheet-card .meta{color:var(--muted);font-size:.8rem;}
     
-    /* Options */
     .options{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
     label.opt{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 16px;cursor:pointer;font-size:.875rem;transition:border-color .2s;}
     label.opt:hover{border-color:var(--accent2);}
     label.opt input[type=checkbox]{accent-color:var(--accent2);width:16px;height:16px;}
     
-    /* Buttons */
     .btn{padding:11px 24px;border-radius:9px;font-weight:600;font-size:.9rem;border:none;cursor:pointer;transition:opacity .2s,transform .1s;}
     .btn:active{transform:scale(.97);}
     .btn:disabled{opacity:.4;cursor:not-allowed;}
@@ -107,7 +96,6 @@
     .btn-secondary{background:var(--border);color:var(--text);}
     .btn-success{background:var(--green);color:#fff;}
     
-    /* Progress */
     .progress-wrap{display:none;flex-direction:column;gap:12px;margin-top:16px;}
     .prog-label{display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:4px;}
     .prog-label .col-name{font-weight:600;}
@@ -116,14 +104,12 @@
     .prog-bar.done{background:var(--green);}
     .prog-bar.error{background:var(--red);}
     
-    /* Log */
     .log{background:#0a0c12;border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-size:.78rem;font-family:monospace;max-height:240px;overflow-y:auto;line-height:1.7;margin-top:16px;display:none;}
     .log .ok{color:var(--green);}
     .log .err{color:var(--red);}
     .log .info{color:var(--accent2);}
     .log .warn{color:#facc15;}
     
-    /* Summary */
     .summary-grid{display:none;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;}
     .sum-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;}
     .sum-box .val{font-size:1.6rem;font-weight:700;color:var(--accent);}
@@ -131,168 +117,81 @@
     .divider{border:none;border-top:1px solid var(--border);margin:12px 0;}
     .row-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
 
-    /* Scan Page Styles */
-    .scan-input-area {
+    /* ─── SCAN PAGE STYLES ─── */
+    .scan-input-row {
       display: flex;
       gap: 12px;
       align-items: flex-end;
       flex-wrap: wrap;
     }
     .scan-input-group {
-      flex: 1;
-      min-width: 140px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
     .scan-input-group label {
-      display: block;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       color: var(--muted);
-      margin-bottom: 6px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
-    .scan-input-group input, .scan-input-group select {
-      width: 100%;
-      padding: 12px;
+    .scan-input-group input {
+      padding: 11px 14px;
       border-radius: 8px;
       border: 1px solid var(--border);
       background: var(--bg);
       color: var(--text);
       font-size: 1rem;
       font-family: monospace;
+      width: 100%;
     }
-    .scan-input-group input:focus, .scan-input-group select:focus {
+    .scan-input-group input:focus {
       outline: none;
       border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(249,115,22,0.15);
     }
-    .scan-input-group select {
-      cursor: pointer;
-    }
-    
-    /* Product Info Card */
-    .product-info-card {
-      background: var(--bg);
-      border: 1px solid var(--accent);
-      border-radius: var(--radius);
-      padding: 20px;
-      margin-top: 16px;
-      display: none;
-      animation: fadeIn 0.3s ease-out;
-    }
-    .product-info-card.show {
-      display: block;
-    }
-    .product-info-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-    .product-info-header h3 {
+    .scan-input-group input.input-barcode {
+      min-width: 220px;
       font-size: 1.1rem;
-      color: var(--accent);
-    }
-    .product-info-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 12px;
-    }
-    .product-info-item {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .product-info-item .label {
-      font-size: 0.7rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .product-info-item .value {
       font-weight: 600;
-      font-size: 0.95rem;
+      letter-spacing: 0.02em;
     }
-    .product-info-item .value.highlight {
-      color: var(--accent);
-      font-size: 1.1rem;
-    }
-    
-    /* Derived Info */
-    .derived-info {
-      background: rgba(59, 130, 246, 0.08);
-      border: 1px solid rgba(59, 130, 246, 0.3);
-      border-radius: 8px;
-      padding: 14px;
-      margin-top: 12px;
-    }
-    .derived-info .di-title {
-      font-size: 0.75rem;
+    .scan-input-group input.input-bin {
+      min-width: 100px;
+      text-align: center;
       font-weight: 600;
-      color: var(--accent2);
-      margin-bottom: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      color: #a78bfa;
     }
-    .derived-info .di-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 10px;
-    }
-    .derived-info .di-item {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-    .derived-info .di-item .label {
+    .input-hint {
       font-size: 0.65rem;
       color: var(--muted);
-      text-transform: uppercase;
-    }
-    .derived-info .di-item .value {
-      font-weight: 600;
-      font-size: 0.9rem;
+      margin-top: 2px;
     }
     
-    /* Search Status */
     .search-status {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 8px 12px;
+      padding: 10px 14px;
       border-radius: 8px;
       font-size: 0.82rem;
-      margin-top: 8px;
+      margin-top: 12px;
+      font-weight: 500;
     }
-    .search-status.searching {
-      background: #1e3a5f33;
-      border: 1px solid #1d4ed8;
-      color: var(--accent2);
-    }
-    .search-status.found {
-      background: #14532d33;
-      border: 1px solid #166534;
-      color: var(--green);
-    }
-    .search-status.not-found {
-      background: #7f1d1d33;
-      border: 1px solid #991b1b;
-      color: var(--red);
-    }
+    .search-status.searching { background: #1e3a5f33; border: 1px solid #1d4ed8; color: var(--accent2); }
+    .search-status.found { background: #14532d33; border: 1px solid #166534; color: var(--green); }
+    .search-status.not-found { background: #7f1d1d33; border: 1px solid #991b1b; color: var(--red); }
     
-    /* Spinner */
     .spinner {
       display: inline-block;
-      width: 14px;
-      height: 14px;
+      width: 14px; height: 14px;
       border: 2px solid transparent;
       border-top-color: currentColor;
       border-radius: 50%;
       animation: spin 0.6s linear infinite;
     }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
     
     .scan-stats {
       display: grid;
@@ -307,20 +206,9 @@
       padding: 14px;
       text-align: center;
     }
-    .stat-box .stat-val {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--accent2);
-    }
-    .stat-box .stat-lbl {
-      font-size: 0.7rem;
-      color: var(--muted);
-      margin-top: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
+    .stat-box .stat-val { font-size: 1.5rem; font-weight: 700; color: var(--accent2); }
+    .stat-box .stat-lbl { font-size: 0.7rem; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
     
-    /* Table Styles */
     .table-wrapper {
       overflow-x: auto;
       margin-top: 16px;
@@ -331,7 +219,7 @@
       width: 100%;
       border-collapse: collapse;
       font-size: 0.82rem;
-      min-width: 1200px;
+      min-width: 1100px;
     }
     .scan-table thead {
       background: var(--bg);
@@ -343,7 +231,7 @@
       padding: 12px 10px;
       text-align: left;
       font-weight: 600;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: var(--muted);
@@ -355,59 +243,23 @@
       border-bottom: 1px solid var(--border);
       white-space: nowrap;
     }
-    .scan-table tbody tr {
-      transition: background 0.2s;
-    }
-    .scan-table tbody tr:hover {
-      background: rgba(59, 130, 246, 0.05);
-    }
-    .scan-table tbody tr.new-row {
-      animation: highlightRow 1.5s ease-out;
-    }
-    .scan-table tbody tr.from-master {
-      border-left: 3px solid var(--accent);
-    }
+    .scan-table tbody tr { transition: background 0.2s; }
+    .scan-table tbody tr:hover { background: rgba(59, 130, 246, 0.05); }
+    .scan-table tbody tr.new-row { animation: highlightRow 1.5s ease-out; }
     @keyframes highlightRow {
       0% { background: rgba(34, 197, 94, 0.3); }
       100% { background: transparent; }
     }
     .scan-table .col-barcode { font-family: monospace; font-weight: 500; color: var(--accent); }
-    .scan-table .col-lokasi { color: var(--accent2); }
     .scan-table .col-bin { font-weight: 600; color: #a78bfa; }
-    .scan-table .col-article { font-family: monospace; }
+    .scan-table .col-lokasi { color: var(--accent2); font-weight: 500; }
+    .scan-table .col-size-us { font-weight: 600; color: var(--accent); }
     .scan-table .col-date { color: var(--muted); font-size: 0.78rem; }
     .scan-table .col-gender { font-weight: 600; }
-    .scan-table .gender-laki { color: #60a5fa; }
-    .scan-table .gender-perempuan { color: #f472b6; }
-    .scan-table .gender-anak { color: #fbbf24; }
-    .scan-table .source-badge {
-      display: inline-block;
-      font-size: 0.6rem;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .source-badge.master {
-      background: #c2410c33;
-      color: #fed7aa;
-      border: 1px solid #c2410c;
-    }
-    .source-badge.manual {
-      background: #1d4ed833;
-      color: #bfdbfe;
-      border: 1px solid #1d4ed8;
-    }
-    .source-badge.derived {
-      background: #7c3aed33;
-      color: #ddd6fe;
-      border: 1px solid #7c3aed;
-    }
-    .actions-cell {
-      display: flex;
-      gap: 6px;
-    }
+    .gender-laki { color: #60a5fa; }
+    .gender-perempuan { color: #f472b6; }
+    .gender-anak { color: #fbbf24; }
+    .actions-cell { display: flex; gap: 6px; }
     .btn-sm {
       padding: 4px 10px;
       font-size: 0.7rem;
@@ -419,19 +271,14 @@
     }
     .btn-sm:hover { opacity: 0.8; }
     .btn-sm-delete { background: var(--red); color: #fff; }
-    .btn-sm-edit { background: var(--accent2); color: #fff; }
     
     .empty-state {
       text-align: center;
       padding: 48px 20px;
       color: var(--muted);
     }
-    .empty-state svg {
-      margin-bottom: 16px;
-      opacity: 0.5;
-    }
+    .empty-state svg { margin-bottom: 16px; opacity: 0.5; }
     
-    /* Toast */
     .toast {
       position: fixed;
       bottom: 24px;
@@ -455,7 +302,6 @@
 </head>
 <body>
 
-<!-- Toast Notification -->
 <div class="toast" id="toast"></div>
 
 <!-- Navigation Tabs -->
@@ -466,7 +312,9 @@
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- PAGE 1: MASTER DATA -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
 <div class="page active" id="page-master">
   <div class="container">
     <header>
@@ -474,7 +322,6 @@
       <p>Upload MASTER_BARCODE · MASTER_PRODUK · SIZE ke Firebase Firestore</p>
     </header>
 
-    <!-- STEP 1: Firebase Config -->
     <div class="card">
       <h2><span class="step-tag">1</span> Konfigurasi Firebase <span class="badge badge-blue">Setup Sekali</span></h2>
       <div class="config-form">
@@ -487,7 +334,6 @@
       </p>
     </div>
 
-    <!-- STEP 2: Upload File -->
     <div class="card">
       <h2><span class="step-tag">2</span> Pilih File Excel <span class="badge badge-orange">.xlsx</span></h2>
       <div class="dropzone" id="dropzone"
@@ -506,7 +352,6 @@
       <div class="sheets-grid" id="sheetsGrid"></div>
     </div>
 
-    <!-- STEP 3: Upload -->
     <div class="card" id="uploadCard" style="display:none">
       <h2><span class="step-tag">3</span> Pilih Sheet &amp; Upload</h2>
       <div class="options" id="sheetOptions"></div>
@@ -532,7 +377,9 @@
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- PAGE 2: SCAN DATA -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
 <div class="page" id="page-scan">
   <div class="container">
     <header>
@@ -540,39 +387,56 @@
       <p>Scan barcode & auto-search dari Master Data Firestore</p>
     </header>
 
-    <!-- Scan Input Card -->
+    <!-- Input Card -->
     <div class="card">
-      <h2><span class="step-tag">📱</span> Input Scan Barcode</h2>
-      <div class="scan-input-area">
-        <div class="scan-input-group" style="flex: 2;">
+      <h2><span class="step-tag">📱</span> Input Scan</h2>
+      
+      <div class="scan-input-row">
+        <div class="scan-input-group" style="flex:2; min-width:200px;">
           <label>🔍 Barcode</label>
           <input 
             type="text" 
             id="scanBarcode" 
-            placeholder="Scan atau ketik barcode di sini..." 
+            class="input-barcode"
+            placeholder="Scan atau ketik barcode..."
             autofocus
             onkeydown="handleBarcodeKeydown(event)"
           />
+          <span class="input-hint">Tekan Enter untuk submit</span>
         </div>
-        <div class="scan-input-group" style="flex: 1;">
+        
+        <div class="scan-input-group" style="flex:1; min-width:100px;">
+          <label>📦 BIN</label>
+          <input 
+            type="text" 
+            id="scanBIN" 
+            class="input-bin"
+            placeholder="Contoh: D1"
+          />
+          <span class="input-hint">Isi manual</span>
+        </div>
+        
+        <div class="scan-input-group" style="flex:1; min-width:130px;">
           <label>📍 Lokasi</label>
-          <select id="scanLokasi">
+          <select id="scanLokasi" style="padding:11px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:1rem;width:100%;cursor:pointer;">
             <option value="Gudang">Gudang</option>
             <option value="Toko">Toko</option>
             <option value="Display">Display</option>
             <option value="Retur">Retur</option>
           </select>
         </div>
-        <div class="scan-input-group" style="flex: 1;">
+        
+        <div class="scan-input-group" style="flex:1; min-width:120px;">
           <label>👤 User</label>
-          <select id="scanUser">
+          <select id="scanUser" style="padding:11px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:1rem;width:100%;cursor:pointer;">
             <option value="LOCAL">LOCAL</option>
             <option value="ADMIN">ADMIN</option>
             <option value="STAFF1">STAFF1</option>
             <option value="STAFF2">STAFF2</option>
           </select>
         </div>
-        <button class="btn btn-primary" onclick="addScanData()" style="height: 46px;">
+        
+        <button class="btn btn-primary" onclick="addScanData()" style="height:44px; white-space:nowrap;">
           ➕ Tambah
         </button>
       </div>
@@ -583,29 +447,15 @@
         <span id="searchStatusText"></span>
       </div>
       
-      <!-- Product Info from Master -->
-      <div class="product-info-card" id="productInfoCard">
-        <div class="product-info-header">
-          <h3>📦 Data dari Master</h3>
-          <span class="badge badge-orange" id="productDataSource">MASTER</span>
-        </div>
-        <div class="product-info-grid" id="productInfoGrid"></div>
-        <div class="derived-info" id="derivedInfo" style="display:none;">
-          <div class="di-title">🔍 Data Turunan (Derived)</div>
-          <div class="di-grid" id="derivedInfoGrid"></div>
-        </div>
-      </div>
-      
-      <!-- Quick Info -->
-      <div style="margin-top: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-        <span style="font-size: 0.75rem; color: var(--muted);">
-          💡 Tekan <strong>Enter</strong> untuk scan & cari otomatis
+      <div style="margin-top:12px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+        <span style="font-size:0.75rem;color:var(--muted);">
+          💡 <strong>Enter</strong> = scan & cari dari Master Data
         </span>
-        <span style="font-size: 0.75rem; color: var(--muted);">
-          | Total hari ini: <strong id="todayCount">0</strong> scan
+        <span style="font-size:0.75rem;color:var(--muted);">
+          | Hari ini: <strong id="todayCount">0</strong> scan
         </span>
-        <span style="font-size: 0.75rem; color: var(--muted);">
-          | DB: <strong id="firestoreStatus">-</strong>
+        <span style="font-size:0.75rem;">
+          DB: <strong id="firestoreStatus">-</strong>
         </span>
       </div>
     </div>
@@ -632,18 +482,14 @@
 
     <!-- Data Table -->
     <div class="card">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h2 style="margin: 0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="margin:0;">
           <span class="step-tag">📋</span> Data Scan
           <span class="badge badge-green" id="rowCount">0 row</span>
         </h2>
-        <div style="display: flex; gap: 8px;">
-          <button class="btn btn-secondary btn-sm" onclick="exportScanToExcel()">
-            📥 Export Excel
-          </button>
-          <button class="btn btn-danger btn-sm" onclick="clearScanData()">
-            🗑 Hapus Semua
-          </button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary btn-sm" onclick="exportScanToExcel()">📥 Export Excel</button>
+          <button class="btn btn-danger btn-sm" onclick="clearScanData()">🗑 Hapus Semua</button>
         </div>
       </div>
       
@@ -665,13 +511,12 @@
               <th>SEASON</th>
               <th>DATE</th>
               <th>USER</th>
-              <th>SUMBER</th>
               <th>AKSI</th>
             </tr>
           </thead>
           <tbody id="scanTableBody">
             <tr class="empty-state">
-              <td colspan="16">
+              <td colspan="15">
                 <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                 </svg>
@@ -683,10 +528,10 @@
       </div>
     </div>
 
-    <!-- Upload to Firebase -->
+    <!-- Upload Card -->
     <div class="card">
-      <h2><span class="step-tag">☁️</span> Upload Data Scan ke Firebase</h2>
-      <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 12px;">
+      <h2><span class="step-tag">☁️</span> Upload ke Firebase</h2>
+      <p style="color:var(--muted);font-size:0.85rem;margin-bottom:12px;">
         Upload semua data scan ke koleksi <strong>SCAN_DATA</strong> di Firestore
       </p>
       <button class="btn btn-success" onclick="uploadScanToFirebase()" id="btnUploadScan">
@@ -701,45 +546,31 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import {
     getFirestore, collection, writeBatch,
-    doc, getDocs, addDoc, Timestamp, query, where, getDoc
+    doc, getDocs, query, where
   } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
   const PROJECT_ID = "wms-league";
   const BATCH_SIZE = 200;
-  
-  // Master collections to search
-  const MASTER_COLLECTIONS = ['MASTER_BARCODE', 'MASTER_PRODUK', 'SIZE'];
 
   let db = null;
   let parsedSheets = {};
   let scanDataArray = [];
-  let lastFoundProduct = null;
 
   // ═══════════════════════════════════════════════════════════════
-  // HELPER: Derive data dari Article
+  // HELPER FUNCTIONS
   // ═══════════════════════════════════════════════════════════════
   
-  /**
-   * Extract 3 digit terakhir dari Article sebagai SIZE US
-   * Contoh: 1011824003N100 → "100", 202018261LAN085 → "085"
-   */
   function extractSizeUS(article) {
     if (!article) return '';
     const str = String(article).trim();
-    // Cari 3 digit terakhir (bisa di akhir atau sebelum karakter non-digit)
     const match = str.match(/(\d{3})\D*$/);
     return match ? match[1] : '';
   }
 
-  /**
-   * Tentukan Gender dari digit pertama Article
-   * 1 = Laki-laki, 2 = Perempuan, 3 = Anak-anak
-   */
   function extractGender(article) {
     if (!article) return { code: '', label: '' };
     const str = String(article).trim();
     const firstDigit = str.charAt(0);
-    
     switch(firstDigit) {
       case '1': return { code: '1', label: 'Laki-laki' };
       case '2': return { code: '2', label: 'Perempuan' };
@@ -748,98 +579,76 @@
     }
   }
 
-  /**
-   * Cari SIZE UK dari koleksi SIZE berdasarkan US_Size dan Gender
-   */
   async function findSizeUK(usSize, genderLabel) {
     if (!db || !usSize || !genderLabel) return '';
-    
     try {
-      // Cari di koleksi SIZE dimana US_Size = usSize dan Gender = genderLabel
-      const q = query(
-        collection(db, 'SIZE'), 
-        where('US_Size', '==', usSize),
-        where('Gender', '==', genderLabel)
-      );
+      const q = query(collection(db, 'SIZE'), where('US_Size', '==', usSize), where('Gender', '==', genderLabel));
       const snapshot = await getDocs(q);
-      
       if (!snapshot.empty) {
-        const doc = snapshot.docs[0];
-        const data = doc.data();
-        // Return UK_Size atau Size_UK field
+        const data = snapshot.docs[0].data();
         return data.UK_Size || data.Size_UK || data['UK_Size'] || '';
       }
-      
-      // Coba cari dengan query lebih fleksibel (hanya US_Size)
+      // fallback: cari hanya by US_Size
       const q2 = query(collection(db, 'SIZE'), where('US_Size', '==', usSize));
       const snapshot2 = await getDocs(q2);
-      
       if (!snapshot2.empty) {
-        // Cari yang gendernya match
-        for (const doc of snapshot2.docs) {
-          const data = doc.data();
-          if (data.Gender === genderLabel) {
-            return data.UK_Size || data.Size_UK || data['UK_Size'] || '';
+        for (const d of snapshot2.docs) {
+          if (d.data().Gender === genderLabel) {
+            return d.data().UK_Size || d.data().Size_UK || d.data()['UK_Size'] || '';
           }
         }
-        // Fallback: ambil yang pertama
-        const firstData = snapshot2.docs[0].data();
-        return firstData.UK_Size || firstData.Size_UK || firstData['UK_Size'] || '';
+        const first = snapshot2.docs[0].data();
+        return first.UK_Size || first.Size_UK || first['UK_Size'] || '';
       }
-    } catch (err) {
-      console.warn('Error mencari SIZE UK:', err.message);
-    }
-    
+    } catch(e) { console.warn('findSizeUK error:', e.message); }
     return '';
   }
 
-  /**
-   * Cari Brand Name dari MASTER_PRODUK berdasarkan Article
-   */
   async function findBrandName(article) {
     if (!db || !article) return '';
-    
     try {
       const q = query(collection(db, 'MASTER_PRODUK'), where('Article', '==', article));
       const snapshot = await getDocs(q);
-      
       if (!snapshot.empty) {
         const data = snapshot.docs[0].data();
-        return data['Brand Name'] || data.Brand_Name || data.BrandName || data.Brand || '';
+        // Cari field Brand_Name, Brand Name, atau Brand
+        return data.Brand_Name || data['Brand Name'] || data.BrandName || data.Brand || data.BRAND || '';
       }
-    } catch (err) {
-      console.warn('Error mencari Brand Name:', err.message);
-    }
-    
+    } catch(e) { console.warn('findBrandName error:', e.message); }
     return '';
   }
 
-  /**
-   * Cari Season Yr dari MASTER_PRODUK berdasarkan Article
-   */
   async function findSeasonYr(article) {
     if (!db || !article) return '';
-    
     try {
       const q = query(collection(db, 'MASTER_PRODUK'), where('Article', '==', article));
       const snapshot = await getDocs(q);
-      
       if (!snapshot.empty) {
         const data = snapshot.docs[0].data();
-        return data['Season Yr'] || data.Season_Yr || data.SeasonYr || data.Season || '';
+        // Cari field Season_Yr, Season Yr, atau Season
+        return data.Season_Yr || data['Season Yr'] || data.SeasonYr || data.Season || data.SEASON || '';
       }
-    } catch (err) {
-      console.warn('Error mencari Season Yr:', err.message);
-    }
-    
+    } catch(e) { console.warn('findSeasonYr error:', e.message); }
     return '';
   }
 
-  // ─── Page Navigation ──────────────────────────────────────────
+  async function searchInCollection(collectionName, fieldName, value) {
+    try {
+      const q = query(collection(db, collectionName), where(fieldName, '==', value));
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        return { found: true, data: { id: snapshot.docs[0].id, ...snapshot.docs[0].data() }, source: collectionName };
+      }
+      return { found: false, data: null, source: null };
+    } catch(e) { return { found: false, data: null, source: null }; }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // PAGE NAVIGATION
+  // ═══════════════════════════════════════════════════════════════
   window.switchPage = function(page) {
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    
     if (page === 'master') {
       document.querySelector('.nav-tab:nth-child(1)').classList.add('active');
       document.getElementById('page-master').classList.add('active');
@@ -852,7 +661,6 @@
     }
   };
 
-  // ─── Toast Notification ───────────────────────────────────────
   function showToast(msg, type = 'info') {
     const toast = document.getElementById('toast');
     toast.textContent = msg;
@@ -861,25 +669,18 @@
     setTimeout(() => { toast.style.display = 'none'; }, 2500);
   }
 
-  // ─── Utility Functions ────────────────────────────────────────
+  function formatDate(date) {
+    const d = new Date(date);
+    return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  }
+
+  function getTodayDate() { return formatDate(new Date()); }
+
   function sanitize(v) {
     if (v === null || v === undefined || v === '') return null;
     if (typeof v === 'number' && isNaN(v)) return null;
     if (v instanceof Date) return v.toISOString().split('T')[0];
     return v;
-  }
-
-  function formatDate(date) {
-    const d = new Date(date);
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const year = d.getFullYear();
-    return `${day}/${month}/${year}`;
-  }
-
-  function getTodayDate() {
-    const now = new Date();
-    return formatDate(now);
   }
 
   function makeDocId(sheetName, row) {
@@ -891,36 +692,23 @@
         id = id.replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
         return id;
       }
-      const ts = Date.now().toString(36);
-      const rnd = Math.random().toString(36).substring(2, 8);
-      return `SIZE_${ts}_${rnd}`;
+      return `SIZE_${Date.now().toString(36)}_${Math.random().toString(36).substring(2,6)}`;
     }
     if (sheetName === 'MASTER_BARCODE') {
-      const keys = ['Barcode', 'Article'];
-      for (const k of keys) {
+      for (const k of ['Barcode', 'Article']) {
         const raw = row[k];
-        if (raw != null) {
-          let id = String(raw).trim();
-          if (id.length > 0) {
-            id = id.replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
-            return id;
-          }
+        if (raw != null && String(raw).trim().length > 0) {
+          return String(raw).trim().replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
         }
       }
     }
     if (sheetName === 'MASTER_PRODUK') {
       const raw = row['Article'];
-      if (raw != null) {
-        let id = String(raw).trim();
-        if (id.length > 0) {
-          id = id.replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
-          return id;
-        }
+      if (raw != null && String(raw).trim().length > 0) {
+        return String(raw).trim().replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
       }
     }
-    const ts = Date.now().toString(36);
-    const rnd = Math.random().toString(36).substring(2, 8);
-    return `${sheetName}_${ts}_${rnd}`;
+    return `${sheetName}_${Date.now().toString(36)}_${Math.random().toString(36).substring(2,6)}`;
   }
 
   function log(msg, type = 'info', targetId = 'logBox') {
@@ -942,39 +730,25 @@
     el.style.display = 'block';
   }
 
-  // ─── Firebase Init ────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  // FIREBASE INIT
+  // ═══════════════════════════════════════════════════════════════
   async function initFirebase() {
     const apiKey = document.getElementById('cfgApiKey').value.trim();
-    if (!apiKey) {
-      setStatus('❌ API Key wajib diisi!', 'err');
-      return;
-    }
+    if (!apiKey) { setStatus('❌ API Key wajib diisi!', 'err'); return; }
     setStatus('⏳ Menghubungkan…', 'info');
-
     try {
-      const firebaseConfig = {
-        apiKey,
-        authDomain: `${PROJECT_ID}.firebaseapp.com`,
-        projectId: PROJECT_ID
-      };
-
-      const firebaseApp = initializeApp(firebaseConfig);
+      const firebaseApp = initializeApp({ apiKey, authDomain: `${PROJECT_ID}.firebaseapp.com`, projectId: PROJECT_ID });
       db = getFirestore(firebaseApp);
-
-      const testRef = doc(db, 'test_write', 'conn_test');
       const testBatch = writeBatch(db);
-      testBatch.set(testRef, { 
-        test: 'connection_test',
-        timestamp: new Date().toISOString()
-      });
+      testBatch.set(doc(db, 'test_write', 'conn_test'), { test: 'connection_test', timestamp: new Date().toISOString() });
       await testBatch.commit();
-
       localStorage.setItem('fb_api_key', apiKey);
-      setStatus(`✅ Terhubung & BISA MENULIS ke ${PROJECT_ID}`, 'ok');
-      log('✅ TEST WRITE BERHASIL — Upload & Scan siap digunakan!', 'ok');
+      setStatus(`✅ Terhubung ke ${PROJECT_ID}`, 'ok');
+      log('✅ TEST WRITE BERHASIL', 'ok');
       showToast('✅ Firebase terhubung!', 'success');
       updateFirestoreStatus();
-    } catch (err) {
+    } catch(err) {
       setStatus('❌ Gagal: ' + err.message, 'err');
       log('❌ Error: ' + err.code + ' - ' + err.message, 'err');
       db = null;
@@ -990,252 +764,78 @@
     }
   }
 
-  // ─── Load Saved Config ────────────────────────────────────────
   const savedApiKey = localStorage.getItem('fb_api_key');
-  if (savedApiKey) {
-    document.getElementById('cfgApiKey').value = savedApiKey;
-    initFirebase();
-  }
+  if (savedApiKey) { document.getElementById('cfgApiKey').value = savedApiKey; initFirebase(); }
 
-  // Load saved scan data from localStorage
+  // Load saved scan data
   const savedScanData = localStorage.getItem('scan_data');
   if (savedScanData) {
-    try {
-      scanDataArray = JSON.parse(savedScanData);
-    } catch(e) {
-      scanDataArray = [];
-    }
+    try { scanDataArray = JSON.parse(savedScanData); } catch(e) { scanDataArray = []; }
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // MASTER DATA SEARCH — Cari barcode di Firestore + Derived Data
+  // SEARCH BARCODE IN MASTER
   // ═══════════════════════════════════════════════════════════════
-
   async function searchBarcodeInMaster(barcode) {
-    if (!db) {
-      return { found: false, error: 'Firebase tidak terhubung' };
-    }
-
+    if (!db) return { found: false, error: 'Firebase tidak terhubung' };
     const searchStatus = document.getElementById('searchStatus');
     const searchStatusText = document.getElementById('searchStatusText');
     const searchSpinner = document.getElementById('searchSpinner');
-    const productInfoCard = document.getElementById('productInfoCard');
-    const productInfoGrid = document.getElementById('productInfoGrid');
-    const productDataSource = document.getElementById('productDataSource');
-    const derivedInfo = document.getElementById('derivedInfo');
-    const derivedInfoGrid = document.getElementById('derivedInfoGrid');
-
-    // Show searching status
     searchStatus.style.display = 'flex';
     searchStatus.className = 'search-status searching';
     searchSpinner.style.display = 'inline-block';
     searchStatusText.textContent = `Mencari "${barcode}" di Master Data...`;
-    productInfoCard.classList.remove('show');
-    derivedInfo.style.display = 'none';
 
     try {
-      // Search in MASTER_BARCODE first (by Barcode field)
+      // Cari di MASTER_BARCODE by Barcode
       let result = await searchInCollection('MASTER_BARCODE', 'Barcode', barcode);
-      
       if (result.found) {
-        // Dapatkan article dari hasil
         const article = result.data.Article || result.data.article || '';
-        
-        // Derive data dari article
         const sizeUS = extractSizeUS(article);
         const gender = extractGender(article);
-        
-        // Cari SIZE UK dari koleksi SIZE
         const sizeUK = await findSizeUK(sizeUS, gender.label);
-        
-        // Cari Brand Name dari MASTER_PRODUK
         const brandName = await findBrandName(article);
-        
-        // Cari Season Yr dari MASTER_PRODUK
         const seasonYr = await findSeasonYr(article);
         
-        // Gabungkan semua data
-        const enrichedData = {
-          ...result.data,
-          _derived: {
-            sizeUS: sizeUS,
-            sizeUK: sizeUK,
-            gender: gender,
-            brandName: brandName || result.data.Brand || result.data.brand || 'LEAGUE',
-            seasonYr: seasonYr || result.data.Season || result.data.season || ''
-          }
-        };
-        
-        displayProductInfo(enrichedData, 'MASTER_BARCODE');
         searchStatus.className = 'search-status found';
         searchSpinner.style.display = 'none';
-        searchStatusText.textContent = `✅ Ditemukan di MASTER_BARCODE | Size US: ${sizeUS} | UK: ${sizeUK || '?'} | ${gender.label}`;
+        searchStatusText.textContent = `✅ Ditemukan | US:${sizeUS} UK:${sizeUK||'?'} ${gender.label} | Brand:${brandName||'?'}`;
         
-        return { 
-          found: true, 
-          data: enrichedData, 
-          source: 'MASTER_BARCODE' 
-        };
+        return { found: true, data: { ...result.data, _derived: { sizeUS, sizeUK, gender, brandName, seasonYr, article } }, source: 'MASTER_BARCODE' };
       }
 
-      // If not found, try MASTER_PRODUK (by Article field)
+      // Cari di MASTER_PRODUK by Article
       result = await searchInCollection('MASTER_PRODUK', 'Article', barcode);
-      
       if (result.found) {
         const article = result.data.Article || result.data.article || barcode;
         const sizeUS = extractSizeUS(article);
         const gender = extractGender(article);
         const sizeUK = await findSizeUK(sizeUS, gender.label);
+        const brandName = result.data.Brand_Name || result.data['Brand Name'] || result.data.Brand || '';
+        const seasonYr = result.data.Season_Yr || result.data['Season Yr'] || result.data.Season || '';
         
-        const enrichedData = {
-          ...result.data,
-          Barcode: barcode,
-          _derived: {
-            sizeUS: sizeUS,
-            sizeUK: sizeUK,
-            gender: gender,
-            brandName: result.data['Brand Name'] || result.data.Brand_Name || result.data.Brand || 'LEAGUE',
-            seasonYr: result.data['Season Yr'] || result.data.Season_Yr || result.data.Season || ''
-          }
-        };
-        
-        displayProductInfo(enrichedData, 'MASTER_PRODUK');
         searchStatus.className = 'search-status found';
         searchSpinner.style.display = 'none';
-        searchStatusText.textContent = `✅ Ditemukan di MASTER_PRODUK | Size US: ${sizeUS} | ${gender.label}`;
+        searchStatusText.textContent = `✅ Ditemukan di MASTER_PRODUK | ${brandName} | ${seasonYr}`;
         
-        return { 
-          found: true, 
-          data: enrichedData, 
-          source: 'MASTER_PRODUK' 
-        };
+        return { found: true, data: { ...result.data, Barcode: barcode, _derived: { sizeUS, sizeUK, gender, brandName, seasonYr, article } }, source: 'MASTER_PRODUK' };
       }
 
-      // Not found in any collection
       searchStatus.className = 'search-status not-found';
       searchSpinner.style.display = 'none';
       searchStatusText.textContent = `❌ "${barcode}" tidak ditemukan di Master Data`;
-      productInfoCard.classList.remove('show');
-      
       return { found: false, data: null, source: null };
-
-    } catch (err) {
+    } catch(err) {
       searchStatus.className = 'search-status not-found';
       searchSpinner.style.display = 'none';
       searchStatusText.textContent = `❌ Error: ${err.message}`;
-      productInfoCard.classList.remove('show');
-      
       return { found: false, error: err.message };
     }
   }
 
-  async function searchInCollection(collectionName, fieldName, value) {
-    try {
-      const q = query(collection(db, collectionName), where(fieldName, '==', value));
-      const snapshot = await getDocs(q);
-      
-      if (!snapshot.empty) {
-        const doc = snapshot.docs[0];
-        return {
-          found: true,
-          data: { id: doc.id, ...doc.data() },
-          source: collectionName
-        };
-      }
-      
-      return { found: false, data: null, source: null };
-    } catch (err) {
-      console.warn(`Error searching ${collectionName}:`, err.message);
-      return { found: false, data: null, source: null };
-    }
-  }
-
-  function displayProductInfo(data, source) {
-    const card = document.getElementById('productInfoCard');
-    const grid = document.getElementById('productInfoGrid');
-    const dataSource = document.getElementById('productDataSource');
-    const derivedInfo = document.getElementById('derivedInfo');
-    const derivedInfoGrid = document.getElementById('derivedInfoGrid');
-    
-    // Fields from master
-    let fields = [];
-    
-    if (source === 'MASTER_BARCODE') {
-      fields = [
-        { key: 'Barcode', label: 'Barcode', highlight: true },
-        { key: 'Article', label: 'Article' },
-        { key: 'Description', label: 'Description' },
-        { key: 'BIN', label: 'BIN (Master)' },
-        { key: 'Category', label: 'Category' },
-      ];
-    } else if (source === 'MASTER_PRODUK') {
-      fields = [
-        { key: 'Article', label: 'Article', highlight: true },
-        { key: 'Brand Name', label: 'Brand Name' },
-        { key: 'Description', label: 'Description' },
-        { key: 'Season Yr', label: 'Season Yr' },
-      ];
-    }
-    
-    // Build grid HTML
-    grid.innerHTML = fields
-      .filter(f => data[f.key] !== undefined && data[f.key] !== null && data[f.key] !== '')
-      .map(f => `
-        <div class="product-info-item">
-          <div class="label">${f.label}</div>
-          <div class="value ${f.highlight ? 'highlight' : ''}">${data[f.key] || '-'}</div>
-        </div>
-      `).join('');
-    
-    dataSource.textContent = source;
-    
-    // Show derived info
-    if (data._derived) {
-      const d = data._derived;
-      const article = data.Article || data.article || '';
-      
-      derivedInfoGrid.innerHTML = `
-        <div class="di-item">
-          <div class="label">Article</div>
-          <div class="value" style="font-family:monospace;">${article}</div>
-        </div>
-        <div class="di-item">
-          <div class="label">Digit 1 → Gender</div>
-          <div class="value">${article.charAt(0)} → <strong>${d.gender.label}</strong></div>
-        </div>
-        <div class="di-item">
-          <div class="label">3 Digit Terakhir → SIZE US</div>
-          <div class="value" style="color:var(--accent);font-size:1.1rem;">${d.sizeUS || '?'}</div>
-        </div>
-        <div class="di-item">
-          <div class="label">SIZE UK (dari SIZE sheet)</div>
-          <div class="value" style="color:var(--accent2);">${d.sizeUK || 'Tidak ditemukan'}</div>
-        </div>
-        <div class="di-item">
-          <div class="label">Brand (dari MASTER_PRODUK)</div>
-          <div class="value">${d.brandName || '?'}</div>
-        </div>
-        <div class="di-item">
-          <div class="label">Season (dari MASTER_PRODUK)</div>
-          <div class="value">${d.seasonYr || '?'}</div>
-        </div>
-      `;
-      derivedInfo.style.display = 'block';
-    } else {
-      derivedInfo.style.display = 'none';
-    }
-    
-    card.classList.add('show');
-    
-    // Store for later use
-    lastFoundProduct = {
-      found: true,
-      data: data,
-      source: source
-    };
-  }
-
-  // ─── Scan Input Handler ───────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  // SCAN HANDLER
+  // ═══════════════════════════════════════════════════════════════
   window.handleBarcodeKeydown = async function(event) {
     if (event.key === 'Enter') {
       event.preventDefault();
@@ -1245,7 +845,9 @@
 
   window.addScanData = async function() {
     const barcodeInput = document.getElementById('scanBarcode');
+    const binInput = document.getElementById('scanBIN');
     const barcode = barcodeInput.value.trim();
+    const binManual = binInput.value.trim();
     const lokasi = document.getElementById('scanLokasi').value;
     const user = document.getElementById('scanUser').value;
     
@@ -1255,58 +857,39 @@
       return;
     }
 
-    // Check duplicate
-    const isDuplicate = scanDataArray.some(row => row.BARCODE === barcode);
-    if (isDuplicate) {
-      const proceed = confirm(`Barcode "${barcode}" sudah ada di daftar. Tambah lagi?`);
-      if (!proceed) {
-        barcodeInput.value = '';
-        barcodeInput.focus();
-        return;
-      }
-    }
-
-    // Disable input while searching
+    // Disable inputs saat searching
     barcodeInput.disabled = true;
-    const addBtn = document.querySelector('#page-scan .btn-primary');
-    if (addBtn) addBtn.disabled = true;
+    binInput.disabled = true;
     
-    // Search in Master Data
     const masterResult = await searchBarcodeInMaster(barcode);
-    
-    // Build new row with derived data
     const now = new Date();
     let newRow;
     
     if (masterResult.found && masterResult.data) {
       const md = masterResult.data;
       const d = md._derived || {};
-      const article = md.Article || md.article || '';
       
       newRow = {
         id: Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
         BARCODE: barcode,
         LOKASI: lokasi,
-        BIN: md.BIN || md.bin || md.Bin || '',
-        ARTICLE: article,
-        SIZE_US: d.sizeUS || extractSizeUS(article),
+        BIN: binManual || md.BIN || md.bin || '',
+        ARTICLE: d.article || md.Article || md.article || '',
+        SIZE_US: d.sizeUS || '',
         SIZE_UK: d.sizeUK || '',
-        GENDER: d.gender?.label || extractGender(article).label,
-        GENDER_CODE: d.gender?.code || extractGender(article).code,
+        GENDER: d.gender?.label || '',
         DESCRIPTION: md.Description || md.description || md.DESCRIPTION || '',
-        BRAND: d.brandName || md.Brand || md.brand || 'LEAGUE',
+        BRAND: d.brandName || '',  // dari Brand_Name MASTER_PRODUK
         CAT: md.Category || md.category || md.CAT || md.Cat || 'F',
-        SEASON: d.seasonYr || md.Season || md.season || md.SEASON || String(now.getFullYear()),
+        SEASON: d.seasonYr || '',  // dari Season_Yr MASTER_PRODUK
         DATE: getTodayDate(),
         USER: user,
         SOURCE: 'MASTER',
-        sourceCollection: masterResult.source,
         timestamp: now.toISOString()
       };
-      
-      showToast(`✅ Data dari ${masterResult.source} | US:${d.sizeUS} UK:${d.sizeUK || '?'} ${d.gender?.label || ''}`, 'success');
+      showToast(`✅ Ditemukan | Brand: ${d.brandName || '?'} | Season: ${d.seasonYr || '?'}`, 'success');
     } else {
-      // Manual entry (not found in master) - tetap derive dari barcode jika memungkinkan
+      // Manual - tetap derive SIZE US & GENDER dari barcode
       const sizeUS = extractSizeUS(barcode);
       const gender = extractGender(barcode);
       
@@ -1314,46 +897,40 @@
         id: Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
         BARCODE: barcode,
         LOKASI: lokasi,
-        BIN: '',
+        BIN: binManual,
         ARTICLE: barcode,
         SIZE_US: sizeUS,
         SIZE_UK: '',
         GENDER: gender.label,
-        GENDER_CODE: gender.code,
         DESCRIPTION: '',
-        BRAND: 'LEAGUE',
+        BRAND: '',
         CAT: 'F',
         SEASON: String(now.getFullYear()),
         DATE: getTodayDate(),
         USER: user,
         SOURCE: 'MANUAL',
-        sourceCollection: null,
         timestamp: now.toISOString()
       };
-      
-      if (db) {
-        showToast('⚠️ Barcode tidak ditemukan di Master Data', 'error');
-      } else {
-        showToast('ℹ️ Firebase offline — data disimpan manual', 'info');
-      }
+      showToast('⚠️ Tidak ditemukan di Master Data — disimpan manual', 'error');
     }
 
-    // Add to array
     scanDataArray.unshift(newRow);
     saveScanData();
     
-    // Reset input
+    // Reset inputs
     barcodeInput.value = '';
+    binInput.value = '';
     barcodeInput.disabled = false;
-    if (addBtn) addBtn.disabled = false;
+    binInput.disabled = false;
     barcodeInput.focus();
     
-    // Update UI
     renderScanTable();
     updateScanStats();
   };
 
-  // ─── Scan Data Management ─────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  // SCAN DATA MANAGEMENT
+  // ═══════════════════════════════════════════════════════════════
   function saveScanData() {
     localStorage.setItem('scan_data', JSON.stringify(scanDataArray));
   }
@@ -1370,35 +947,22 @@
   window.editScanCell = function(id, field) {
     const row = scanDataArray.find(r => r.id === id);
     if (!row) return;
-    
-    const currentValue = row[field] || '';
-    const newValue = prompt(`Edit ${field}:`, currentValue);
+    const newValue = prompt(`Edit ${field}:`, row[field] || '');
     if (newValue === null) return;
-    
     row[field] = newValue;
-    
-    // Jika yang diedit ARTICLE, update derived fields
     if (field === 'ARTICLE') {
       row.SIZE_US = extractSizeUS(newValue);
       const gender = extractGender(newValue);
       row.GENDER = gender.label;
-      row.GENDER_CODE = gender.code;
-      
-      // Note: SIZE UK, Brand, Season tidak diupdate otomatis saat edit manual
-      // karena memerlukan query ke Firestore
     }
-    
     saveScanData();
     renderScanTable();
     showToast('✅ Data diupdate', 'success');
   };
 
   window.clearScanData = function() {
-    if (!scanDataArray.length) {
-      showToast('📭 Tidak ada data untuk dihapus', 'info');
-      return;
-    }
-    if (!confirm(`Yakin hapus SEMUA data scan (${scanDataArray.length} row)?`)) return;
+    if (!scanDataArray.length) { showToast('📭 Tidak ada data', 'info'); return; }
+    if (!confirm(`Hapus SEMUA (${scanDataArray.length} row)?`)) return;
     scanDataArray = [];
     saveScanData();
     renderScanTable();
@@ -1410,12 +974,8 @@
     const total = scanDataArray.length;
     const uniqueBarcodes = new Set(scanDataArray.map(r => r.BARCODE)).size;
     const fromMaster = scanDataArray.filter(r => r.SOURCE === 'MASTER').length;
-    
     const today = getTodayDate();
     const todayData = scanDataArray.filter(r => r.DATE === today);
-    
-    const lastScan = scanDataArray.length > 0 ? scanDataArray[0].DATE : '-';
-    
     document.getElementById('statTotal').textContent = total.toLocaleString();
     document.getElementById('statUnique').textContent = uniqueBarcodes.toLocaleString();
     document.getElementById('statToday').textContent = todayData.length.toLocaleString();
@@ -1424,8 +984,8 @@
     document.getElementById('rowCount').textContent = `${total} row`;
   }
 
-  function getGenderClass(genderLabel) {
-    switch(genderLabel) {
+  function getGenderClass(label) {
+    switch(label) {
       case 'Laki-laki': return 'gender-laki';
       case 'Perempuan': return 'gender-perempuan';
       case 'Anak-anak': return 'gender-anak';
@@ -1435,147 +995,91 @@
 
   function renderScanTable() {
     const tbody = document.getElementById('scanTableBody');
-    
     if (scanDataArray.length === 0) {
-      tbody.innerHTML = `
-        <tr class="empty-state">
-          <td colspan="16">
-            <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
-            </svg>
-            <p>Belum ada data scan. Silakan input barcode di atas.</p>
-          </td>
-        </tr>`;
+      tbody.innerHTML = `<tr class="empty-state"><td colspan="15">
+        <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+        </svg>
+        <p>Belum ada data scan. Silakan input barcode di atas.</p>
+      </td></tr>`;
       return;
     }
-
     tbody.innerHTML = scanDataArray.map((row, index) => `
-      <tr class="${row.SOURCE === 'MASTER' ? 'from-master' : ''}">
+      <tr>
         <td>${index + 1}</td>
-        <td class="col-barcode" onclick="editScanCell('${row.id}', 'BARCODE')" title="Klik untuk edit">${row.BARCODE}</td>
-        <td class="col-lokasi" onclick="editScanCell('${row.id}', 'LOKASI')" title="Klik untuk edit">${row.LOKASI}</td>
-        <td class="col-bin" onclick="editScanCell('${row.id}', 'BIN')" title="Klik untuk edit">${row.BIN || '-'}</td>
-        <td class="col-article" onclick="editScanCell('${row.id}', 'ARTICLE')" title="Klik untuk edit">${row.ARTICLE || '-'}</td>
-        <td style="font-weight:600;color:var(--accent);" onclick="editScanCell('${row.id}', 'SIZE_US')" title="Klik untuk edit">${row.SIZE_US || '-'}</td>
-        <td style="font-weight:600;color:var(--accent2);" onclick="editScanCell('${row.id}', 'SIZE_UK')" title="Klik untuk edit">${row.SIZE_UK || '-'}</td>
-        <td class="col-gender ${getGenderClass(row.GENDER)}" onclick="editScanCell('${row.id}', 'GENDER')" title="Klik untuk edit">${row.GENDER || '-'}</td>
-        <td onclick="editScanCell('${row.id}', 'DESCRIPTION')" title="Klik untuk edit">${row.DESCRIPTION || '-'}</td>
-        <td onclick="editScanCell('${row.id}', 'BRAND')" title="Klik untuk edit">${row.BRAND || '-'}</td>
-        <td onclick="editScanCell('${row.id}', 'CAT')" title="Klik untuk edit">${row.CAT || '-'}</td>
-        <td onclick="editScanCell('${row.id}', 'SEASON')" title="Klik untuk edit">${row.SEASON || '-'}</td>
+        <td class="col-barcode" onclick="editScanCell('${row.id}','BARCODE')" title="Klik untuk edit">${row.BARCODE}</td>
+        <td class="col-lokasi" onclick="editScanCell('${row.id}','LOKASI')" title="Klik untuk edit">${row.LOKASI}</td>
+        <td class="col-bin" onclick="editScanCell('${row.id}','BIN')" title="Klik untuk edit">${row.BIN || '-'}</td>
+        <td style="font-family:monospace;" onclick="editScanCell('${row.id}','ARTICLE')" title="Klik untuk edit">${row.ARTICLE || '-'}</td>
+        <td class="col-size-us" onclick="editScanCell('${row.id}','SIZE_US')" title="Klik untuk edit">${row.SIZE_US || '-'}</td>
+        <td style="color:var(--accent2);font-weight:600;" onclick="editScanCell('${row.id}','SIZE_UK')" title="Klik untuk edit">${row.SIZE_UK || '-'}</td>
+        <td class="col-gender ${getGenderClass(row.GENDER)}" onclick="editScanCell('${row.id}','GENDER')" title="Klik untuk edit">${row.GENDER || '-'}</td>
+        <td onclick="editScanCell('${row.id}','DESCRIPTION')" title="Klik untuk edit">${row.DESCRIPTION || '-'}</td>
+        <td style="font-weight:600;" onclick="editScanCell('${row.id}','BRAND')" title="Klik untuk edit">${row.BRAND || '-'}</td>
+        <td onclick="editScanCell('${row.id}','CAT')" title="Klik untuk edit">${row.CAT || '-'}</td>
+        <td onclick="editScanCell('${row.id}','SEASON')" title="Klik untuk edit">${row.SEASON || '-'}</td>
         <td class="col-date">${row.DATE}</td>
         <td>${row.USER}</td>
-        <td>
-          <span class="source-badge ${row.SOURCE === 'MASTER' ? 'master' : row.SOURCE === 'DERIVED' ? 'derived' : 'manual'}">
-            ${row.SOURCE === 'MASTER' ? '📦 MASTER' : '✏️ MANUAL'}
-          </span>
-        </td>
-        <td>
-          <div class="actions-cell">
-            <button class="btn-sm btn-sm-delete" onclick="deleteScanRow('${row.id}')" title="Hapus">🗑</button>
-          </div>
-        </td>
+        <td><div class="actions-cell"><button class="btn-sm btn-sm-delete" onclick="deleteScanRow('${row.id}')" title="Hapus">🗑</button></div></td>
       </tr>
     `).join('');
   }
 
   window.exportScanToExcel = function() {
-    if (!scanDataArray.length) {
-      showToast('📭 Tidak ada data untuk diexport', 'error');
-      return;
-    }
-
+    if (!scanDataArray.length) { showToast('📭 Tidak ada data', 'error'); return; }
     const exportData = scanDataArray.map(row => ({
-      BARCODE: row.BARCODE,
-      LOKASI: row.LOKASI,
-      BIN: row.BIN,
-      ARTICLE: row.ARTICLE,
-      'SIZE US': row.SIZE_US,
-      'SIZE UK': row.SIZE_UK,
-      GENDER: row.GENDER,
-      DESCRIPTION: row.DESCRIPTION,
-      BRAND: row.BRAND,
-      CAT: row.CAT,
-      SEASON: row.SEASON,
-      DATE: row.DATE,
-      USER: row.USER,
-      SOURCE: row.SOURCE
+      BARCODE: row.BARCODE, LOKASI: row.LOKASI, BIN: row.BIN, ARTICLE: row.ARTICLE,
+      'SIZE US': row.SIZE_US, 'SIZE UK': row.SIZE_UK, GENDER: row.GENDER,
+      DESCRIPTION: row.DESCRIPTION, BRAND: row.BRAND, CAT: row.CAT,
+      SEASON: row.SEASON, DATE: row.DATE, USER: row.USER
     }));
-
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "SCAN_DATA");
-    
-    const fileName = `SCAN_DATA_${getTodayDate().replace(/\//g, '-')}.xlsx`;
-    XLSX.writeFile(wb, fileName);
-    showToast(`📥 Data diexport ke ${fileName}`, 'success');
+    XLSX.writeFile(wb, `SCAN_DATA_${getTodayDate().replace(/\//g,'-')}.xlsx`);
+    showToast('📥 Export berhasil!', 'success');
   };
 
   window.uploadScanToFirebase = async function() {
-    if (!db) {
-      showToast('❌ Firebase belum terhubung! Sambungkan dulu di tab Master Data.', 'error');
-      log('❌ Firebase belum terhubung.', 'err', 'scanLogBox');
-      return;
-    }
-    if (!scanDataArray.length) {
-      showToast('📭 Tidak ada data scan untuk diupload', 'error');
-      return;
-    }
-
+    if (!db) { showToast('❌ Firebase belum terhubung!', 'error'); return; }
+    if (!scanDataArray.length) { showToast('📭 Tidak ada data', 'error'); return; }
     const btn = document.getElementById('btnUploadScan');
     btn.disabled = true;
     btn.textContent = '⏳ Mengupload...';
-
-    log(`⬆ Mulai upload ${scanDataArray.length} data scan ke SCAN_DATA...`, 'info', 'scanLogBox');
-
+    log(`⬆ Upload ${scanDataArray.length} data ke SCAN_DATA...`, 'info', 'scanLogBox');
     try {
       let uploaded = 0;
       for (let i = 0; i < scanDataArray.length; i += BATCH_SIZE) {
         const batch = writeBatch(db);
         const chunk = scanDataArray.slice(i, i + BATCH_SIZE);
-        
         chunk.forEach(row => {
-          const docData = {
-            BARCODE: row.BARCODE,
-            LOKASI: row.LOKASI,
-            BIN: row.BIN || '',
-            ARTICLE: row.ARTICLE || '',
-            SIZE_US: row.SIZE_US || '',
-            SIZE_UK: row.SIZE_UK || '',
-            GENDER: row.GENDER || '',
-            GENDER_CODE: row.GENDER_CODE || '',
-            DESCRIPTION: row.DESCRIPTION || '',
-            BRAND: row.BRAND || 'LEAGUE',
-            CAT: row.CAT || 'F',
-            SEASON: row.SEASON || '',
-            DATE: row.DATE,
-            USER: row.USER,
-            SOURCE: row.SOURCE,
-            sourceCollection: row.sourceCollection || '',
-            scanned_at: row.timestamp
-          };
-          
           const docRef = doc(collection(db, 'SCAN_DATA'));
-          batch.set(docRef, docData);
+          batch.set(docRef, {
+            BARCODE: row.BARCODE, LOKASI: row.LOKASI, BIN: row.BIN || '',
+            ARTICLE: row.ARTICLE || '', SIZE_US: row.SIZE_US || '', SIZE_UK: row.SIZE_UK || '',
+            GENDER: row.GENDER || '', DESCRIPTION: row.DESCRIPTION || '',
+            BRAND: row.BRAND || '', CAT: row.CAT || 'F', SEASON: row.SEASON || '',
+            DATE: row.DATE, USER: row.USER, SOURCE: row.SOURCE, scanned_at: row.timestamp
+          });
         });
-        
         await batch.commit();
         uploaded += chunk.length;
-        log(`✅ Batch ${Math.floor(i/BATCH_SIZE)+1}: ${uploaded}/${scanDataArray.length} terupload`, 'ok', 'scanLogBox');
+        log(`✅ Batch ${Math.floor(i/BATCH_SIZE)+1}: ${uploaded}/${scanDataArray.length}`, 'ok', 'scanLogBox');
       }
-
-      log(`🎉 Upload selesai! ${uploaded} dokumen ke koleksi SCAN_DATA`, 'ok', 'scanLogBox');
-      showToast(`✅ ${uploaded} data berhasil diupload ke Firebase!`, 'success');
-    } catch (err) {
+      log(`🎉 Selesai! ${uploaded} dokumen`, 'ok', 'scanLogBox');
+      showToast(`✅ ${uploaded} data berhasil diupload!`, 'success');
+    } catch(err) {
       log(`❌ Error: ${err.message}`, 'err', 'scanLogBox');
-      showToast('❌ Upload gagal: ' + err.message, 'error');
+      showToast('❌ Upload gagal', 'error');
     } finally {
       btn.disabled = false;
       btn.textContent = '⬆ Upload Scan Data ke Firestore';
     }
   };
 
-  // ─── File Handling (MASTER DATA) ──────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  // MASTER DATA UPLOAD (unchanged logic)
+  // ═══════════════════════════════════════════════════════════════
   function handleDrop(e) {
     e.preventDefault();
     document.getElementById('dropzone').classList.remove('over');
@@ -1584,7 +1088,7 @@
 
   function handleFile(file) {
     if (!file) return;
-    log(`📂 Membaca: ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)…`, 'info');
+    log(`📂 Membaca: ${file.name}…`, 'info');
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
@@ -1592,52 +1096,36 @@
         parsedSheets = {};
         document.getElementById('sheetsGrid').innerHTML = '';
         document.getElementById('sheetOptions').innerHTML = '';
-
         wb.SheetNames.forEach(name => {
           const raw = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: null });
           if (raw.length < 2) return;
-
           const headers = raw[0].map(h => String(h ?? '').trim().replace(/[\s.]+/g, '_'));
-          const rows = raw.slice(1)
-            .map(r => { const o={}; headers.forEach((h,i)=>{ o[h]=sanitize(r[i]); }); return o; })
-            .filter(r => Object.values(r).some(v => v !== null));
-
+          const rows = raw.slice(1).map(r => { const o={}; headers.forEach((h,i)=>{ o[h]=sanitize(r[i]); }); return o; }).filter(r => Object.values(r).some(v => v !== null));
           parsedSheets[name] = rows;
-
           const card = document.createElement('div');
           card.className = 'sheet-card';
-          card.innerHTML = `<div class="name">📋 ${name}</div>
-            <div class="meta">${rows.length.toLocaleString()} baris · ${headers.length} kolom</div>`;
+          card.innerHTML = `<div class="name">📋 ${name}</div><div class="meta">${rows.length.toLocaleString()} baris · ${headers.length} kolom</div>`;
           document.getElementById('sheetsGrid').appendChild(card);
-
           const lbl = document.createElement('label');
           lbl.className = 'opt';
-          lbl.innerHTML = `<input type="checkbox" checked value="${name}" class="sheetCheck" />
-            ${name} <span style="color:var(--muted);font-size:.75rem;">(${rows.length.toLocaleString()})</span>`;
+          lbl.innerHTML = `<input type="checkbox" checked value="${name}" class="sheetCheck" />${name} <span style="color:var(--muted);font-size:.75rem;">(${rows.length.toLocaleString()})</span>`;
           document.getElementById('sheetOptions').appendChild(lbl);
         });
-
         document.getElementById('sheetsGrid').style.display = 'grid';
         document.getElementById('uploadCard').style.display = 'block';
-        log(`✅ ${Object.keys(parsedSheets).length} sheet terbaca. Siap upload.`, 'ok');
-      } catch (err) {
-        log('❌ Gagal baca file: ' + err.message, 'err');
-      }
+        log(`✅ ${Object.keys(parsedSheets).length} sheet terbaca`, 'ok');
+      } catch(err) { log('❌ Gagal baca file: ' + err.message, 'err'); }
     };
     reader.readAsArrayBuffer(file);
   }
 
-  // ─── Batch Upload ─────────────────────────────────────────────
   async function uploadBatched(colName, rows, onProgress) {
     let done = 0;
     for (let i = 0; i < rows.length; i += BATCH_SIZE) {
       const batch = writeBatch(db);
-      const chunk = rows.slice(i, i + BATCH_SIZE);
-      chunk.forEach(row => {
-        batch.set(doc(db, colName, makeDocId(colName, row)), row);
-      });
+      rows.slice(i, i + BATCH_SIZE).forEach(row => batch.set(doc(db, colName, makeDocId(colName, row)), row));
       await batch.commit();
-      done += chunk.length;
+      done += Math.min(BATCH_SIZE, rows.length - i);
       onProgress(done, rows.length);
     }
   }
@@ -1645,14 +1133,12 @@
   async function deleteCollection(colName, onProgress) {
     const snap = await getDocs(collection(db, colName));
     if (snap.empty) { onProgress(0, 0); return; }
-    let done = 0;
     const docs = snap.docs;
     for (let i = 0; i < docs.length; i += BATCH_SIZE) {
       const batch = writeBatch(db);
       docs.slice(i, i + BATCH_SIZE).forEach(d => batch.delete(d.ref));
       await batch.commit();
-      done += Math.min(BATCH_SIZE, docs.length - i);
-      onProgress(done, docs.length);
+      onProgress(i + Math.min(BATCH_SIZE, docs.length - i), docs.length);
     }
   }
 
@@ -1660,51 +1146,33 @@
     if (!db) { log('❌ Firebase belum terhubung.', 'err'); return; }
     const selected = [...document.querySelectorAll('.sheetCheck:checked')].map(c => c.value);
     if (!selected.length) { log('⚠️ Pilih minimal 1 sheet.', 'warn'); return; }
-
     const clearFirst = document.getElementById('optClear').checked;
     document.getElementById('btnUpload').disabled = true;
     document.getElementById('btnClear').disabled = true;
-
     const pw = document.getElementById('progressWrap');
-    pw.innerHTML = '';
-    pw.style.display = 'flex';
-    pw.style.flexDirection = 'column';
+    pw.innerHTML = ''; pw.style.display = 'flex'; pw.style.flexDirection = 'column';
     document.getElementById('summaryGrid').style.display = 'none';
-
-    const t0 = Date.now();
-    let totalDocs = 0;
-
+    const t0 = Date.now(); let totalDocs = 0;
     for (const name of selected) {
       const rows = parsedSheets[name];
-      if (!rows?.length) { log(`⚠️ ${name}: tidak ada data.`, 'warn'); continue; }
+      if (!rows?.length) { log(`⚠️ ${name}: kosong`, 'warn'); continue; }
       const pid = 'pg_' + name.replace(/\W/g,'_');
       addProg(pid, name, rows.length);
-
       try {
-        if (clearFirst) {
-          log(`🗑 Menghapus data lama: ${name}…`, 'warn');
-          await deleteCollection(name, (d,t) => updateProg(pid, d, t, '🗑'));
-        }
-        log(`⬆ Uploading ${name} (${rows.length.toLocaleString()} dok)…`, 'info');
+        if (clearFirst) { log(`🗑 Hapus ${name}…`, 'warn'); await deleteCollection(name, (d,t) => updateProg(pid, d, t, '🗑')); }
+        log(`⬆ Upload ${name}…`, 'info');
         await uploadBatched(name, rows, (d,t) => updateProg(pid, d, t, '⬆'));
         totalDocs += rows.length;
         doneProg(pid, rows.length);
-        log(`✅ ${name} selesai — ${rows.length.toLocaleString()} dokumen`, 'ok');
-      } catch (err) {
-        errProg(pid);
-        log(`❌ ${name}: ${err.message}`, 'err');
-      }
+        log(`✅ ${name} selesai — ${rows.length.toLocaleString()} dok`, 'ok');
+      } catch(err) { errProg(pid); log(`❌ ${name}: ${err.message}`, 'err'); }
     }
-
     const elapsed = ((Date.now()-t0)/1000).toFixed(1);
     document.getElementById('sumDocs').textContent = totalDocs.toLocaleString();
     document.getElementById('sumCols').textContent = selected.length;
     document.getElementById('sumTime').textContent = elapsed + 's';
     document.getElementById('summaryGrid').style.display = 'grid';
-    log(`🎉 Selesai! ${totalDocs.toLocaleString()} dokumen dalam ${elapsed}s`, 'ok');
-    showToast(`✅ Upload selesai!`, 'success');
-    updateFirestoreStatus();
-
+    log(`🎉 Selesai! ${totalDocs.toLocaleString()} dok dalam ${elapsed}s`, 'ok');
     document.getElementById('btnUpload').disabled = false;
     document.getElementById('btnClear').disabled = false;
   }
@@ -1713,31 +1181,19 @@
     if (!db) { log('❌ Firebase belum terhubung.', 'err'); return; }
     const selected = [...document.querySelectorAll('.sheetCheck:checked')].map(c => c.value);
     if (!selected.length || !confirm(`Hapus: ${selected.join(', ')}?`)) return;
-
     const pw = document.getElementById('progressWrap');
-    pw.innerHTML = '';
-    pw.style.display = 'flex';
-    pw.style.flexDirection = 'column';
-
+    pw.innerHTML = ''; pw.style.display = 'flex'; pw.style.flexDirection = 'column';
     for (const name of selected) {
       const pid = 'pgd_' + name.replace(/\W/g,'_');
       addProg(pid, `${name} (hapus)`, 100);
-      try {
-        await deleteCollection(name, (d,t) => updateProg(pid, d, t, '🗑'));
-        doneProg(pid, 0);
-        log(`✅ ${name} dihapus.`, 'ok');
-      } catch(err) {
-        errProg(pid);
-        log(`❌ ${name}: ${err.message}`, 'err');
-      }
+      try { await deleteCollection(name, (d,t) => updateProg(pid, d, t, '🗑')); doneProg(pid, 0); log(`✅ ${name} dihapus`, 'ok'); }
+      catch(err) { errProg(pid); log(`❌ ${name}: ${err.message}`, 'err'); }
     }
   }
 
   function addProg(id, name, total) {
-    const el = document.createElement('div');
-    el.id = id;
-    el.innerHTML = `<div class="prog-label"><span class="col-name">${name}</span><span class="pct">0/${total.toLocaleString()}</span></div>
-      <div class="prog-bar-bg"><div class="prog-bar" style="width:0%"></div></div>`;
+    const el = document.createElement('div'); el.id = id;
+    el.innerHTML = `<div class="prog-label"><span class="col-name">${name}</span><span class="pct">0/${total.toLocaleString()}</span></div><div class="prog-bar-bg"><div class="prog-bar" style="width:0%"></div></div>`;
     document.getElementById('progressWrap').appendChild(el);
   }
   function updateProg(id, done, total, lbl) {
@@ -1757,19 +1213,21 @@
     el.querySelector('.pct').textContent = '❌ Error';
   }
 
-  // ─── Expose functions to window ───────────────────────────────
-  window.initFirebase  = initFirebase;
-  window.handleDrop    = handleDrop;
-  window.handleFile    = handleFile;
-  window.startUpload   = startUpload;
+  // ═══════════════════════════════════════════════════════════════
+  // EXPOSE TO WINDOW
+  // ═══════════════════════════════════════════════════════════════
+  window.initFirebase = initFirebase;
+  window.handleDrop = handleDrop;
+  window.handleFile = handleFile;
+  window.startUpload = startUpload;
   window.clearSelected = clearSelected;
 
-  // ─── Initialize ───────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  // INIT
+  // ═══════════════════════════════════════════════════════════════
   renderScanTable();
   updateScanStats();
   updateFirestoreStatus();
-
-  // Auto-refresh scan stats every 30 seconds
   setInterval(() => {
     if (document.getElementById('page-scan').classList.contains('active')) {
       updateScanStats();
