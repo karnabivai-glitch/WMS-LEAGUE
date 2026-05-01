@@ -160,12 +160,28 @@
   }
 
   function makeDocId(sheetName, row) {
-    const map = {
-      MASTER_BARCODE: ['Barcode','Article'],
-      MASTER_PRODUK:  ['Article'],
-      SIZE:           ['US_Size'],
-    };
-    for (const k of (map[sheetName] || [])) {
+  // ─── SIZE: gabungan US_Size + Gender ───
+  if (sheetName === 'SIZE') {
+    const usSize = row['US_Size'] != null ? String(row['US_Size']).trim() : '';
+    const gender = row['Gender'] != null ? String(row['Gender']).trim() : '';
+    
+    if (usSize && gender) {
+      // Contoh: "095_Laki-laki", "095_Perempuan"
+      let id = `${usSize}_${gender}`;
+      id = id.replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
+      return id;
+    }
+    
+    // Fallback kalau salah satu kosong
+    const ts = Date.now().toString(36);
+    const rnd = Math.random().toString(36).substring(2, 8);
+    return `SIZE_${ts}_${rnd}`;
+  }
+
+  // ─── MASTER_BARCODE ───
+  if (sheetName === 'MASTER_BARCODE') {
+    const keys = ['Barcode', 'Article'];
+    for (const k of keys) {
       const raw = row[k];
       if (raw != null) {
         let id = String(raw).trim();
@@ -175,10 +191,25 @@
         }
       }
     }
-    const ts = Date.now().toString(36);
-    const rnd = Math.random().toString(36).substring(2, 8);
-    return `${sheetName}_${ts}_${rnd}`;
   }
+
+  // ─── MASTER_PRODUK ───
+  if (sheetName === 'MASTER_PRODUK') {
+    const raw = row['Article'];
+    if (raw != null) {
+      let id = String(raw).trim();
+      if (id.length > 0) {
+        id = id.replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
+        return id;
+      }
+    }
+  }
+
+  // ─── Fallback ───
+  const ts = Date.now().toString(36);
+  const rnd = Math.random().toString(36).substring(2, 8);
+  return `${sheetName}_${ts}_${rnd}`;
+}
 
   function log(msg, type = 'info') {
     const box = document.getElementById('logBox');
