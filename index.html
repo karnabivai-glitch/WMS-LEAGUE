@@ -142,11 +142,13 @@
 
 <script type="module">
   // ─── Konstanta ────────────────────────────────────────────────
-  const BATCH_SIZE = 400;
+  const BATCH_SIZE = 200;          // lebih aman untuk data besar
+  const MAX_RETRIES = 3;
+  const BATCH_TIMEOUT = 45000;     // 45 detik per batch
 
   // ─── State ───────────────────────────────────────────────────
   let db = null;
-  let fsLib = null;          // { collection, writeBatch, doc, getDocs }
+  let fsLib = null;
   let parsedSheets = {};
 
   // ─── Helpers ─────────────────────────────────────────────────
@@ -163,10 +165,23 @@
       MASTER_PRODUK:  ['Article'],
       SIZE:           ['US_Size'],
     };
+
     for (const k of (map[sheetName] || [])) {
-      if (row[k] != null) return String(row[k]);
+      const raw = row[k];
+      if (raw != null) {
+        let id = String(raw).trim();
+        if (id.length > 0) {
+          // karakter tidak valid untuk Firestore doc ID di-escape
+          id = id.replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
+          return id;
+        }
+      }
     }
-    return crypto.randomUUID();
+
+    // Fallback ID unik
+    const ts = Date.now().toString(36);
+    const rnd = Math.random().toString(36).substring(2, 8);
+    return `${sheetName}_${ts}_${rnd}`;
   }
 
   function log(msg, type = 'info') {
@@ -203,7 +218,6 @@
       const appMod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
       const fsMod  = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
 
-      // Gunakan nama unik agar tidak bentrok dengan instance lama
       const appName = 'uploader_' + Date.now();
       const firebaseApp = appMod.initializeApp({
         apiKey,
@@ -217,9 +231,7 @@
       db    = fsMod.getFirestore(firebaseApp);
       fsLib = fsMod;
 
-      // Simpan config
       localStorage.setItem('fb_config', JSON.stringify({ apiKey, projectId, appId, messagingSenderId: senderId }));
-
       setStatus(`✅ Terhubung ke project: ${projectId}`, 'ok');
       log(`🔌 Firebase OK — project: ${projectId}`, 'ok');
     } catch (err) {
@@ -237,7 +249,7 @@
     document.getElementById('cfgProjectId').value = cfg.projectId || '';
     document.getElementById('cfgAppId').value     = cfg.appId || '';
     document.getElementById('cfgSenderId').value  = cfg.messagingSenderId || '';
-    initFirebase();   // auto-connect
+    initFirebase();
   }
 
   // ─── File handling ────────────────────────────────────────────
@@ -269,7 +281,6 @@
 
           parsedSheets[name] = rows;
 
-          // Sheet card
           const card = document.createElement('div');
           card.className = 'sheet-card';
           card.innerHTML = `<div class="name">📋 ${name}</div>
@@ -279,7 +290,6 @@
             </div>`;
           document.getElementById('sheetsGrid').appendChild(card);
 
-          // Checkbox
           const lbl = document.createElement('label');
           lbl.className = 'opt';
           lbl.innerHTML = `<input type="checkbox" checked value="${name}" class="sheetCheck" />
@@ -297,18 +307,51 @@
     reader.readAsArrayBuffer(file);
   }
 
-  // ─── Batch upload ─────────────────────────────────────────────
+  // ─── Batch upload with retry & timeout ────────────────────────
   async function uploadBatched(colName, rows, onProgress) {
     const { collection, writeBatch, doc } = fsLib;
     let done = 0;
+
     for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-      const batch = writeBatch(db);
-      rows.slice(i, i + BATCH_SIZE).forEach(row => {
-        batch.set(doc(db, colName, makeDocId(colName, row)), row);
-      });
-      await batch.commit();
-      done += Math.min(BATCH_SIZE, rows.length - i);
+      const chunk = rows.slice(i, i + BATCH_SIZE);
+      let success = false;
+
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          const batch = writeBatch(db);
+          chunk.forEach(row => {
+            batch.set(doc(db, colName, makeDocId(colName, row)), row);
+          });
+
+          const commitWithTimeout = new Promise((resolve, reject) => {
+            const timer = setTimeout(() => reject(new Error('Timeout')), BATCH_TIMEOUT);
+            batch.commit().then(
+              () => { clearTimeout(timer); resolve(); },
+              (err) => { clearTimeout(timer); reject(err); }
+            );
+          });
+
+          await commitWithTimeout;
+          success = true;
+          break;       // keluar dari retry loop
+        } catch (err) {
+          log(`   ⚠️ Batch gagal (percobaan ${attempt}/${MAX_RETRIES}): ${err.message}`, 'warn');
+          if (attempt === MAX_RETRIES) {
+            throw new Error(`Batch gagal setelah ${MAX_RETRIES}x: ${err.message}`);
+          }
+          // exponential backoff
+          await new Promise(r => setTimeout(r, 1200 * attempt));
+        }
+      }
+
+      done += chunk.length;
       onProgress(done, rows.length);
+
+      // log tiap 10 batch agar tidak terlalu rame
+      if ((i / BATCH_SIZE) % 10 === 0) {
+        const pct = Math.round(done / rows.length * 100);
+        log(`   📊 ${colName} — ${done.toLocaleString()}/${rows.length.toLocaleString()} (${pct}%)`, 'info');
+      }
     }
   }
 
