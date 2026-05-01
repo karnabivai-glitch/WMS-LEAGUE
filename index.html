@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MASTER DATA — Firebase Uploader (FIX)</title>
+  <title>MASTER DATA — Firebase Uploader (FINAL FIX)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     :root {
@@ -86,12 +86,12 @@
     <h2><span class="step-tag">1</span> Konfigurasi Firebase <span class="badge badge-blue">Setup Sekali</span></h2>
     <div class="config-form">
       <div><label>API Key</label><input id="cfgApiKey" placeholder="AIzaSy..." /></div>
-      <div><label>Project ID</label><input id="cfgProjectId" placeholder="my-project-id" /></div>
-      <div><label>Auth Domain (opsional)</label><input id="cfgAuthDomain" placeholder="my-project.firebaseapp.com" /></div>
       <div><button class="btn btn-secondary" onclick="initFirebase()">🔌 Sambungkan ke Firebase</button></div>
       <div id="configStatus"></div>
     </div>
-    <p style="color:var(--muted);font-size:.75rem;margin-top:10px;">Config disimpan di localStorage.</p>
+    <p style="color:var(--muted);font-size:.75rem;margin-top:10px;">
+      Project ID: <b>wms-league</b> (hardcode) — Hanya perlu API Key dari Firebase Console
+    </p>
   </div>
 
   <!-- STEP 2 -->
@@ -140,21 +140,18 @@
 </div>
 
 <script type="module">
-  // ⬇️ PAKAI IMPORT SAMA PERSIS SEPERTI KODE NOTA ⬇️
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import {
     getFirestore, collection, writeBatch,
     doc, getDocs
   } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  // ─── Konstanta ────────────────────────────────────────────────
+  const PROJECT_ID = "wms-league";
   const BATCH_SIZE = 200;
 
-  // ─── State ───────────────────────────────────────────────────
   let db = null;
   let parsedSheets = {};
 
-  // ─── Helpers ─────────────────────────────────────────────────
   function sanitize(v) {
     if (v === null || v === undefined || v === '') return null;
     if (typeof v === 'number' && isNaN(v)) return null;
@@ -168,7 +165,6 @@
       MASTER_PRODUK:  ['Article'],
       SIZE:           ['US_Size'],
     };
-
     for (const k of (map[sheetName] || [])) {
       const raw = row[k];
       if (raw != null) {
@@ -179,7 +175,6 @@
         }
       }
     }
-
     const ts = Date.now().toString(36);
     const rnd = Math.random().toString(36).substring(2, 8);
     return `${sheetName}_${ts}_${rnd}`;
@@ -202,53 +197,49 @@
     el.style.display = 'block';
   }
 
-  // ─── Firebase init (SAMA PERSIS DENGAN KODE NOTA) ───────────
+  // ─── Firebase init ────────────────────────────────────────────
   async function initFirebase() {
-    const apiKey    = document.getElementById('cfgApiKey').value.trim();
-    const projectId = document.getElementById('cfgProjectId').value.trim();
-    const authDomain = document.getElementById('cfgAuthDomain').value.trim() || `${projectId}.firebaseapp.com`;
-
-    if (!apiKey || !projectId) {
-      setStatus('❌ API Key dan Project ID wajib diisi!', 'err');
+    const apiKey = document.getElementById('cfgApiKey').value.trim();
+    if (!apiKey) {
+      setStatus('❌ API Key wajib diisi!', 'err');
       return;
     }
     setStatus('⏳ Menghubungkan…', 'info');
 
     try {
-      // ⬇️ CONFIG SEDERHANA — SAMA SEPERTI KODE NOTA ⬇️
       const firebaseConfig = {
         apiKey,
-        authDomain,
-        projectId
+        authDomain: `${PROJECT_ID}.firebaseapp.com`,
+        projectId: PROJECT_ID
       };
 
       const firebaseApp = initializeApp(firebaseConfig);
       db = getFirestore(firebaseApp);
 
-      // Test koneksi
-      const colRef = collection(db, 'SIZE');
-      const testSnap = await getDocs(colRef);
-      log(`🔌 Koneksi OK — ${testSnap.size} dokumen di koleksi SIZE`, 'ok');
+      // TEST TULIS langsung
+      const testRef = doc(db, 'test_write', 'conn_test');
+      const testBatch = writeBatch(db);
+      testBatch.set(testRef, { 
+        test: 'connection_test',
+        timestamp: new Date().toISOString()
+      });
+      await testBatch.commit();
 
-      localStorage.setItem('fb_config', JSON.stringify({ apiKey, projectId, authDomain }));
-      setStatus(`✅ Terhubung ke project: ${projectId}`, 'ok');
+      localStorage.setItem('fb_api_key', apiKey);
+      setStatus(`✅ Terhubung & BISA MENULIS ke ${PROJECT_ID}`, 'ok');
+      log('✅ TEST WRITE BERHASIL — Upload siap digunakan!', 'ok');
     } catch (err) {
-      setStatus('❌ Gagal konek: ' + err.message, 'err');
-      log('❌ Firebase error: ' + err.message, 'err');
+      setStatus('❌ Gagal: ' + err.message, 'err');
+      log('❌ Error: ' + err.code + ' - ' + err.message, 'err');
       db = null;
     }
   }
 
   // ─── Load saved config ────────────────────────────────────────
-  const saved = localStorage.getItem('fb_config');
-  if (saved) {
-    try {
-      const cfg = JSON.parse(saved);
-      document.getElementById('cfgApiKey').value    = cfg.apiKey || '';
-      document.getElementById('cfgProjectId').value = cfg.projectId || '';
-      document.getElementById('cfgAuthDomain').value = cfg.authDomain || '';
-      initFirebase();
-    } catch(e) {}
+  const savedApiKey = localStorage.getItem('fb_api_key');
+  if (savedApiKey) {
+    document.getElementById('cfgApiKey').value = savedApiKey;
+    initFirebase();
   }
 
   // ─── File handling ────────────────────────────────────────────
@@ -274,7 +265,7 @@
           if (raw.length < 2) return;
 
           const headers = raw[0].map(h => String(h ?? '').trim().replace(/[\s.]+/g, '_'));
-          const rows    = raw.slice(1)
+          const rows = raw.slice(1)
             .map(r => { const o={}; headers.forEach((h,i)=>{ o[h]=sanitize(r[i]); }); return o; })
             .filter(r => Object.values(r).some(v => v !== null));
 
@@ -283,10 +274,7 @@
           const card = document.createElement('div');
           card.className = 'sheet-card';
           card.innerHTML = `<div class="name">📋 ${name}</div>
-            <div class="meta">${rows.length.toLocaleString()} baris · ${headers.length} kolom</div>
-            <div class="meta" style="margin-top:5px;font-size:.72rem;word-break:break-all;">
-              ${headers.slice(0,6).join(', ')}${headers.length>6?' …':''}
-            </div>`;
+            <div class="meta">${rows.length.toLocaleString()} baris · ${headers.length} kolom</div>`;
           document.getElementById('sheetsGrid').appendChild(card);
 
           const lbl = document.createElement('label');
@@ -296,8 +284,8 @@
           document.getElementById('sheetOptions').appendChild(lbl);
         });
 
-        document.getElementById('sheetsGrid').style.display  = 'grid';
-        document.getElementById('uploadCard').style.display  = 'block';
+        document.getElementById('sheetsGrid').style.display = 'grid';
+        document.getElementById('uploadCard').style.display = 'block';
         log(`✅ ${Object.keys(parsedSheets).length} sheet terbaca. Siap upload.`, 'ok');
       } catch (err) {
         log('❌ Gagal baca file: ' + err.message, 'err');
@@ -325,7 +313,6 @@
   async function deleteCollection(colName, onProgress) {
     const snap = await getDocs(collection(db, colName));
     if (snap.empty) { onProgress(0, 0); return; }
-    
     let done = 0;
     const docs = snap.docs;
     for (let i = 0; i < docs.length; i += BATCH_SIZE) {
@@ -345,7 +332,7 @@
 
     const clearFirst = document.getElementById('optClear').checked;
     document.getElementById('btnUpload').disabled = true;
-    document.getElementById('btnClear').disabled  = true;
+    document.getElementById('btnClear').disabled = true;
 
     const pw = document.getElementById('progressWrap');
     pw.innerHTML = '';
@@ -375,7 +362,6 @@
       } catch (err) {
         errProg(pid);
         log(`❌ ${name}: ${err.message}`, 'err');
-        console.error(err);
       }
     }
 
@@ -387,7 +373,7 @@
     log(`🎉 Selesai! ${totalDocs.toLocaleString()} dokumen dalam ${elapsed}s`, 'ok');
 
     document.getElementById('btnUpload').disabled = false;
-    document.getElementById('btnClear').disabled  = false;
+    document.getElementById('btnClear').disabled = false;
   }
 
   async function clearSelected() {
@@ -414,7 +400,6 @@
     }
   }
 
-  // ─── Progress helpers ─────────────────────────────────────────
   function addProg(id, name, total) {
     const el = document.createElement('div');
     el.id = id;
@@ -439,7 +424,6 @@
     el.querySelector('.pct').textContent = '❌ Error';
   }
 
-  // ─── Expose ke tombol HTML ────────────────────────────────────
   window.initFirebase  = initFirebase;
   window.handleDrop    = handleDrop;
   window.handleFile    = handleFile;
