@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MASTER DATA — Firebase Uploader (FINAL FIX)</title>
+  <title>MASTER DATA & SCAN — Firebase Uploader</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     :root {
@@ -14,17 +14,61 @@
     }
     *{box-sizing:border-box;margin:0;padding:0;}
     body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;min-height:100vh;padding:24px 16px;}
+    
+    /* Navigation */
+    .nav-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 4px;
+      border: 1px solid var(--border);
+    }
+    .nav-tab {
+      flex: 1;
+      padding: 12px 20px;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      color: var(--muted);
+      border: none;
+      background: transparent;
+    }
+    .nav-tab.active {
+      background: var(--accent);
+      color: #fff;
+    }
+    .nav-tab:hover:not(.active) {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    /* Page containers */
+    .page {
+      display: none;
+    }
+    .page.active {
+      display: block;
+    }
+
     header{text-align:center;margin-bottom:32px;}
     header h1{font-size:1.8rem;font-weight:700;}
     header h1 span{color:var(--accent);}
     header p{color:var(--muted);margin-top:6px;font-size:.9rem;}
-    .container{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:20px;}
+    .container{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:20px;}
     .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;}
     .card h2{font-size:1rem;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
     .step-tag{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:.7rem;font-weight:700;background:var(--accent);color:#fff;flex-shrink:0;}
     .badge{font-size:.65rem;font-weight:700;letter-spacing:.06em;padding:2px 8px;border-radius:99px;text-transform:uppercase;}
     .badge-blue{background:#1d4ed8;color:#bfdbfe;}
     .badge-orange{background:#c2410c;color:#fed7aa;}
+    .badge-green{background:#166534;color:#bbf7d0;}
+    
+    /* Forms & Inputs */
     .config-form{display:flex;flex-direction:column;gap:10px;}
     .config-form label{font-size:.8rem;color:var(--muted);margin-bottom:2px;display:block;}
     .config-form input{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.875rem;font-family:monospace;}
@@ -33,26 +77,37 @@
     #configStatus.ok{background:#14532d33;color:var(--green);border:1px solid #166534;}
     #configStatus.err{background:#7f1d1d33;color:var(--red);border:1px solid #991b1b;}
     #configStatus.info{background:#1e3a5f33;color:var(--accent2);border:1px solid #1d4ed8;}
+    
+    /* Dropzone */
     .dropzone{border:2px dashed var(--border);border-radius:10px;padding:36px 20px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;}
     .dropzone:hover,.dropzone.over{border-color:var(--accent);background:rgba(249,115,22,.06);}
     .dropzone svg{color:var(--muted);margin-bottom:10px;}
     .dropzone p{color:var(--muted);font-size:.9rem;}
     .dropzone p strong{color:var(--text);}
     #fileInput{display:none;}
+    
+    /* Sheets */
     .sheets-grid{display:none;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-top:16px;}
     .sheet-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;}
     .sheet-card .name{font-weight:600;font-size:.95rem;margin-bottom:4px;}
     .sheet-card .meta{color:var(--muted);font-size:.8rem;}
+    
+    /* Options */
     .options{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
     label.opt{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 16px;cursor:pointer;font-size:.875rem;transition:border-color .2s;}
     label.opt:hover{border-color:var(--accent2);}
     label.opt input[type=checkbox]{accent-color:var(--accent2);width:16px;height:16px;}
+    
+    /* Buttons */
     .btn{padding:11px 24px;border-radius:9px;font-weight:600;font-size:.9rem;border:none;cursor:pointer;transition:opacity .2s,transform .1s;}
     .btn:active{transform:scale(.97);}
     .btn:disabled{opacity:.4;cursor:not-allowed;}
     .btn-primary{background:var(--accent);color:#fff;}
     .btn-danger{background:var(--red);color:#fff;}
     .btn-secondary{background:var(--border);color:var(--text);}
+    .btn-success{background:var(--green);color:#fff;}
+    
+    /* Progress */
     .progress-wrap{display:none;flex-direction:column;gap:12px;margin-top:16px;}
     .prog-label{display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:4px;}
     .prog-label .col-name{font-weight:600;}
@@ -60,90 +115,407 @@
     .prog-bar{height:100%;border-radius:99px;background:var(--accent2);transition:width .2s;width:0%;}
     .prog-bar.done{background:var(--green);}
     .prog-bar.error{background:var(--red);}
+    
+    /* Log */
     .log{background:#0a0c12;border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-size:.78rem;font-family:monospace;max-height:240px;overflow-y:auto;line-height:1.7;margin-top:16px;display:none;}
     .log .ok{color:var(--green);}
     .log .err{color:var(--red);}
     .log .info{color:var(--accent2);}
     .log .warn{color:#facc15;}
+    
+    /* Summary */
     .summary-grid{display:none;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;}
     .sum-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;}
     .sum-box .val{font-size:1.6rem;font-weight:700;color:var(--accent);}
     .sum-box .lbl{color:var(--muted);font-size:.78rem;margin-top:4px;}
     .divider{border:none;border-top:1px solid var(--border);margin:12px 0;}
     .row-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+
+    /* Scan Page Styles */
+    .scan-input-area {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+    }
+    .scan-input-group {
+      flex: 1;
+    }
+    .scan-input-group label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .scan-input-group input, .scan-input-group select {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 1rem;
+      font-family: monospace;
+    }
+    .scan-input-group input:focus, .scan-input-group select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .scan-input-group select {
+      cursor: pointer;
+    }
+    .scan-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .stat-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+    }
+    .stat-box .stat-val {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent2);
+    }
+    .stat-box .stat-lbl {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    /* Table Styles */
+    .table-wrapper {
+      overflow-x: auto;
+      margin-top: 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .scan-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      min-width: 1000px;
+    }
+    .scan-table thead {
+      background: var(--bg);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    .scan-table th {
+      padding: 12px 10px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      border-bottom: 2px solid var(--border);
+      white-space: nowrap;
+    }
+    .scan-table td {
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .scan-table tbody tr {
+      transition: background 0.2s;
+    }
+    .scan-table tbody tr:hover {
+      background: rgba(59, 130, 246, 0.05);
+    }
+    .scan-table tbody tr.new-row {
+      animation: highlightRow 1.5s ease-out;
+    }
+    @keyframes highlightRow {
+      0% { background: rgba(34, 197, 94, 0.2); }
+      100% { background: transparent; }
+    }
+    .scan-table .col-barcode { font-family: monospace; font-weight: 500; color: var(--accent); }
+    .scan-table .col-lokasi { color: var(--accent2); }
+    .scan-table .col-article { font-family: monospace; }
+    .scan-table .col-bin { font-weight: 600; }
+    .scan-table .col-date { color: var(--muted); font-size: 0.78rem; }
+    .scan-table .actions-cell {
+      display: flex;
+      gap: 6px;
+    }
+    .btn-sm {
+      padding: 4px 10px;
+      font-size: 0.7rem;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      transition: opacity 0.2s;
+    }
+    .btn-sm:hover { opacity: 0.8; }
+    .btn-sm-delete { background: var(--red); color: #fff; }
+    .btn-sm-edit { background: var(--accent2); color: #fff; }
+    
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--muted);
+    }
+    .empty-state svg {
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+    
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      z-index: 1000;
+      animation: slideIn 0.3s ease-out;
+      display: none;
+    }
+    .toast.success { background: #166534; color: #bbf7d0; border: 1px solid #22c55e; }
+    .toast.error { background: #7f1d1d; color: #fecaca; border: 1px solid #ef4444; }
+    .toast.info { background: #1e3a5f; color: #bfdbfe; border: 1px solid #3b82f6; }
+    @keyframes slideIn {
+      from { transform: translateX(100px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
   </style>
 </head>
 <body>
-<header>
-  <h1>MASTER DATA <span>⬆</span> Firestore</h1>
-  <p>Upload MASTER_BARCODE · MASTER_PRODUK · SIZE ke Firebase Firestore</p>
-</header>
 
+<!-- Toast Notification -->
+<div class="toast" id="toast"></div>
+
+<!-- Navigation Tabs -->
 <div class="container">
-
-  <!-- STEP 1 -->
-  <div class="card">
-    <h2><span class="step-tag">1</span> Konfigurasi Firebase <span class="badge badge-blue">Setup Sekali</span></h2>
-    <div class="config-form">
-      <div><label>API Key</label><input id="cfgApiKey" placeholder="AIzaSy..." /></div>
-      <div><button class="btn btn-secondary" onclick="initFirebase()">🔌 Sambungkan ke Firebase</button></div>
-      <div id="configStatus"></div>
-    </div>
-    <p style="color:var(--muted);font-size:.75rem;margin-top:10px;">
-      Project ID: <b>wms-league</b> (hardcode) — Hanya perlu API Key dari Firebase Console
-    </p>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchPage('master')">📦 MASTER DATA Upload</button>
+    <button class="nav-tab" onclick="switchPage('scan')">📱 SCAN Data</button>
   </div>
+</div>
 
-  <!-- STEP 2 -->
-  <div class="card">
-    <h2><span class="step-tag">2</span> Pilih File Excel <span class="badge badge-orange">.xlsx</span></h2>
-    <div class="dropzone" id="dropzone"
-         onclick="document.getElementById('fileInput').click()"
-         ondragover="event.preventDefault();this.classList.add('over')"
-         ondragleave="this.classList.remove('over')"
-         ondrop="handleDrop(event)">
-      <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round"
-          d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
-      </svg>
-      <p><strong>Klik atau drop file di sini</strong></p>
-      <p style="margin-top:4px;">Mendukung sheet: MASTER_BARCODE · MASTER_PRODUK · SIZE</p>
+<!-- PAGE 1: MASTER DATA -->
+<div class="page active" id="page-master">
+  <div class="container">
+    <header>
+      <h1>MASTER DATA <span>⬆</span> Firestore</h1>
+      <p>Upload MASTER_BARCODE · MASTER_PRODUK · SIZE ke Firebase Firestore</p>
+    </header>
+
+    <!-- STEP 1: Firebase Config -->
+    <div class="card">
+      <h2><span class="step-tag">1</span> Konfigurasi Firebase <span class="badge badge-blue">Setup Sekali</span></h2>
+      <div class="config-form">
+        <div><label>API Key</label><input id="cfgApiKey" placeholder="AIzaSy..." /></div>
+        <div><button class="btn btn-secondary" onclick="initFirebase()">🔌 Sambungkan ke Firebase</button></div>
+        <div id="configStatus"></div>
+      </div>
+      <p style="color:var(--muted);font-size:.75rem;margin-top:10px;">
+        Project ID: <b>wms-league</b> (hardcode) — Hanya perlu API Key dari Firebase Console
+      </p>
     </div>
-    <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFile(this.files[0])" />
-    <div class="sheets-grid" id="sheetsGrid"></div>
+
+    <!-- STEP 2: Upload File -->
+    <div class="card">
+      <h2><span class="step-tag">2</span> Pilih File Excel <span class="badge badge-orange">.xlsx</span></h2>
+      <div class="dropzone" id="dropzone"
+           onclick="document.getElementById('fileInput').click()"
+           ondragover="event.preventDefault();this.classList.add('over')"
+           ondragleave="this.classList.remove('over')"
+           ondrop="handleDrop(event)">
+        <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+        </svg>
+        <p><strong>Klik atau drop file di sini</strong></p>
+        <p style="margin-top:4px;">Mendukung sheet: MASTER_BARCODE · MASTER_PRODUK · SIZE</p>
+      </div>
+      <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFile(this.files[0])" />
+      <div class="sheets-grid" id="sheetsGrid"></div>
+    </div>
+
+    <!-- STEP 3: Upload -->
+    <div class="card" id="uploadCard" style="display:none">
+      <h2><span class="step-tag">3</span> Pilih Sheet &amp; Upload</h2>
+      <div class="options" id="sheetOptions"></div>
+      <hr class="divider" />
+      <div class="options">
+        <label class="opt">
+          <input type="checkbox" id="optClear" />
+          Hapus data lama sebelum upload (replace all)
+        </label>
+      </div>
+      <div class="row-actions" style="margin-top:14px;">
+        <button class="btn btn-primary" id="btnUpload" onclick="startUpload()">⬆ Mulai Upload ke Firestore</button>
+        <button class="btn btn-danger"  id="btnClear"  onclick="clearSelected()">🗑 Hapus Koleksi</button>
+      </div>
+      <div class="progress-wrap" id="progressWrap"></div>
+      <div class="log" id="logBox"></div>
+      <div class="summary-grid" id="summaryGrid">
+        <div class="sum-box"><div class="val" id="sumDocs">0</div><div class="lbl">Dokumen Diupload</div></div>
+        <div class="sum-box"><div class="val" id="sumCols">0</div><div class="lbl">Koleksi</div></div>
+        <div class="sum-box"><div class="val" id="sumTime">0s</div><div class="lbl">Waktu Total</div></div>
+      </div>
+    </div>
   </div>
+</div>
 
-  <!-- STEP 3 -->
-  <div class="card" id="uploadCard" style="display:none">
-    <h2><span class="step-tag">3</span> Pilih Sheet &amp; Upload</h2>
-    <div class="options" id="sheetOptions"></div>
-    <hr class="divider" />
-    <div class="options">
-      <label class="opt">
-        <input type="checkbox" id="optClear" />
-        Hapus data lama sebelum upload (replace all)
-      </label>
+<!-- PAGE 2: SCAN DATA -->
+<div class="page" id="page-scan">
+  <div class="container">
+    <header>
+      <h1>📱 SCAN <span>DATA</span></h1>
+      <p>Input barcode hasil scanning dan kelola data scan</p>
+    </header>
+
+    <!-- Scan Input Card -->
+    <div class="card">
+      <h2><span class="step-tag">📱</span> Input Scan Barcode</h2>
+      <div class="scan-input-area">
+        <div class="scan-input-group" style="flex: 2;">
+          <label>🔍 Barcode</label>
+          <input 
+            type="text" 
+            id="scanBarcode" 
+            placeholder="Scan atau ketik barcode di sini..." 
+            autofocus
+            onkeydown="if(event.key==='Enter')addScanData()"
+          />
+        </div>
+        <div class="scan-input-group" style="flex: 1;">
+          <label>📍 Lokasi</label>
+          <select id="scanLokasi">
+            <option value="Gudang">Gudang</option>
+            <option value="Toko">Toko</option>
+            <option value="Display">Display</option>
+            <option value="Retur">Retur</option>
+          </select>
+        </div>
+        <div class="scan-input-group" style="flex: 1;">
+          <label>👤 User</label>
+          <select id="scanUser">
+            <option value="LOCAL">LOCAL</option>
+            <option value="ADMIN">ADMIN</option>
+            <option value="STAFF1">STAFF1</option>
+            <option value="STAFF2">STAFF2</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="addScanData()" style="height: 46px;">
+          ➕ Tambah
+        </button>
+      </div>
+      
+      <!-- Quick Info -->
+      <div style="margin-top: 12px; display: flex; gap: 12px; align-items: center;">
+        <span style="font-size: 0.75rem; color: var(--muted);">
+          💡 Tekan <strong>Enter</strong> setelah scan untuk menambah otomatis
+        </span>
+        <span style="font-size: 0.75rem; color: var(--muted);">
+          | Total hari ini: <strong id="todayCount">0</strong> scan
+        </span>
+      </div>
     </div>
-    <div class="row-actions" style="margin-top:14px;">
-      <button class="btn btn-primary" id="btnUpload" onclick="startUpload()">⬆ Mulai Upload ke Firestore</button>
-      <button class="btn btn-danger"  id="btnClear"  onclick="clearSelected()">🗑 Hapus Koleksi</button>
+
+    <!-- Statistics -->
+    <div class="scan-stats">
+      <div class="stat-box">
+        <div class="stat-val" id="statTotal">0</div>
+        <div class="stat-lbl">Total Scan</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="statUnique">0</div>
+        <div class="stat-lbl">Unique Barcode</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="statToday">0</div>
+        <div class="stat-lbl">Hari Ini</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="statLastScan">-</div>
+        <div class="stat-lbl">Scan Terakhir</div>
+      </div>
     </div>
-    <div class="progress-wrap" id="progressWrap"></div>
-    <div class="log" id="logBox"></div>
-    <div class="summary-grid" id="summaryGrid">
-      <div class="sum-box"><div class="val" id="sumDocs">0</div><div class="lbl">Dokumen Diupload</div></div>
-      <div class="sum-box"><div class="val" id="sumCols">0</div><div class="lbl">Koleksi</div></div>
-      <div class="sum-box"><div class="val" id="sumTime">0s</div><div class="lbl">Waktu Total</div></div>
+
+    <!-- Data Table -->
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h2 style="margin: 0;">
+          <span class="step-tag">📋</span> Data Scan
+          <span class="badge badge-green" id="rowCount">0 row</span>
+        </h2>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary btn-sm" onclick="exportScanToExcel()">
+            📥 Export Excel
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="clearScanData()">
+            🗑 Hapus Semua
+          </button>
+        </div>
+      </div>
+      
+      <div class="table-wrapper">
+        <table class="scan-table" id="scanTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>BARCODE</th>
+              <th>LOKASI</th>
+              <th>ARTICLE</th>
+              <th>BIN</th>
+              <th>SIZE US</th>
+              <th>SIZE UK</th>
+              <th>DESCRIPTION</th>
+              <th>BRAND</th>
+              <th>CAT</th>
+              <th>SEASON</th>
+              <th>DATE</th>
+              <th>USER</th>
+              <th>AKSI</th>
+            </tr>
+          </thead>
+          <tbody id="scanTableBody">
+            <tr class="empty-state">
+              <td colspan="14">
+                <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                </svg>
+                <p>Belum ada data scan. Silakan input barcode di atas.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Upload to Firebase -->
+    <div class="card">
+      <h2><span class="step-tag">☁️</span> Upload Data Scan ke Firebase</h2>
+      <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 12px;">
+        Upload semua data scan ke koleksi <strong>SCAN_DATA</strong> di Firestore
+      </p>
+      <button class="btn btn-success" onclick="uploadScanToFirebase()" id="btnUploadScan">
+        ⬆ Upload Scan Data ke Firestore
+      </button>
+      <div class="log" id="scanLogBox"></div>
     </div>
   </div>
-
 </div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import {
     getFirestore, collection, writeBatch,
-    doc, getDocs
+    doc, getDocs, addDoc, Timestamp
   } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
   const PROJECT_ID = "wms-league";
@@ -151,7 +523,34 @@
 
   let db = null;
   let parsedSheets = {};
+  let scanDataArray = [];
 
+  // ─── Page Navigation ──────────────────────────────────────────
+  window.switchPage = function(page) {
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    
+    if (page === 'master') {
+      document.querySelector('.nav-tab:nth-child(1)').classList.add('active');
+      document.getElementById('page-master').classList.add('active');
+    } else {
+      document.querySelector('.nav-tab:nth-child(2)').classList.add('active');
+      document.getElementById('page-scan').classList.add('active');
+      document.getElementById('scanBarcode')?.focus();
+      updateScanStats();
+    }
+  };
+
+  // ─── Toast Notification ───────────────────────────────────────
+  function showToast(msg, type = 'info') {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = `toast ${type}`;
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 2500);
+  }
+
+  // ─── Utility Functions ────────────────────────────────────────
   function sanitize(v) {
     if (v === null || v === undefined || v === '') return null;
     if (typeof v === 'number' && isNaN(v)) return null;
@@ -159,30 +558,47 @@
     return v;
   }
 
-  function makeDocId(sheetName, row) {
-  // ─── SIZE: gabungan US_Size + Gender ───
-  if (sheetName === 'SIZE') {
-    const usSize = row['US_Size'] != null ? String(row['US_Size']).trim() : '';
-    const gender = row['Gender'] != null ? String(row['Gender']).trim() : '';
-    
-    if (usSize && gender) {
-      // Contoh: "095_Laki-laki", "095_Perempuan"
-      let id = `${usSize}_${gender}`;
-      id = id.replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
-      return id;
-    }
-    
-    // Fallback kalau salah satu kosong
-    const ts = Date.now().toString(36);
-    const rnd = Math.random().toString(36).substring(2, 8);
-    return `SIZE_${ts}_${rnd}`;
+  function formatDate(date) {
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
   }
 
-  // ─── MASTER_BARCODE ───
-  if (sheetName === 'MASTER_BARCODE') {
-    const keys = ['Barcode', 'Article'];
-    for (const k of keys) {
-      const raw = row[k];
+  function getTodayDate() {
+    const now = new Date();
+    return formatDate(now);
+  }
+
+  function makeDocId(sheetName, row) {
+    if (sheetName === 'SIZE') {
+      const usSize = row['US_Size'] != null ? String(row['US_Size']).trim() : '';
+      const gender = row['Gender'] != null ? String(row['Gender']).trim() : '';
+      if (usSize && gender) {
+        let id = `${usSize}_${gender}`;
+        id = id.replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
+        return id;
+      }
+      const ts = Date.now().toString(36);
+      const rnd = Math.random().toString(36).substring(2, 8);
+      return `SIZE_${ts}_${rnd}`;
+    }
+    if (sheetName === 'MASTER_BARCODE') {
+      const keys = ['Barcode', 'Article'];
+      for (const k of keys) {
+        const raw = row[k];
+        if (raw != null) {
+          let id = String(raw).trim();
+          if (id.length > 0) {
+            id = id.replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
+            return id;
+          }
+        }
+      }
+    }
+    if (sheetName === 'MASTER_PRODUK') {
+      const raw = row['Article'];
       if (raw != null) {
         let id = String(raw).trim();
         if (id.length > 0) {
@@ -191,28 +607,14 @@
         }
       }
     }
+    const ts = Date.now().toString(36);
+    const rnd = Math.random().toString(36).substring(2, 8);
+    return `${sheetName}_${ts}_${rnd}`;
   }
 
-  // ─── MASTER_PRODUK ───
-  if (sheetName === 'MASTER_PRODUK') {
-    const raw = row['Article'];
-    if (raw != null) {
-      let id = String(raw).trim();
-      if (id.length > 0) {
-        id = id.replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
-        return id;
-      }
-    }
-  }
-
-  // ─── Fallback ───
-  const ts = Date.now().toString(36);
-  const rnd = Math.random().toString(36).substring(2, 8);
-  return `${sheetName}_${ts}_${rnd}`;
-}
-
-  function log(msg, type = 'info') {
-    const box = document.getElementById('logBox');
+  function log(msg, type = 'info', targetId = 'logBox') {
+    const box = document.getElementById(targetId);
+    if (!box) return;
     box.style.display = 'block';
     const line = document.createElement('div');
     line.className = type;
@@ -228,7 +630,7 @@
     el.style.display = 'block';
   }
 
-  // ─── Firebase init ────────────────────────────────────────────
+  // ─── Firebase Init ────────────────────────────────────────────
   async function initFirebase() {
     const apiKey = document.getElementById('cfgApiKey').value.trim();
     if (!apiKey) {
@@ -247,7 +649,6 @@
       const firebaseApp = initializeApp(firebaseConfig);
       db = getFirestore(firebaseApp);
 
-      // TEST TULIS langsung
       const testRef = doc(db, 'test_write', 'conn_test');
       const testBatch = writeBatch(db);
       testBatch.set(testRef, { 
@@ -258,7 +659,8 @@
 
       localStorage.setItem('fb_api_key', apiKey);
       setStatus(`✅ Terhubung & BISA MENULIS ke ${PROJECT_ID}`, 'ok');
-      log('✅ TEST WRITE BERHASIL — Upload siap digunakan!', 'ok');
+      log('✅ TEST WRITE BERHASIL — Upload & Scan siap digunakan!', 'ok');
+      showToast('✅ Firebase terhubung!', 'success');
     } catch (err) {
       setStatus('❌ Gagal: ' + err.message, 'err');
       log('❌ Error: ' + err.code + ' - ' + err.message, 'err');
@@ -266,14 +668,24 @@
     }
   }
 
-  // ─── Load saved config ────────────────────────────────────────
+  // ─── Load Saved Config ────────────────────────────────────────
   const savedApiKey = localStorage.getItem('fb_api_key');
   if (savedApiKey) {
     document.getElementById('cfgApiKey').value = savedApiKey;
     initFirebase();
   }
 
-  // ─── File handling ────────────────────────────────────────────
+  // Load saved scan data from localStorage
+  const savedScanData = localStorage.getItem('scan_data');
+  if (savedScanData) {
+    try {
+      scanDataArray = JSON.parse(savedScanData);
+    } catch(e) {
+      scanDataArray = [];
+    }
+  }
+
+  // ─── File Handling (MASTER DATA) ──────────────────────────────
   function handleDrop(e) {
     e.preventDefault();
     document.getElementById('dropzone').classList.remove('over');
@@ -325,7 +737,7 @@
     reader.readAsArrayBuffer(file);
   }
 
-  // ─── Batch upload ─────────────────────────────────────────────
+  // ─── Batch Upload ─────────────────────────────────────────────
   async function uploadBatched(colName, rows, onProgress) {
     let done = 0;
     for (let i = 0; i < rows.length; i += BATCH_SIZE) {
@@ -340,7 +752,6 @@
     }
   }
 
-  // ─── Delete collection ────────────────────────────────────────
   async function deleteCollection(colName, onProgress) {
     const snap = await getDocs(collection(db, colName));
     if (snap.empty) { onProgress(0, 0); return; }
@@ -355,7 +766,6 @@
     }
   }
 
-  // ─── Start upload ─────────────────────────────────────────────
   async function startUpload() {
     if (!db) { log('❌ Firebase belum terhubung.', 'err'); return; }
     const selected = [...document.querySelectorAll('.sheetCheck:checked')].map(c => c.value);
@@ -455,11 +865,256 @@
     el.querySelector('.pct').textContent = '❌ Error';
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // SCAN DATA FUNCTIONS
+  // ═══════════════════════════════════════════════════════════════
+
+  function saveScanData() {
+    localStorage.setItem('scan_data', JSON.stringify(scanDataArray));
+  }
+
+  window.addScanData = function() {
+    const barcodeInput = document.getElementById('scanBarcode');
+    const barcode = barcodeInput.value.trim();
+    const lokasi = document.getElementById('scanLokasi').value;
+    const user = document.getElementById('scanUser').value;
+    
+    if (!barcode) {
+      showToast('⚠️ Silakan input/scan barcode terlebih dahulu', 'error');
+      barcodeInput.focus();
+      return;
+    }
+
+    const now = new Date();
+    const newRow = {
+      id: Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
+      BARCODE: barcode,
+      LOKASI: lokasi,
+      ARTICLE: '',  // Bisa diisi manual/edit nanti
+      BIN: '',
+      SIZE_US: '',
+      SIZE_UK: '',
+      DESCRIPTION: '',
+      BRAND: 'LEAGUE',
+      CAT: 'F',
+      SEASON: String(now.getFullYear()),
+      DATE: getTodayDate(),
+      USER: user,
+      timestamp: now.toISOString()
+    };
+
+    scanDataArray.unshift(newRow); // Add to beginning
+    saveScanData();
+    
+    // Reset input
+    barcodeInput.value = '';
+    barcodeInput.focus();
+    
+    // Update UI
+    renderScanTable();
+    updateScanStats();
+    showToast('✅ Data berhasil ditambahkan', 'success');
+  };
+
+  window.deleteScanRow = function(id) {
+    if (!confirm('Hapus data ini?')) return;
+    scanDataArray = scanDataArray.filter(row => row.id !== id);
+    saveScanData();
+    renderScanTable();
+    updateScanStats();
+    showToast('🗑 Data dihapus', 'info');
+  };
+
+  window.editScanCell = function(id, field) {
+    const row = scanDataArray.find(r => r.id === id);
+    if (!row) return;
+    
+    const newValue = prompt(`Edit ${field}:`, row[field] || '');
+    if (newValue === null) return;
+    
+    row[field] = newValue;
+    saveScanData();
+    renderScanTable();
+    showToast('✅ Data diupdate', 'success');
+  };
+
+  window.clearScanData = function() {
+    if (!scanDataArray.length) {
+      showToast('📭 Tidak ada data untuk dihapus', 'info');
+      return;
+    }
+    if (!confirm(`Yakin hapus SEMUA data scan (${scanDataArray.length} row)?`)) return;
+    scanDataArray = [];
+    saveScanData();
+    renderScanTable();
+    updateScanStats();
+    showToast('🗑 Semua data dihapus', 'info');
+  };
+
+  function updateScanStats() {
+    const total = scanDataArray.length;
+    const uniqueBarcodes = new Set(scanDataArray.map(r => r.BARCODE)).size;
+    
+    const today = getTodayDate();
+    const todayData = scanDataArray.filter(r => r.DATE === today);
+    
+    const lastScan = scanDataArray.length > 0 ? scanDataArray[0].DATE : '-';
+    
+    document.getElementById('statTotal').textContent = total.toLocaleString();
+    document.getElementById('statUnique').textContent = uniqueBarcodes.toLocaleString();
+    document.getElementById('statToday').textContent = todayData.length.toLocaleString();
+    document.getElementById('statLastScan').textContent = lastScan;
+    document.getElementById('todayCount').textContent = todayData.length.toLocaleString();
+    document.getElementById('rowCount').textContent = `${total} row`;
+  }
+
+  function renderScanTable() {
+    const tbody = document.getElementById('scanTableBody');
+    
+    if (scanDataArray.length === 0) {
+      tbody.innerHTML = `
+        <tr class="empty-state">
+          <td colspan="14">
+            <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-12"/>
+            </svg>
+            <p>Belum ada data scan. Silakan input barcode di atas.</p>
+          </td>
+        </tr>`;
+      return;
+    }
+
+    tbody.innerHTML = scanDataArray.map((row, index) => `
+      <tr>
+        <td>${index + 1}</td>
+        <td class="col-barcode" onclick="editScanCell('${row.id}', 'BARCODE')" title="Klik untuk edit">${row.BARCODE}</td>
+        <td class="col-lokasi" onclick="editScanCell('${row.id}', 'LOKASI')" title="Klik untuk edit">${row.LOKASI}</td>
+        <td class="col-article" onclick="editScanCell('${row.id}', 'ARTICLE')" title="Klik untuk edit">${row.ARTICLE || '-'}</td>
+        <td class="col-bin" onclick="editScanCell('${row.id}', 'BIN')" title="Klik untuk edit">${row.BIN || '-'}</td>
+        <td onclick="editScanCell('${row.id}', 'SIZE_US')" title="Klik untuk edit">${row.SIZE_US || '-'}</td>
+        <td onclick="editScanCell('${row.id}', 'SIZE_UK')" title="Klik untuk edit">${row.SIZE_UK || '-'}</td>
+        <td onclick="editScanCell('${row.id}', 'DESCRIPTION')" title="Klik untuk edit">${row.DESCRIPTION || '-'}</td>
+        <td onclick="editScanCell('${row.id}', 'BRAND')" title="Klik untuk edit">${row.BRAND}</td>
+        <td onclick="editScanCell('${row.id}', 'CAT')" title="Klik untuk edit">${row.CAT}</td>
+        <td onclick="editScanCell('${row.id}', 'SEASON')" title="Klik untuk edit">${row.SEASON}</td>
+        <td class="col-date">${row.DATE}</td>
+        <td>${row.USER}</td>
+        <td>
+          <div class="actions-cell">
+            <button class="btn-sm btn-sm-delete" onclick="deleteScanRow('${row.id}')" title="Hapus">🗑</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  window.exportScanToExcel = function() {
+    if (!scanDataArray.length) {
+      showToast('📭 Tidak ada data untuk diexport', 'error');
+      return;
+    }
+
+    const exportData = scanDataArray.map(row => ({
+      BARCODE: row.BARCODE,
+      LOKASI: row.LOKASI,
+      ARTICLE: row.ARTICLE,
+      BIN: row.BIN,
+      'SIZE US': row.SIZE_US,
+      'SIZE UK': row.SIZE_UK,
+      DESCRIPTION: row.DESCRIPTION,
+      BRAND: row.BRAND,
+      CAT: row.CAT,
+      SEASON: row.SEASON,
+      DATE: row.DATE,
+      USER: row.USER
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "SCAN_DATA");
+    
+    const fileName = `SCAN_DATA_${getTodayDate().replace(/\//g, '-')}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    showToast(`📥 Data diexport ke ${fileName}`, 'success');
+  };
+
+  window.uploadScanToFirebase = async function() {
+    if (!db) {
+      showToast('❌ Firebase belum terhubung! Sambungkan dulu di tab Master Data.', 'error');
+      log('❌ Firebase belum terhubung.', 'err', 'scanLogBox');
+      return;
+    }
+    if (!scanDataArray.length) {
+      showToast('📭 Tidak ada data scan untuk diupload', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('btnUploadScan');
+    btn.disabled = true;
+    btn.textContent = '⏳ Mengupload...';
+
+    log(`⬆ Mulai upload ${scanDataArray.length} data scan ke SCAN_DATA...`, 'info', 'scanLogBox');
+
+    try {
+      let uploaded = 0;
+      for (let i = 0; i < scanDataArray.length; i += BATCH_SIZE) {
+        const batch = writeBatch(db);
+        const chunk = scanDataArray.slice(i, i + BATCH_SIZE);
+        
+        chunk.forEach(row => {
+          const docData = {
+            BARCODE: row.BARCODE,
+            LOKASI: row.LOKASI,
+            ARTICLE: row.ARTICLE || '',
+            BIN: row.BIN || '',
+            SIZE_US: row.SIZE_US || '',
+            SIZE_UK: row.SIZE_UK || '',
+            DESCRIPTION: row.DESCRIPTION || '',
+            BRAND: row.BRAND || 'LEAGUE',
+            CAT: row.CAT || 'F',
+            SEASON: row.SEASON || '',
+            DATE: row.DATE,
+            USER: row.USER,
+            scanned_at: row.timestamp
+          };
+          
+          const docRef = doc(collection(db, 'SCAN_DATA'));
+          batch.set(docRef, docData);
+        });
+        
+        await batch.commit();
+        uploaded += chunk.length;
+        log(`✅ Batch ${Math.floor(i/BATCH_SIZE)+1}: ${uploaded}/${scanDataArray.length} terupload`, 'ok', 'scanLogBox');
+      }
+
+      log(`🎉 Upload selesai! ${uploaded} dokumen ke koleksi SCAN_DATA`, 'ok', 'scanLogBox');
+      showToast(`✅ ${uploaded} data berhasil diupload ke Firebase!`, 'success');
+    } catch (err) {
+      log(`❌ Error: ${err.message}`, 'err', 'scanLogBox');
+      showToast('❌ Upload gagal: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '⬆ Upload Scan Data ke Firestore';
+    }
+  };
+
+  // ─── Expose functions to window ───────────────────────────────
   window.initFirebase  = initFirebase;
   window.handleDrop    = handleDrop;
   window.handleFile    = handleFile;
   window.startUpload   = startUpload;
   window.clearSelected = clearSelected;
+
+  // ─── Initialize Scan Table ────────────────────────────────────
+  renderScanTable();
+  updateScanStats();
+
+  // Auto-refresh scan stats every 30 seconds
+  setInterval(() => {
+    if (document.getElementById('page-scan').classList.contains('active')) {
+      updateScanStats();
+    }
+  }, 30000);
 </script>
 </body>
 </html>
