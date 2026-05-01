@@ -82,6 +82,7 @@
     .log .err{color:var(--red);}
     .log .info{color:var(--accent2);}
     .log .warn{color:#facc15;}
+    .log .debug{color:#a78bfa;}
     
     .summary-grid{display:none;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;}
     .sum-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;}
@@ -94,9 +95,9 @@
     .scan-input-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
     .scan-input-group { display: flex; flex-direction: column; gap: 4px; }
     .scan-input-group label { font-size: 0.75rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-    .scan-input-group input { padding: 11px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 1rem; font-family: monospace; width: 100%; }
-    .scan-input-group input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(249,115,22,0.15); }
-    .scan-input-group input.input-barcode { min-width: 220px; font-size: 1.1rem; font-weight: 600; letter-spacing: 0.02em; }
+    .scan-input-group input, .scan-input-group select { padding: 11px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 1rem; font-family: monospace; width: 100%; }
+    .scan-input-group input:focus, .scan-input-group select:focus { outline: none; border-color: var(--accent); }
+    .scan-input-group input.input-barcode { min-width: 220px; font-size: 1.1rem; font-weight: 600; }
     .scan-input-group input.input-bin { min-width: 100px; text-align: center; font-weight: 600; color: #a78bfa; }
     .input-hint { font-size: 0.65rem; color: var(--muted); margin-top: 2px; }
     
@@ -113,7 +114,6 @@
     .stat-box .stat-val { font-size: 1.5rem; font-weight: 700; color: var(--accent2); }
     .stat-box .stat-lbl { font-size: 0.7rem; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
     
-    /* Derived Info Box */
     .derived-box {
       background: rgba(139, 92, 246, 0.08);
       border: 1px solid rgba(139, 92, 246, 0.3);
@@ -123,20 +123,8 @@
       display: none;
     }
     .derived-box.show { display: block; }
-    .derived-box .db-title {
-      font-size: 0.7rem;
-      font-weight: 700;
-      color: #a78bfa;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 8px;
-    }
-    .derived-box .db-row {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-      font-size: 0.82rem;
-    }
+    .derived-box .db-title { font-size: 0.7rem; font-weight: 700; color: #a78bfa; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+    .derived-box .db-row { display: flex; gap: 20px; flex-wrap: wrap; font-size: 0.82rem; }
     .derived-box .db-item { display: flex; gap: 6px; align-items: center; }
     .derived-box .db-label { color: var(--muted); }
     .derived-box .db-value { font-weight: 600; font-family: monospace; }
@@ -150,8 +138,6 @@
     .scan-table td { padding: 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
     .scan-table tbody tr { transition: background 0.2s; }
     .scan-table tbody tr:hover { background: rgba(59, 130, 246, 0.05); }
-    .scan-table tbody tr.new-row { animation: highlightRow 1.5s ease-out; }
-    @keyframes highlightRow { 0% { background: rgba(34, 197, 94, 0.3); } 100% { background: transparent; } }
     .scan-table .col-barcode { font-family: monospace; font-weight: 500; color: var(--accent); }
     .scan-table .col-bin { font-weight: 600; color: #a78bfa; }
     .scan-table .col-lokasi { color: var(--accent2); font-weight: 500; }
@@ -159,7 +145,7 @@
     .scan-table .col-article { font-family: monospace; }
     .scan-table .col-brand { font-weight: 600; color: #f59e0b; }
     .scan-table .col-season { font-weight: 600; color: #10b981; }
-    .scan-table .col-cat { font-weight: 700; color: #f59e0b; font-size: 0.9rem; }
+    .scan-table .col-cat { font-weight: 700; color: #f59e0b; }
     .scan-table .col-date { color: var(--muted); font-size: 0.78rem; }
     .actions-cell { display: flex; gap: 6px; }
     .btn-sm { padding: 4px 10px; font-size: 0.7rem; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; transition: opacity 0.2s; }
@@ -187,14 +173,13 @@
   </div>
 </div>
 
-<!-- PAGE 1: MASTER DATA -->
+<!-- PAGE 1: MASTER DATA (tidak berubah) -->
 <div class="page active" id="page-master">
   <div class="container">
     <header>
       <h1>MASTER DATA <span>⬆</span> Firestore</h1>
       <p>Upload MASTER_BARCODE · MASTER_PRODUK · SIZE ke Firebase Firestore</p>
     </header>
-
     <div class="card">
       <h2><span class="step-tag">1</span> Konfigurasi Firebase <span class="badge badge-blue">Setup Sekali</span></h2>
       <div class="config-form">
@@ -202,29 +187,23 @@
         <div><button class="btn btn-secondary" onclick="initFirebase()">🔌 Sambungkan ke Firebase</button></div>
         <div id="configStatus"></div>
       </div>
-      <p style="color:var(--muted);font-size:.75rem;margin-top:10px;">Project ID: <b>wms-league</b> (hardcode)</p>
+      <p style="color:var(--muted);font-size:.75rem;margin-top:10px;">Project ID: <b>wms-league</b></p>
     </div>
-
     <div class="card">
       <h2><span class="step-tag">2</span> Pilih File Excel <span class="badge badge-orange">.xlsx</span></h2>
       <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="handleDrop(event)">
-        <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
-        </svg>
+        <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
         <p><strong>Klik atau drop file di sini</strong></p>
-        <p style="margin-top:4px;">Mendukung sheet: MASTER_BARCODE · MASTER_PRODUK · SIZE</p>
+        <p style="margin-top:4px;">Sheet: MASTER_BARCODE · MASTER_PRODUK · SIZE</p>
       </div>
       <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFile(this.files[0])" />
       <div class="sheets-grid" id="sheetsGrid"></div>
     </div>
-
     <div class="card" id="uploadCard" style="display:none">
       <h2><span class="step-tag">3</span> Pilih Sheet &amp; Upload</h2>
       <div class="options" id="sheetOptions"></div>
       <hr class="divider" />
-      <div class="options">
-        <label class="opt"><input type="checkbox" id="optClear" />Hapus data lama sebelum upload (replace all)</label>
-      </div>
+      <div class="options"><label class="opt"><input type="checkbox" id="optClear" />Hapus data lama sebelum upload</label></div>
       <div class="row-actions" style="margin-top:14px;">
         <button class="btn btn-primary" id="btnUpload" onclick="startUpload()">⬆ Mulai Upload ke Firestore</button>
         <button class="btn btn-danger" id="btnClear" onclick="clearSelected()">🗑 Hapus Koleksi</button>
@@ -250,58 +229,41 @@
 
     <div class="card">
       <h2><span class="step-tag">📱</span> Input Scan</h2>
-      
       <div class="scan-input-row">
-        <div class="scan-input-group" style="flex:2; min-width:200px;">
+        <div class="scan-input-group" style="flex:2;min-width:200px;">
           <label>🔍 Barcode</label>
-          <input type="text" id="scanBarcode" class="input-barcode" placeholder="Scan atau ketik barcode..." autofocus onkeydown="handleBarcodeKeydown(event)" />
+          <input type="text" id="scanBarcode" class="input-barcode" placeholder="Scan/ketik barcode..." autofocus onkeydown="handleBarcodeKeydown(event)" />
           <span class="input-hint">Tekan Enter untuk submit</span>
         </div>
-        
-        <div class="scan-input-group" style="flex:1; min-width:100px;">
+        <div class="scan-input-group" style="flex:1;min-width:100px;">
           <label>📦 BIN</label>
-          <input type="text" id="scanBIN" class="input-bin" placeholder="Contoh: D1" />
-          <span class="input-hint">Isi manual</span>
+          <input type="text" id="scanBIN" class="input-bin" placeholder="D1" />
+          <span class="input-hint">Manual</span>
         </div>
-        
-        <div class="scan-input-group" style="flex:1; min-width:130px;">
+        <div class="scan-input-group" style="flex:1;min-width:130px;">
           <label>📍 Lokasi</label>
-          <select id="scanLokasi" style="padding:11px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:1rem;width:100%;cursor:pointer;">
-            <option value="Gudang">Gudang</option>
-            <option value="Toko">Toko</option>
-            <option value="Display">Display</option>
-            <option value="Retur">Retur</option>
-          </select>
+          <select id="scanLokasi"><option value="Gudang">Gudang</option><option value="Toko">Toko</option><option value="Display">Display</option><option value="Retur">Retur</option></select>
         </div>
-        
-        <div class="scan-input-group" style="flex:1; min-width:120px;">
+        <div class="scan-input-group" style="flex:1;min-width:120px;">
           <label>👤 User</label>
-          <select id="scanUser" style="padding:11px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:1rem;width:100%;cursor:pointer;">
-            <option value="LOCAL">LOCAL</option>
-            <option value="ADMIN">ADMIN</option>
-            <option value="STAFF1">STAFF1</option>
-            <option value="STAFF2">STAFF2</option>
-          </select>
+          <select id="scanUser"><option value="LOCAL">LOCAL</option><option value="ADMIN">ADMIN</option><option value="STAFF1">STAFF1</option><option value="STAFF2">STAFF2</option></select>
         </div>
-        
-        <button class="btn btn-primary" onclick="addScanData()" style="height:44px; white-space:nowrap;">➕ Tambah</button>
+        <button class="btn btn-primary" onclick="addScanData()" style="height:44px;white-space:nowrap;">➕ Tambah</button>
       </div>
       
-      <!-- Derived Info Box -->
       <div class="derived-box" id="derivedBox">
-        <div class="db-title">🔍 Proses Pencarian</div>
+        <div class="db-title">🔍 Debug Pencarian</div>
         <div class="db-row" id="derivedContent"></div>
       </div>
       
-      <!-- Search Status -->
-      <div class="search-status" id="searchStatus" style="display: none;">
-        <span class="spinner" id="searchSpinner" style="display: none;"></span>
+      <div class="search-status" id="searchStatus" style="display:none;">
+        <span class="spinner" id="searchSpinner" style="display:none;"></span>
         <span id="searchStatusText"></span>
       </div>
       
       <div style="margin-top:12px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
-        <span style="font-size:0.75rem;color:var(--muted);">💡 <strong>Enter</strong> = scan & cari dari Master Data</span>
-        <span style="font-size:0.75rem;color:var(--muted);">| Hari ini: <strong id="todayCount">0</strong> scan</span>
+        <span style="font-size:0.75rem;color:var(--muted);">💡 <strong>Enter</strong> = scan & cari</span>
+        <span style="font-size:0.75rem;color:var(--muted);">| Hari ini: <strong id="todayCount">0</strong></span>
         <span style="font-size:0.75rem;">DB: <strong id="firestoreStatus">-</strong></span>
       </div>
     </div>
@@ -321,34 +283,20 @@
           <button class="btn btn-danger btn-sm" onclick="clearScanData()">🗑 Hapus Semua</button>
         </div>
       </div>
-      
       <div class="table-wrapper">
         <table class="scan-table" id="scanTable">
           <thead>
             <tr>
-              <th>#</th>
-              <th>BARCODE</th>
-              <th>LOKASI</th>
-              <th>ARTICLE</th>
-              <th>BIN</th>
-              <th>SIZE US</th>
-              <th>SIZE UK</th>
-              <th>DESCRIPTION</th>
-              <th>BRAND</th>
-              <th>CAT</th>
-              <th>SEASON</th>
-              <th>DATE</th>
-              <th>USER</th>
-              <th>AKSI</th>
+              <th>#</th><th>BARCODE</th><th>LOKASI</th><th>ARTICLE</th><th>BIN</th>
+              <th>SIZE US</th><th>SIZE UK</th><th>DESCRIPTION</th><th>BRAND</th>
+              <th>CAT</th><th>SEASON</th><th>DATE</th><th>USER</th><th>AKSI</th>
             </tr>
           </thead>
           <tbody id="scanTableBody">
-            <tr class="empty-state">
-              <td colspan="14">
-                <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                <p>Belum ada data scan. Silakan input barcode di atas.</p>
-              </td>
-            </tr>
+            <tr class="empty-state"><td colspan="14">
+              <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+              <p>Belum ada data scan.</p>
+            </td></tr>
           </tbody>
         </table>
       </div>
@@ -356,8 +304,8 @@
 
     <div class="card">
       <h2><span class="step-tag">☁️</span> Upload ke Firebase</h2>
-      <p style="color:var(--muted);font-size:0.85rem;margin-bottom:12px;">Upload semua data scan ke koleksi <strong>SCAN_DATA</strong> di Firestore</p>
-      <button class="btn btn-success" onclick="uploadScanToFirebase()" id="btnUploadScan">⬆ Upload Scan Data ke Firestore</button>
+      <p style="color:var(--muted);font-size:0.85rem;margin-bottom:12px;">Upload ke koleksi <strong>SCAN_DATA</strong></p>
+      <button class="btn btn-success" onclick="uploadScanToFirebase()" id="btnUploadScan">⬆ Upload Scan Data</button>
       <div class="log" id="scanLogBox"></div>
     </div>
   </div>
@@ -365,19 +313,17 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore, collection, writeBatch, doc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import { getFirestore, collection, writeBatch, doc, getDocs, query, where, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
   const PROJECT_ID = "wms-league";
   const BATCH_SIZE = 200;
-
   let db = null;
   let parsedSheets = {};
   let scanDataArray = [];
 
   // ═══════════════════════════════════════════════════════════════
-  // HELPER FUNCTIONS
+  // HELPER
   // ═══════════════════════════════════════════════════════════════
-  
   function extractSizeUS(article) {
     if (!article) return '';
     const str = String(article).trim();
@@ -385,10 +331,6 @@
     return match ? match[1] : '';
   }
 
-  /**
-   * Buat GENERIC dari Article dengan menghilangkan 3 digit SIZE US terakhir
-   * Contoh: 207068201N080 → "207068201N"
-   */
   function extractGeneric(article) {
     if (!article) return '';
     const str = String(article).trim();
@@ -411,80 +353,267 @@
     }
   }
 
-  /**
-   * Ekstrak CAT dari Merch_Cat
-   * Contoh: "BE0111" → ambil karakter ke-2 → "E"
-   *         "BF0208" → ambil karakter ke-2 → "F"
-   */
   function extractCat(merchCat) {
     if (!merchCat) return '';
     const str = String(merchCat).trim();
-    if (str.length >= 2) {
-      return str.charAt(1); // Karakter kedua (index 1)
+    return str.length >= 2 ? str.charAt(1) : str;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // FIREBASE SEARCH — MULTIPLE FALLBACK STRATEGIES
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * Cari dokumen berdasarkan ID langsung (tanpa query)
+   * Ini bypass masalah index/type mismatch
+   */
+  async function searchById(collectionName, docId) {
+    try {
+      const docRef = doc(db, collectionName, docId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        return { found: true, data: { id: docSnap.id, ...docSnap.data() }, source: collectionName };
+      }
+      return { found: false, data: null, source: null };
+    } catch(e) { return { found: false, data: null, source: null }; }
+  }
+
+  /**
+   * Cari dengan query where — coba sebagai string DAN number
+   */
+  async function searchByField(collectionName, fieldName, value) {
+    const results = [];
+    
+    // Strategy 1: Exact match as string
+    try {
+      const q = query(collection(db, collectionName), where(fieldName, '==', String(value)));
+      const snap = await getDocs(q);
+      if (!snap.empty) results.push({ data: { id: snap.docs[0].id, ...snap.docs[0].data() }, method: 'string' });
+    } catch(e) { console.warn('search string error:', e.message); }
+
+    // Strategy 2: Exact match as number (jika value adalah angka)
+    if (!results.length && /^\d+$/.test(String(value))) {
+      try {
+        const q = query(collection(db, collectionName), where(fieldName, '==', Number(value)));
+        const snap = await getDocs(q);
+        if (!snap.empty) results.push({ data: { id: snap.docs[0].id, ...snap.docs[0].data() }, method: 'number' });
+      } catch(e) { console.warn('search number error:', e.message); }
     }
-    return str;
+
+    // Strategy 3: Coba field name variations (lowercase, uppercase)
+    if (!results.length) {
+      const fieldVariations = [
+        fieldName,
+        fieldName.toLowerCase(),
+        fieldName.toUpperCase(),
+        fieldName.charAt(0).toUpperCase() + fieldName.slice(1).toLowerCase(),
+        fieldName.replace(/_/g, ' '),
+        fieldName.replace(/ /g, '_')
+      ];
+      
+      for (const field of [...new Set(fieldVariations)]) {
+        if (field === fieldName) continue; // sudah dicoba
+        try {
+          const q = query(collection(db, collectionName), where(field, '==', String(value)));
+          const snap = await getDocs(q);
+          if (!snap.empty) {
+            console.log(`✅ Found with field name: "${field}"`);
+            results.push({ data: { id: snap.docs[0].id, ...snap.docs[0].data() }, method: `field:${field}` });
+            break;
+          }
+        } catch(e) { /* lanjut */ }
+      }
+    }
+
+    if (results.length) {
+      return { found: true, data: results[0].data, source: collectionName, method: results[0].method };
+    }
+    return { found: false, data: null, source: null };
   }
 
   async function findSizeUK(usSize, genderLabel) {
     if (!db || !usSize || !genderLabel) return '';
     try {
-      const q = query(collection(db, 'SIZE'), where('US_Size', '==', usSize), where('Gender', '==', genderLabel));
-      const snapshot = await getDocs(q);
-      if (!snapshot.empty) {
-        const data = snapshot.docs[0].data();
-        return data.UK_Size || data.Size_UK || data['UK_Size'] || '';
+      // Coba sebagai string
+      let q = query(collection(db, 'SIZE'), where('US_Size', '==', String(usSize)), where('Gender', '==', genderLabel));
+      let snap = await getDocs(q);
+      if (!snap.empty) {
+        const d = snap.docs[0].data();
+        return d.UK_Size || d.Size_UK || d['UK_Size'] || '';
       }
-      const q2 = query(collection(db, 'SIZE'), where('US_Size', '==', usSize));
-      const snapshot2 = await getDocs(q2);
-      if (!snapshot2.empty) {
-        for (const d of snapshot2.docs) {
-          if (d.data().Gender === genderLabel) {
-            return d.data().UK_Size || d.data().Size_UK || d.data()['UK_Size'] || '';
-          }
+      // Coba sebagai number
+      if (/^\d+$/.test(usSize)) {
+        q = query(collection(db, 'SIZE'), where('US_Size', '==', Number(usSize)), where('Gender', '==', genderLabel));
+        snap = await getDocs(q);
+        if (!snap.empty) {
+          const d = snap.docs[0].data();
+          return d.UK_Size || d.Size_UK || d['UK_Size'] || '';
         }
-        const first = snapshot2.docs[0].data();
-        return first.UK_Size || first.Size_UK || first['UK_Size'] || '';
       }
     } catch(e) { console.warn('findSizeUK error:', e.message); }
     return '';
   }
 
-  /**
-   * Cari info produk dari MASTER_PRODUK menggunakan GENERIC
-   * Mengambil: Brand_Name, Season_Yr_, Merch_Cat
-   * CAT diambil dari karakter ke-2 Merch_Cat
-   */
   async function findProductInfoByGeneric(generic) {
     if (!db || !generic) return { brandName: '', seasonYr: '', cat: '', merchCat: '' };
-    try {
-      const q = query(collection(db, 'MASTER_PRODUK'), where('Article', '==', generic));
-      const snapshot = await getDocs(q);
-      
-      if (!snapshot.empty) {
-        const data = snapshot.docs[0].data();
-        const merchCat = data.Merch_Cat || data['Merch Cat'] || data.MerchCat || '';
-        const cat = extractCat(merchCat);
-        
-        return {
-          brandName: data.Brand_Name || data['Brand Name'] || data.BrandName || data.Brand || '',
-          seasonYr: data.Season_Yr_ || data['Season Yr'] || data.SeasonYr || data.Season_Yr || data.Season || '',
-          merchCat: merchCat,
-          cat: cat  // Karakter ke-2 dari Merch_Cat
-        };
-      }
-    } catch(e) { console.warn('findProductInfoByGeneric error:', e.message); }
+    
+    // Coba cari by ID dulu (paling cepat)
+    let result = await searchById('MASTER_PRODUK', generic);
+    if (!result.found) {
+      // Coba by field 'Article'
+      result = await searchByField('MASTER_PRODUK', 'Article', generic);
+    }
+    
+    if (result.found && result.data) {
+      const data = result.data;
+      const merchCat = data.Merch_Cat || data['Merch Cat'] || data.MerchCat || '';
+      const cat = extractCat(merchCat);
+      return {
+        brandName: data.Brand_Name || data['Brand Name'] || data.BrandName || data.Brand || '',
+        seasonYr: data.Season_Yr_ || data['Season Yr'] || data.SeasonYr || data.Season_Yr || data.Season || '',
+        merchCat, cat
+      };
+    }
     return { brandName: '', seasonYr: '', cat: '', merchCat: '' };
   }
 
-  async function searchInCollection(collectionName, fieldName, value) {
+  // ═══════════════════════════════════════════════════════════════
+  // MAIN SEARCH
+  // ═══════════════════════════════════════════════════════════════
+  async function searchBarcodeInMaster(barcode) {
+    if (!db) return { found: false, error: 'Firebase tidak terhubung' };
+    
+    const searchStatus = document.getElementById('searchStatus');
+    const searchStatusText = document.getElementById('searchStatusText');
+    const searchSpinner = document.getElementById('searchSpinner');
+    const derivedBox = document.getElementById('derivedBox');
+    const derivedContent = document.getElementById('derivedContent');
+    
+    searchStatus.style.display = 'flex';
+    searchStatus.className = 'search-status searching';
+    searchSpinner.style.display = 'inline-block';
+    searchStatusText.textContent = `Mencari "${barcode}"...`;
+    derivedBox.classList.remove('show');
+
+    const debugInfo = [];
+    const barcodeStr = String(barcode).trim();
+    debugInfo.push(`<div class="db-item"><span class="db-label">Input:</span><span class="db-value">"${barcodeStr}"</span></div>`);
+
     try {
-      const q = query(collection(db, collectionName), where(fieldName, '==', value));
-      const snapshot = await getDocs(q);
-      if (!snapshot.empty) {
-        return { found: true, data: { id: snapshot.docs[0].id, ...snapshot.docs[0].data() }, source: collectionName };
+      // ═══ STRATEGY 1: Cari by Document ID di MASTER_BARCODE ═══
+      debugInfo.push(`<div class="db-item"><span class="db-label">Coba 1:</span><span class="db-value" style="color:var(--accent2);">getDoc(MASTER_BARCODE/${barcodeStr})</span></div>`);
+      let result = await searchById('MASTER_BARCODE', barcodeStr);
+      
+      if (result.found) {
+        return await processFoundResult(result, barcodeStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
       }
+
+      // ═══ STRATEGY 2: Cari by field 'Barcode' (string & number) ═══
+      debugInfo.push(`<div class="db-item"><span class="db-label">Coba 2:</span><span class="db-value" style="color:var(--accent2);">where(Barcode == "${barcodeStr}")</span></div>`);
+      result = await searchByField('MASTER_BARCODE', 'Barcode', barcodeStr);
+      
+      if (result.found) {
+        debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">${result.method}</span></div>`);
+        return await processFoundResult(result, barcodeStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
+      }
+
+      // ═══ STRATEGY 3: Cari by field 'Article' di MASTER_BARCODE ═══
+      debugInfo.push(`<div class="db-item"><span class="db-label">Coba 3:</span><span class="db-value" style="color:var(--accent2);">where(Article == "${barcodeStr}") di MASTER_BARCODE</span></div>`);
+      result = await searchByField('MASTER_BARCODE', 'Article', barcodeStr);
+      
+      if (result.found) {
+        debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">${result.method}</span></div>`);
+        const article = result.data.Article || result.data.article || barcodeStr;
+        result.data.Article = article;
+        result.data.Barcode = result.data.Barcode || barcodeStr;
+        return await processFoundResult(result, barcodeStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
+      }
+
+      // ═══ STRATEGY 4: Cari by Document ID di MASTER_PRODUK ═══
+      debugInfo.push(`<div class="db-item"><span class="db-label">Coba 4:</span><span class="db-value" style="color:var(--accent2);">getDoc(MASTER_PRODUK/${barcodeStr})</span></div>`);
+      result = await searchById('MASTER_PRODUK', barcodeStr);
+      
+      if (result.found) {
+        debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">getDoc MASTER_PRODUK</span></div>`);
+        result.data.Barcode = result.data.Barcode || barcodeStr;
+        result.data.Article = result.data.Article || barcodeStr;
+        return await processFoundResult(result, barcodeStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
+      }
+
+      // ═══ STRATEGY 5: Cari by Generic di MASTER_PRODUK ═══
+      const generic = extractGeneric(barcodeStr);
+      debugInfo.push(`<div class="db-item"><span class="db-label">Coba 5:</span><span class="db-value generic">Generic: "${generic}" → MASTER_PRODUK</span></div>`);
+      
+      if (generic && generic !== barcodeStr) {
+        // Coba by doc ID
+        result = await searchById('MASTER_PRODUK', generic);
+        if (!result.found) {
+          // Coba by field Article
+          result = await searchByField('MASTER_PRODUK', 'Article', generic);
+        }
+        
+        if (result.found) {
+          debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">Generic match!</span></div>`);
+          result.data.Barcode = result.data.Barcode || barcodeStr;
+          result.data.Article = result.data.Article || barcodeStr;
+          return await processFoundResult(result, barcodeStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
+        }
+      }
+
+      // ═══ TIDAK DITEMUKAN ═══
+      debugInfo.push(`<div class="db-item"><span class="db-label">Hasil:</span><span class="db-value" style="color:var(--red);">❌ Tidak ditemukan di semua strategi</span></div>`);
+      
+      derivedContent.innerHTML = debugInfo.join('');
+      derivedBox.classList.add('show');
+      searchStatus.className = 'search-status not-found';
+      searchSpinner.style.display = 'none';
+      searchStatusText.textContent = `❌ "${barcode}" tidak ditemukan (5 strategi dicoba)`;
+      
+      // Log untuk debugging
+      log(`DEBUG: "${barcode}" - 5 strategi gagal. Generic: ${generic}`, 'debug', 'scanLogBox');
+      
       return { found: false, data: null, source: null };
-    } catch(e) { return { found: false, data: null, source: null }; }
+      
+    } catch(err) {
+      debugInfo.push(`<div class="db-item"><span class="db-label">Error:</span><span class="db-value" style="color:var(--red);">${err.message}</span></div>`);
+      derivedContent.innerHTML = debugInfo.join('');
+      derivedBox.classList.add('show');
+      searchStatus.className = 'search-status not-found';
+      searchSpinner.style.display = 'none';
+      searchStatusText.textContent = `❌ Error: ${err.message}`;
+      return { found: false, error: err.message };
+    }
+  }
+
+  async function processFoundResult(result, barcode, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent) {
+    const article = result.data.Article || result.data.article || barcode;
+    const sizeUS = extractSizeUS(article);
+    const gender = extractGender(article);
+    const generic = extractGeneric(article);
+    const sizeUK = await findSizeUK(sizeUS, gender.label);
+    const productInfo = await findProductInfoByGeneric(generic);
+    
+    debugInfo.push(`<div class="db-item"><span class="db-label">Article:</span><span class="db-value">${article}</span></div>`);
+    debugInfo.push(`<div class="db-item"><span class="db-label">→ Generic:</span><span class="db-value generic">${generic}</span></div>`);
+    debugInfo.push(`<div class="db-item"><span class="db-label">→ Size US:</span><span class="db-value">${sizeUS}</span></div>`);
+    debugInfo.push(`<div class="db-item"><span class="db-label">→ Merch_Cat:</span><span class="db-value">${productInfo.merchCat || '-'}</span></div>`);
+    debugInfo.push(`<div class="db-item"><span class="db-label">→ CAT:</span><span class="db-value cat">${productInfo.cat || '-'}</span></div>`);
+    debugInfo.push(`<div class="db-item"><span class="db-label">→ Brand:</span><span class="db-value">${productInfo.brandName || '-'}</span></div>`);
+    debugInfo.push(`<div class="db-item"><span class="db-label">→ Season:</span><span class="db-value">${productInfo.seasonYr || '-'}</span></div>`);
+    
+    derivedContent.innerHTML = debugInfo.join('');
+    derivedBox.classList.add('show');
+    searchStatus.className = 'search-status found';
+    searchSpinner.style.display = 'none';
+    searchStatusText.textContent = `✅ Ditemukan | CAT:${productInfo.cat||'-'} Brand:${productInfo.brandName||'-'} Season:${productInfo.seasonYr||'-'}`;
+    
+    log(`✅ "${barcode}" ditemukan via ${result.method || 'getDoc'} | Article:${article}`, 'ok', 'scanLogBox');
+    
+    return {
+      found: true,
+      data: { ...result.data, _derived: { sizeUS, sizeUK, gender, generic, ...productInfo, article } },
+      source: result.source
+    };
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -507,16 +636,11 @@
 
   function showToast(msg, type = 'info') {
     const toast = document.getElementById('toast');
-    toast.textContent = msg;
-    toast.className = `toast ${type}`;
-    toast.style.display = 'block';
+    toast.textContent = msg; toast.className = `toast ${type}`; toast.style.display = 'block';
     setTimeout(() => { toast.style.display = 'none'; }, 2500);
   }
 
-  function formatDate(date) {
-    const d = new Date(date);
-    return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
-  }
+  function formatDate(d) { const dd = new Date(d); return `${String(dd.getDate()).padStart(2,'0')}/${String(dd.getMonth()+1).padStart(2,'0')}/${dd.getFullYear()}`; }
   function getTodayDate() { return formatDate(new Date()); }
 
   function sanitize(v) {
@@ -528,45 +652,34 @@
 
   function makeDocId(sheetName, row) {
     if (sheetName === 'SIZE') {
-      const usSize = row['US_Size'] != null ? String(row['US_Size']).trim() : '';
-      const gender = row['Gender'] != null ? String(row['Gender']).trim() : '';
-      if (usSize && gender) {
-        let id = `${usSize}_${gender}`;
-        id = id.replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
-        return id;
-      }
-      return `SIZE_${Date.now().toString(36)}_${Math.random().toString(36).substring(2,6)}`;
+      const u = row['US_Size'] != null ? String(row['US_Size']).trim() : '';
+      const g = row['Gender'] != null ? String(row['Gender']).trim() : '';
+      if (u && g) return `${u}_${g}`.replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
+      return `SIZE_${Date.now().toString(36)}`;
     }
     if (sheetName === 'MASTER_BARCODE') {
       for (const k of ['Barcode', 'Article']) {
-        const raw = row[k];
-        if (raw != null && String(raw).trim().length > 0) return String(raw).trim().replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
+        const r = row[k]; if (r != null && String(r).trim()) return String(r).trim().replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
       }
     }
     if (sheetName === 'MASTER_PRODUK') {
-      const raw = row['Article'];
-      if (raw != null && String(raw).trim().length > 0) return String(raw).trim().replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
+      const r = row['Article']; if (r != null && String(r).trim()) return String(r).trim().replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
     }
-    return `${sheetName}_${Date.now().toString(36)}_${Math.random().toString(36).substring(2,6)}`;
+    return `${sheetName}_${Date.now().toString(36)}`;
   }
 
   function log(msg, type = 'info', targetId = 'logBox') {
     const box = document.getElementById(targetId);
     if (!box) return;
     box.style.display = 'block';
-    const line = document.createElement('div');
-    line.className = type;
+    const line = document.createElement('div'); line.className = type;
     line.textContent = `[${new Date().toLocaleTimeString('id-ID')}] ${msg}`;
-    box.appendChild(line);
-    box.scrollTop = box.scrollHeight;
+    box.appendChild(line); box.scrollTop = box.scrollHeight;
   }
 
   function setStatus(msg, cls) {
-    const el = document.getElementById('configStatus');
-    if (!el) return;
-    el.textContent = msg;
-    el.className = cls;
-    el.style.display = 'block';
+    const el = document.getElementById('configStatus'); if (!el) return;
+    el.textContent = msg; el.className = cls; el.style.display = 'block';
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -577,166 +690,35 @@
     if (!apiKey) { setStatus('❌ API Key wajib diisi!', 'err'); return; }
     setStatus('⏳ Menghubungkan…', 'info');
     try {
-      const firebaseApp = initializeApp({ apiKey, authDomain: `${PROJECT_ID}.firebaseapp.com`, projectId: PROJECT_ID });
-      db = getFirestore(firebaseApp);
-      const testBatch = writeBatch(db);
-      testBatch.set(doc(db, 'test_write', 'conn_test'), { test: 'connection_test', timestamp: new Date().toISOString() });
-      await testBatch.commit();
+      const app = initializeApp({ apiKey, authDomain: `${PROJECT_ID}.firebaseapp.com`, projectId: PROJECT_ID });
+      db = getFirestore(app);
+      const tb = writeBatch(db);
+      tb.set(doc(db, 'test_write', 'conn_test'), { test: 'connection_test', timestamp: new Date().toISOString() });
+      await tb.commit();
       localStorage.setItem('fb_api_key', apiKey);
       setStatus(`✅ Terhubung ke ${PROJECT_ID}`, 'ok');
-      log('✅ TEST WRITE BERHASIL', 'ok');
       showToast('✅ Firebase terhubung!', 'success');
       updateFirestoreStatus();
     } catch(err) {
       setStatus('❌ Gagal: ' + err.message, 'err');
-      log('❌ Error: ' + err.code + ' - ' + err.message, 'err');
-      db = null;
-      updateFirestoreStatus();
+      db = null; updateFirestoreStatus();
     }
   }
 
   function updateFirestoreStatus() {
     const el = document.getElementById('firestoreStatus');
-    if (el) {
-      el.textContent = db ? '✅ Online' : '❌ Offline';
-      el.style.color = db ? 'var(--green)' : 'var(--red)';
-    }
+    if (el) { el.textContent = db ? '✅ Online' : '❌ Offline'; el.style.color = db ? 'var(--green)' : 'var(--red)'; }
   }
 
-  const savedApiKey = localStorage.getItem('fb_api_key');
-  if (savedApiKey) { document.getElementById('cfgApiKey').value = savedApiKey; initFirebase(); }
-
-  const savedScanData = localStorage.getItem('scan_data');
-  if (savedScanData) { try { scanDataArray = JSON.parse(savedScanData); } catch(e) { scanDataArray = []; } }
-
-  // ═══════════════════════════════════════════════════════════════
-  // SEARCH BARCODE IN MASTER
-  // ═══════════════════════════════════════════════════════════════
-  async function searchBarcodeInMaster(barcode) {
-    if (!db) return { found: false, error: 'Firebase tidak terhubung' };
-    
-    const searchStatus = document.getElementById('searchStatus');
-    const searchStatusText = document.getElementById('searchStatusText');
-    const searchSpinner = document.getElementById('searchSpinner');
-    const derivedBox = document.getElementById('derivedBox');
-    const derivedContent = document.getElementById('derivedContent');
-    
-    searchStatus.style.display = 'flex';
-    searchStatus.className = 'search-status searching';
-    searchSpinner.style.display = 'inline-block';
-    searchStatusText.textContent = `Mencari "${barcode}" di Master Data...`;
-    derivedBox.classList.remove('show');
-
-    try {
-      // Step 1: Cari di MASTER_BARCODE by Barcode
-      let result = await searchInCollection('MASTER_BARCODE', 'Barcode', barcode);
-      
-      if (result.found) {
-        const article = result.data.Article || result.data.article || '';
-        const sizeUS = extractSizeUS(article);
-        const gender = extractGender(article);
-        const generic = extractGeneric(article);
-        
-        // Cari SIZE UK dari SIZE sheet
-        const sizeUK = await findSizeUK(sizeUS, gender.label);
-        
-        // Cari Brand, Season, CAT dari MASTER_PRODUK menggunakan GENERIC
-        const productInfo = await findProductInfoByGeneric(generic);
-        
-        // Tampilkan info derivasi
-        derivedContent.innerHTML = `
-          <div class="db-item"><span class="db-label">Article:</span><span class="db-value">${article}</span></div>
-          <div class="db-item"><span class="db-label">→ Generic:</span><span class="db-value generic">${generic}</span></div>
-          <div class="db-item"><span class="db-label">→ Size US:</span><span class="db-value">${sizeUS}</span></div>
-          <div class="db-item"><span class="db-label">→ Merch_Cat:</span><span class="db-value">${productInfo.merchCat || '?'}</span></div>
-          <div class="db-item"><span class="db-label">→ CAT:</span><span class="db-value cat">${productInfo.cat || '?'}</span></div>
-          <div class="db-item"><span class="db-label">→ Brand:</span><span class="db-value">${productInfo.brandName || '?'}</span></div>
-          <div class="db-item"><span class="db-label">→ Season:</span><span class="db-value">${productInfo.seasonYr || '?'}</span></div>
-        `;
-        derivedBox.classList.add('show');
-        
-        searchStatus.className = 'search-status found';
-        searchSpinner.style.display = 'none';
-        searchStatusText.textContent = `✅ Ditemukan | CAT: ${productInfo.cat || '?'} | Brand: ${productInfo.brandName || '?'} | Season: ${productInfo.seasonYr || '?'}`;
-        
-        return { 
-          found: true, 
-          data: { 
-            ...result.data, 
-            _derived: { sizeUS, sizeUK, gender, generic, ...productInfo, article } 
-          }, 
-          source: 'MASTER_BARCODE' 
-        };
-      }
-
-      // Step 2: Interpretasi barcode sebagai Article, cari via Generic
-      const sizeUS = extractSizeUS(barcode);
-      const gender = extractGender(barcode);
-      const generic = extractGeneric(barcode);
-      
-      const productInfo = await findProductInfoByGeneric(generic);
-      
-      if (productInfo.brandName || productInfo.seasonYr || productInfo.cat) {
-        const sizeUK = await findSizeUK(sizeUS, gender.label);
-        
-        derivedContent.innerHTML = `
-          <div class="db-item"><span class="db-label">Barcode:</span><span class="db-value">${barcode}</span></div>
-          <div class="db-item"><span class="db-label">→ Generic:</span><span class="db-value generic">${generic}</span></div>
-          <div class="db-item"><span class="db-label">→ Size US:</span><span class="db-value">${sizeUS}</span></div>
-          <div class="db-item"><span class="db-label">→ Merch_Cat:</span><span class="db-value">${productInfo.merchCat || '?'}</span></div>
-          <div class="db-item"><span class="db-label">→ CAT:</span><span class="db-value cat">${productInfo.cat || '?'}</span></div>
-          <div class="db-item"><span class="db-label">→ Brand:</span><span class="db-value">${productInfo.brandName || '?'}</span></div>
-          <div class="db-item"><span class="db-label">→ Season:</span><span class="db-value">${productInfo.seasonYr || '?'}</span></div>
-        `;
-        derivedBox.classList.add('show');
-        
-        searchStatus.className = 'search-status found';
-        searchSpinner.style.display = 'none';
-        searchStatusText.textContent = `✅ MASTER_PRODUK | CAT: ${productInfo.cat} | Brand: ${productInfo.brandName} | Season: ${productInfo.seasonYr}`;
-        
-        return {
-          found: true,
-          data: {
-            Barcode: barcode,
-            Article: barcode,
-            _derived: { sizeUS, sizeUK, gender, generic, ...productInfo, article: barcode }
-          },
-          source: 'MASTER_PRODUK'
-        };
-      }
-
-      // Tidak ditemukan
-      derivedContent.innerHTML = `
-        <div class="db-item"><span class="db-label">Barcode:</span><span class="db-value">${barcode}</span></div>
-        <div class="db-item"><span class="db-label">→ Generic:</span><span class="db-value generic">${generic || '-'}</span></div>
-        <div class="db-item"><span class="db-label">Status:</span><span class="db-value" style="color:var(--red);">Tidak ditemukan</span></div>
-      `;
-      derivedBox.classList.add('show');
-      
-      searchStatus.className = 'search-status not-found';
-      searchSpinner.style.display = 'none';
-      searchStatusText.textContent = `❌ "${barcode}" tidak ditemukan di Master Data`;
-      
-      return { found: false, data: null, source: null };
-      
-    } catch(err) {
-      searchStatus.className = 'search-status not-found';
-      searchSpinner.style.display = 'none';
-      searchStatusText.textContent = `❌ Error: ${err.message}`;
-      derivedBox.classList.remove('show');
-      return { found: false, error: err.message };
-    }
-  }
+  const savedKey = localStorage.getItem('fb_api_key');
+  if (savedKey) { document.getElementById('cfgApiKey').value = savedKey; initFirebase(); }
+  const saved = localStorage.getItem('scan_data');
+  if (saved) { try { scanDataArray = JSON.parse(saved); } catch(e) { scanDataArray = []; } }
 
   // ═══════════════════════════════════════════════════════════════
   // SCAN HANDLER
   // ═══════════════════════════════════════════════════════════════
-  window.handleBarcodeKeydown = async function(event) {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      await addScanData();
-    }
-  };
+  window.handleBarcodeKeydown = async function(e) { if (e.key === 'Enter') { e.preventDefault(); await addScanData(); } };
 
   window.addScanData = async function() {
     const barcodeInput = document.getElementById('scanBarcode');
@@ -745,219 +727,161 @@
     const binManual = binInput.value.trim();
     const lokasi = document.getElementById('scanLokasi').value;
     const user = document.getElementById('scanUser').value;
+    if (!barcode) { showToast('⚠️ Input barcode dulu', 'error'); barcodeInput.focus(); return; }
     
-    if (!barcode) {
-      showToast('⚠️ Silakan input/scan barcode terlebih dahulu', 'error');
-      barcodeInput.focus();
-      return;
-    }
-
-    barcodeInput.disabled = true;
-    binInput.disabled = true;
-    
+    barcodeInput.disabled = true; binInput.disabled = true;
     const masterResult = await searchBarcodeInMaster(barcode);
-    const now = new Date();
-    let newRow;
+    const now = new Date(); let newRow;
     
     if (masterResult.found && masterResult.data) {
-      const md = masterResult.data;
-      const d = md._derived || {};
-      
+      const md = masterResult.data; const d = md._derived || {};
       newRow = {
-        id: Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
-        BARCODE: barcode,
-        LOKASI: lokasi,
+        id: Date.now().toString(36)+Math.random().toString(36).substring(2,6),
+        BARCODE: barcode, LOKASI: lokasi,
         ARTICLE: d.article || md.Article || md.article || barcode,
         BIN: binManual || md.BIN || md.bin || '',
         SIZE_US: d.sizeUS || extractSizeUS(barcode),
         SIZE_UK: d.sizeUK || '',
         DESCRIPTION: md.Description || md.description || md.DESCRIPTION || '',
-        BRAND: d.brandName || '',        // Brand_Name dari MASTER_PRODUK
-        CAT: d.cat || '',                // Karakter ke-2 dari Merch_Cat MASTER_PRODUK
-        SEASON: d.seasonYr || '',        // Season_Yr_ dari MASTER_PRODUK
-        DATE: getTodayDate(),
-        USER: user,
-        GENERIC: d.generic || '',
-        MERCH_CAT: d.merchCat || '',
+        BRAND: d.brandName || '',
+        CAT: d.cat || '',
+        SEASON: d.seasonYr || '',
+        DATE: getTodayDate(), USER: user,
+        GENERIC: d.generic || '', MERCH_CAT: d.merchCat || '',
         timestamp: now.toISOString()
       };
-      showToast(`✅ CAT: ${d.cat || '?'} | Brand: ${d.brandName || '?'} | Season: ${d.seasonYr || '?'}`, 'success');
+      showToast(`✅ CAT:${d.cat||'-'} Brand:${d.brandName||'-'}`, 'success');
     } else {
-      const sizeUS = extractSizeUS(barcode);
-      const generic = extractGeneric(barcode);
-      
+      const sizeUS = extractSizeUS(barcode); const generic = extractGeneric(barcode);
       newRow = {
-        id: Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
-        BARCODE: barcode,
-        LOKASI: lokasi,
-        ARTICLE: barcode,
-        BIN: binManual,
-        SIZE_US: sizeUS,
-        SIZE_UK: '',
-        DESCRIPTION: '',
-        BRAND: '',
-        CAT: '',
-        SEASON: String(now.getFullYear()),
-        DATE: getTodayDate(),
-        USER: user,
-        GENERIC: generic,
-        MERCH_CAT: '',
+        id: Date.now().toString(36)+Math.random().toString(36).substring(2,6),
+        BARCODE: barcode, LOKASI: lokasi, ARTICLE: barcode,
+        BIN: binManual, SIZE_US: sizeUS, SIZE_UK: '',
+        DESCRIPTION: '', BRAND: '', CAT: '', SEASON: String(now.getFullYear()),
+        DATE: getTodayDate(), USER: user, GENERIC: generic, MERCH_CAT: '',
         timestamp: now.toISOString()
       };
-      showToast('⚠️ Tidak ditemukan di Master Data', 'error');
+      showToast('⚠️ Tidak ditemukan di Master', 'error');
     }
-
-    scanDataArray.unshift(newRow);
-    saveScanData();
-    
-    barcodeInput.value = '';
-    binInput.value = '';
-    barcodeInput.disabled = false;
-    binInput.disabled = false;
+    scanDataArray.unshift(newRow); saveScanData();
+    barcodeInput.value = ''; binInput.value = '';
+    barcodeInput.disabled = false; binInput.disabled = false;
     barcodeInput.focus();
-    
-    renderScanTable();
-    updateScanStats();
+    renderScanTable(); updateScanStats();
   };
 
-  // ═══════════════════════════════════════════════════════════════
-  // SCAN DATA MANAGEMENT
-  // ═══════════════════════════════════════════════════════════════
   function saveScanData() { localStorage.setItem('scan_data', JSON.stringify(scanDataArray)); }
 
   window.deleteScanRow = function(id) {
-    if (!confirm('Hapus data ini?')) return;
-    scanDataArray = scanDataArray.filter(row => row.id !== id);
-    saveScanData();
-    renderScanTable();
-    updateScanStats();
-    showToast('🗑 Data dihapus', 'info');
+    if (!confirm('Hapus?')) return;
+    scanDataArray = scanDataArray.filter(r => r.id !== id);
+    saveScanData(); renderScanTable(); updateScanStats();
+    showToast('🗑 Dihapus', 'info');
   };
 
   window.editScanCell = function(id, field) {
-    const row = scanDataArray.find(r => r.id === id);
-    if (!row) return;
-    const newValue = prompt(`Edit ${field}:`, row[field] || '');
-    if (newValue === null) return;
-    row[field] = newValue;
-    if (field === 'ARTICLE') {
-      row.SIZE_US = extractSizeUS(newValue);
-      row.GENERIC = extractGeneric(newValue);
-    }
-    saveScanData();
-    renderScanTable();
-    showToast('✅ Data diupdate', 'success');
+    const row = scanDataArray.find(r => r.id === id); if (!row) return;
+    const nv = prompt(`Edit ${field}:`, row[field] || ''); if (nv === null) return;
+    row[field] = nv;
+    if (field === 'ARTICLE') { row.SIZE_US = extractSizeUS(nv); row.GENERIC = extractGeneric(nv); }
+    saveScanData(); renderScanTable(); showToast('✅ Updated', 'success');
   };
 
   window.clearScanData = function() {
-    if (!scanDataArray.length) { showToast('📭 Tidak ada data', 'info'); return; }
-    if (!confirm(`Hapus SEMUA (${scanDataArray.length} row)?`)) return;
-    scanDataArray = [];
-    saveScanData();
-    renderScanTable();
-    updateScanStats();
-    showToast('🗑 Semua data dihapus', 'info');
+    if (!scanDataArray.length) { showToast('📭 Kosong', 'info'); return; }
+    if (!confirm(`Hapus ${scanDataArray.length} row?`)) return;
+    scanDataArray = []; saveScanData(); renderScanTable(); updateScanStats();
+    showToast('🗑 Clear', 'info');
   };
 
   function updateScanStats() {
-    const total = scanDataArray.length;
-    const uniqueBarcodes = new Set(scanDataArray.map(r => r.BARCODE)).size;
-    const fromMaster = scanDataArray.filter(r => r.BRAND !== '' || r.CAT !== '').length;
+    const t = scanDataArray.length;
+    const u = new Set(scanDataArray.map(r => r.BARCODE)).size;
+    const m = scanDataArray.filter(r => r.BRAND !== '' || r.CAT !== '').length;
     const today = getTodayDate();
-    const todayData = scanDataArray.filter(r => r.DATE === today);
-    document.getElementById('statTotal').textContent = total.toLocaleString();
-    document.getElementById('statUnique').textContent = uniqueBarcodes.toLocaleString();
-    document.getElementById('statToday').textContent = todayData.length.toLocaleString();
-    document.getElementById('statFromMaster').textContent = fromMaster.toLocaleString();
-    document.getElementById('todayCount').textContent = todayData.length.toLocaleString();
-    document.getElementById('rowCount').textContent = `${total} row`;
+    const td = scanDataArray.filter(r => r.DATE === today);
+    document.getElementById('statTotal').textContent = t.toLocaleString();
+    document.getElementById('statUnique').textContent = u.toLocaleString();
+    document.getElementById('statToday').textContent = td.length.toLocaleString();
+    document.getElementById('statFromMaster').textContent = m.toLocaleString();
+    document.getElementById('todayCount').textContent = td.length.toLocaleString();
+    document.getElementById('rowCount').textContent = `${t} row`;
   }
 
   function renderScanTable() {
     const tbody = document.getElementById('scanTableBody');
-    if (scanDataArray.length === 0) {
-      tbody.innerHTML = `<tr class="empty-state"><td colspan="14">
-        <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-        <p>Belum ada data scan. Silakan input barcode di atas.</p>
-      </td></tr>`;
+    if (!scanDataArray.length) {
+      tbody.innerHTML = `<tr class="empty-state"><td colspan="14"><svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg><p>Belum ada data scan.</p></td></tr>`;
       return;
     }
-    tbody.innerHTML = scanDataArray.map((row, index) => `
+    tbody.innerHTML = scanDataArray.map((row, i) => `
       <tr>
-        <td>${index + 1}</td>
-        <td class="col-barcode" onclick="editScanCell('${row.id}','BARCODE')" title="Klik untuk edit">${row.BARCODE}</td>
-        <td class="col-lokasi" onclick="editScanCell('${row.id}','LOKASI')" title="Klik untuk edit">${row.LOKASI}</td>
-        <td class="col-article" onclick="editScanCell('${row.id}','ARTICLE')" title="Klik untuk edit">${row.ARTICLE || '-'}</td>
-        <td class="col-bin" onclick="editScanCell('${row.id}','BIN')" title="Klik untuk edit">${row.BIN || '-'}</td>
-        <td class="col-size-us" onclick="editScanCell('${row.id}','SIZE_US')" title="Klik untuk edit">${row.SIZE_US || '-'}</td>
-        <td style="color:var(--accent2);font-weight:600;" onclick="editScanCell('${row.id}','SIZE_UK')" title="Klik untuk edit">${row.SIZE_UK || '-'}</td>
-        <td onclick="editScanCell('${row.id}','DESCRIPTION')" title="Klik untuk edit">${row.DESCRIPTION || '-'}</td>
-        <td class="col-brand" onclick="editScanCell('${row.id}','BRAND')" title="Klik untuk edit">${row.BRAND || '-'}</td>
-        <td class="col-cat" onclick="editScanCell('${row.id}','CAT')" title="Klik untuk edit">${row.CAT || '-'}</td>
-        <td class="col-season" onclick="editScanCell('${row.id}','SEASON')" title="Klik untuk edit">${row.SEASON || '-'}</td>
+        <td>${i+1}</td>
+        <td class="col-barcode" onclick="editScanCell('${row.id}','BARCODE')" title="Edit">${row.BARCODE}</td>
+        <td class="col-lokasi" onclick="editScanCell('${row.id}','LOKASI')" title="Edit">${row.LOKASI}</td>
+        <td style="font-family:monospace;" onclick="editScanCell('${row.id}','ARTICLE')" title="Edit">${row.ARTICLE||'-'}</td>
+        <td class="col-bin" onclick="editScanCell('${row.id}','BIN')" title="Edit">${row.BIN||'-'}</td>
+        <td class="col-size-us" onclick="editScanCell('${row.id}','SIZE_US')" title="Edit">${row.SIZE_US||'-'}</td>
+        <td style="color:var(--accent2);font-weight:600;" onclick="editScanCell('${row.id}','SIZE_UK')" title="Edit">${row.SIZE_UK||'-'}</td>
+        <td onclick="editScanCell('${row.id}','DESCRIPTION')" title="Edit">${row.DESCRIPTION||'-'}</td>
+        <td class="col-brand" onclick="editScanCell('${row.id}','BRAND')" title="Edit">${row.BRAND||'-'}</td>
+        <td class="col-cat" onclick="editScanCell('${row.id}','CAT')" title="Edit">${row.CAT||'-'}</td>
+        <td class="col-season" onclick="editScanCell('${row.id}','SEASON')" title="Edit">${row.SEASON||'-'}</td>
         <td class="col-date">${row.DATE}</td>
         <td>${row.USER}</td>
-        <td><div class="actions-cell"><button class="btn-sm btn-sm-delete" onclick="deleteScanRow('${row.id}')" title="Hapus">🗑</button></div></td>
+        <td><div class="actions-cell"><button class="btn-sm btn-sm-delete" onclick="deleteScanRow('${row.id}')">🗑</button></div></td>
       </tr>
     `).join('');
   }
 
   window.exportScanToExcel = function() {
-    if (!scanDataArray.length) { showToast('📭 Tidak ada data', 'error'); return; }
-    const exportData = scanDataArray.map(row => ({
-      BARCODE: row.BARCODE, LOKASI: row.LOKASI, ARTICLE: row.ARTICLE, BIN: row.BIN,
-      'SIZE US': row.SIZE_US, 'SIZE UK': row.SIZE_UK, GENERIC: row.GENERIC || '',
-      DESCRIPTION: row.DESCRIPTION, BRAND: row.BRAND, CAT: row.CAT,
-      SEASON: row.SEASON, DATE: row.DATE, USER: row.USER
+    if (!scanDataArray.length) { showToast('📭 Kosong', 'error'); return; }
+    const data = scanDataArray.map(r => ({
+      BARCODE:r.BARCODE,LOKASI:r.LOKASI,ARTICLE:r.ARTICLE,BIN:r.BIN,
+      'SIZE US':r.SIZE_US,'SIZE UK':r.SIZE_UK,GENERIC:r.GENERIC||'',
+      DESCRIPTION:r.DESCRIPTION,BRAND:r.BRAND,CAT:r.CAT,SEASON:r.SEASON,
+      DATE:r.DATE,USER:r.USER
     }));
-    const ws = XLSX.utils.json_to_sheet(exportData);
+    const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "SCAN_DATA");
-    XLSX.writeFile(wb, `SCAN_DATA_${getTodayDate().replace(/\//g,'-')}.xlsx`);
-    showToast('📥 Export berhasil!', 'success');
+    XLSX.writeFile(wb, `SCAN_${getTodayDate().replace(/\//g,'-')}.xlsx`);
+    showToast('📥 Exported!', 'success');
   };
 
   window.uploadScanToFirebase = async function() {
-    if (!db) { showToast('❌ Firebase belum terhubung!', 'error'); return; }
-    if (!scanDataArray.length) { showToast('📭 Tidak ada data', 'error'); return; }
-    const btn = document.getElementById('btnUploadScan');
-    btn.disabled = true; btn.textContent = '⏳ Mengupload...';
-    log(`⬆ Upload ${scanDataArray.length} data ke SCAN_DATA...`, 'info', 'scanLogBox');
+    if (!db) { showToast('❌ DB offline', 'error'); return; }
+    if (!scanDataArray.length) { showToast('📭 Kosong', 'error'); return; }
+    const btn = document.getElementById('btnUploadScan'); btn.disabled = true; btn.textContent = '⏳...';
+    log(`⬆ Upload ${scanDataArray.length} data...`, 'info', 'scanLogBox');
     try {
-      let uploaded = 0;
+      let up = 0;
       for (let i = 0; i < scanDataArray.length; i += BATCH_SIZE) {
         const batch = writeBatch(db);
-        const chunk = scanDataArray.slice(i, i + BATCH_SIZE);
-        chunk.forEach(row => {
-          const docRef = doc(collection(db, 'SCAN_DATA'));
-          batch.set(docRef, {
-            BARCODE: row.BARCODE, LOKASI: row.LOKASI, ARTICLE: row.ARTICLE || '',
-            BIN: row.BIN || '', SIZE_US: row.SIZE_US || '', SIZE_UK: row.SIZE_UK || '',
-            GENERIC: row.GENERIC || '', DESCRIPTION: row.DESCRIPTION || '',
-            BRAND: row.BRAND || '', CAT: row.CAT || '', SEASON: row.SEASON || '',
-            DATE: row.DATE, USER: row.USER, scanned_at: row.timestamp
+        scanDataArray.slice(i, i+BATCH_SIZE).forEach(row => {
+          batch.set(doc(collection(db, 'SCAN_DATA')), {
+            BARCODE:row.BARCODE,LOKASI:row.LOKASI,ARTICLE:row.ARTICLE||'',
+            BIN:row.BIN||'',SIZE_US:row.SIZE_US||'',SIZE_UK:row.SIZE_UK||'',
+            GENERIC:row.GENERIC||'',DESCRIPTION:row.DESCRIPTION||'',
+            BRAND:row.BRAND||'',CAT:row.CAT||'',SEASON:row.SEASON||'',
+            DATE:row.DATE,USER:row.USER,scanned_at:row.timestamp
           });
         });
-        await batch.commit();
-        uploaded += chunk.length;
-        log(`✅ Batch ${Math.floor(i/BATCH_SIZE)+1}: ${uploaded}/${scanDataArray.length}`, 'ok', 'scanLogBox');
+        await batch.commit(); up += Math.min(BATCH_SIZE, scanDataArray.length - i);
+        log(`✅ ${up}/${scanDataArray.length}`, 'ok', 'scanLogBox');
       }
-      log(`🎉 Selesai! ${uploaded} dokumen`, 'ok', 'scanLogBox');
-      showToast(`✅ ${uploaded} data berhasil diupload!`, 'success');
-    } catch(err) {
-      log(`❌ Error: ${err.message}`, 'err', 'scanLogBox');
-      showToast('❌ Upload gagal', 'error');
-    } finally { btn.disabled = false; btn.textContent = '⬆ Upload Scan Data ke Firestore'; }
+      showToast(`✅ ${up} terupload!`, 'success');
+    } catch(err) { log(`❌ ${err.message}`, 'err', 'scanLogBox'); showToast('❌ Gagal', 'error'); }
+    finally { btn.disabled = false; btn.textContent = '⬆ Upload Scan Data'; }
   };
 
   // ═══════════════════════════════════════════════════════════════
-  // MASTER DATA UPLOAD
+  // MASTER UPLOAD (unchanged)
   // ═══════════════════════════════════════════════════════════════
   function handleDrop(e) { e.preventDefault(); document.getElementById('dropzone').classList.remove('over'); handleFile(e.dataTransfer.files[0]); }
-
   function handleFile(file) {
     if (!file) return;
-    log(`📂 Membaca: ${file.name}…`, 'info');
+    log(`📂 ${file.name}…`, 'info');
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
@@ -968,20 +892,20 @@
         wb.SheetNames.forEach(name => {
           const raw = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: null });
           if (raw.length < 2) return;
-          const headers = raw[0].map(h => String(h ?? '').trim().replace(/[\s.]+/g, '_'));
-          const rows = raw.slice(1).map(r => { const o={}; headers.forEach((h,i)=>{ o[h]=sanitize(r[i]); }); return o; }).filter(r => Object.values(r).some(v => v !== null));
+          const headers = raw[0].map(h => String(h??'').trim().replace(/[\s.]+/g,'_'));
+          const rows = raw.slice(1).map(r => { const o={}; headers.forEach((h,i)=>{o[h]=sanitize(r[i]);}); return o; }).filter(r => Object.values(r).some(v=>v!==null));
           parsedSheets[name] = rows;
-          const card = document.createElement('div'); card.className = 'sheet-card';
+          const card = document.createElement('div'); card.className='sheet-card';
           card.innerHTML = `<div class="name">📋 ${name}</div><div class="meta">${rows.length.toLocaleString()} baris · ${headers.length} kolom</div>`;
           document.getElementById('sheetsGrid').appendChild(card);
-          const lbl = document.createElement('label'); lbl.className = 'opt';
-          lbl.innerHTML = `<input type="checkbox" checked value="${name}" class="sheetCheck" />${name} <span style="color:var(--muted);font-size:.75rem;">(${rows.length.toLocaleString()})</span>`;
+          const lbl = document.createElement('label'); lbl.className='opt';
+          lbl.innerHTML = `<input type="checkbox" checked value="${name}" class="sheetCheck" />${name} (${rows.length.toLocaleString()})`;
           document.getElementById('sheetOptions').appendChild(lbl);
         });
-        document.getElementById('sheetsGrid').style.display = 'grid';
-        document.getElementById('uploadCard').style.display = 'block';
-        log(`✅ ${Object.keys(parsedSheets).length} sheet terbaca`, 'ok');
-      } catch(err) { log('❌ Gagal baca file: ' + err.message, 'err'); }
+        document.getElementById('sheetsGrid').style.display='grid';
+        document.getElementById('uploadCard').style.display='block';
+        log(`✅ ${Object.keys(parsedSheets).length} sheet`, 'ok');
+      } catch(err) { log('❌ '+err.message, 'err'); }
     };
     reader.readAsArrayBuffer(file);
   }
@@ -990,71 +914,62 @@
     let done = 0;
     for (let i = 0; i < rows.length; i += BATCH_SIZE) {
       const batch = writeBatch(db);
-      rows.slice(i, i + BATCH_SIZE).forEach(row => batch.set(doc(db, colName, makeDocId(colName, row)), row));
-      await batch.commit();
-      done += Math.min(BATCH_SIZE, rows.length - i);
+      rows.slice(i, i+BATCH_SIZE).forEach(row => batch.set(doc(db, colName, makeDocId(colName, row)), row));
+      await batch.commit(); done += Math.min(BATCH_SIZE, rows.length - i);
       onProgress(done, rows.length);
     }
   }
 
   async function deleteCollection(colName, onProgress) {
     const snap = await getDocs(collection(db, colName));
-    if (snap.empty) { onProgress(0, 0); return; }
+    if (snap.empty) { onProgress(0,0); return; }
     const docs = snap.docs;
     for (let i = 0; i < docs.length; i += BATCH_SIZE) {
       const batch = writeBatch(db);
-      docs.slice(i, i + BATCH_SIZE).forEach(d => batch.delete(d.ref));
+      docs.slice(i, i+BATCH_SIZE).forEach(d => batch.delete(d.ref));
       await batch.commit();
       onProgress(i + Math.min(BATCH_SIZE, docs.length - i), docs.length);
     }
   }
 
   async function startUpload() {
-    if (!db) { log('❌ Firebase belum terhubung.', 'err'); return; }
-    const selected = [...document.querySelectorAll('.sheetCheck:checked')].map(c => c.value);
-    if (!selected.length) { log('⚠️ Pilih minimal 1 sheet.', 'warn'); return; }
+    if (!db) { log('❌ DB offline', 'err'); return; }
+    const selected = [...document.querySelectorAll('.sheetCheck:checked')].map(c=>c.value);
+    if (!selected.length) { log('⚠️ Pilih sheet', 'warn'); return; }
     const clearFirst = document.getElementById('optClear').checked;
     document.getElementById('btnUpload').disabled = true;
     document.getElementById('btnClear').disabled = true;
-    const pw = document.getElementById('progressWrap');
-    pw.innerHTML = ''; pw.style.display = 'flex'; pw.style.flexDirection = 'column';
-    document.getElementById('summaryGrid').style.display = 'none';
-    const t0 = Date.now(); let totalDocs = 0;
+    const pw = document.getElementById('progressWrap'); pw.innerHTML=''; pw.style.display='flex'; pw.style.flexDirection='column';
+    document.getElementById('summaryGrid').style.display='none';
+    const t0 = Date.now(); let total = 0;
     for (const name of selected) {
-      const rows = parsedSheets[name];
-      if (!rows?.length) { log(`⚠️ ${name}: kosong`, 'warn'); continue; }
-      const pid = 'pg_' + name.replace(/\W/g,'_');
-      addProg(pid, name, rows.length);
+      const rows = parsedSheets[name]; if (!rows?.length) { log(`⚠️ ${name} kosong`, 'warn'); continue; }
+      const pid = 'pg_'+name.replace(/\W/g,'_'); addProg(pid, name, rows.length);
       try {
-        if (clearFirst) { log(`🗑 Hapus ${name}…`, 'warn'); await deleteCollection(name, (d,t) => updateProg(pid, d, t, '🗑')); }
-        log(`⬆ Upload ${name}…`, 'info');
-        await uploadBatched(name, rows, (d,t) => updateProg(pid, d, t, '⬆'));
-        totalDocs += rows.length;
-        doneProg(pid, rows.length);
-        log(`✅ ${name} selesai — ${rows.length.toLocaleString()} dok`, 'ok');
+        if (clearFirst) { await deleteCollection(name, (d,t)=>updateProg(pid,d,t,'🗑')); }
+        await uploadBatched(name, rows, (d,t)=>updateProg(pid,d,t,'⬆'));
+        total += rows.length; doneProg(pid, rows.length);
+        log(`✅ ${name} — ${rows.length.toLocaleString()}`, 'ok');
       } catch(err) { errProg(pid); log(`❌ ${name}: ${err.message}`, 'err'); }
     }
-    const elapsed = ((Date.now()-t0)/1000).toFixed(1);
-    document.getElementById('sumDocs').textContent = totalDocs.toLocaleString();
+    const el = ((Date.now()-t0)/1000).toFixed(1);
+    document.getElementById('sumDocs').textContent = total.toLocaleString();
     document.getElementById('sumCols').textContent = selected.length;
-    document.getElementById('sumTime').textContent = elapsed + 's';
-    document.getElementById('summaryGrid').style.display = 'grid';
-    log(`🎉 Selesai! ${totalDocs.toLocaleString()} dok dalam ${elapsed}s`, 'ok');
+    document.getElementById('sumTime').textContent = el+'s';
+    document.getElementById('summaryGrid').style.display='grid';
     document.getElementById('btnUpload').disabled = false;
     document.getElementById('btnClear').disabled = false;
   }
 
   async function clearSelected() {
-    if (!db) { log('❌ Firebase belum terhubung.', 'err'); return; }
-    const selected = [...document.querySelectorAll('.sheetCheck:checked')].map(c => c.value);
+    if (!db) { log('❌ DB offline', 'err'); return; }
+    const selected = [...document.querySelectorAll('.sheetCheck:checked')].map(c=>c.value);
     if (!selected.length || !confirm(`Hapus: ${selected.join(', ')}?`)) return;
-    const pw = document.getElementById('progressWrap');
-    pw.innerHTML = ''; pw.style.display = 'flex'; pw.style.flexDirection = 'column';
+    const pw = document.getElementById('progressWrap'); pw.innerHTML=''; pw.style.display='flex'; pw.style.flexDirection='column';
     for (const name of selected) {
-      const pid = 'pgd_' + name.replace(/\W/g,'_');
-      addProg(pid, `${name} (hapus)`, 100);
-      try { await deleteCollection(name, (d,t) => updateProg(pid, d, t, '🗑')); doneProg(pid, 0); log(`✅ ${name} dihapus`, 'ok'); }
-      catch(err) { errProg(pid); log(`❌ ${name}: ${err.message}`, 'err'); }
+      const pid = 'pgd_'+name.replace(/\W/g,'_'); addProg(pid, `${name} (hapus)`, 100);
+      try { await deleteCollection(name, (d,t)=>updateProg(pid,d,t,'🗑')); doneProg(pid,0); log(`✅ ${name}`, 'ok'); }
+      catch(err) { errProg(pid); log(`❌ ${err.message}`, 'err'); }
     }
   }
 
@@ -1065,14 +980,14 @@
   }
   function updateProg(id, done, total, lbl) {
     const el = document.getElementById(id); if (!el) return;
-    const pct = total ? Math.round(done/total*100) : 0;
+    const pct = total?Math.round(done/total*100):0;
     el.querySelector('.pct').textContent = `${lbl} ${done.toLocaleString()}/${total.toLocaleString()} (${pct}%)`;
-    el.querySelector('.prog-bar').style.width = pct + '%';
+    el.querySelector('.prog-bar').style.width = pct+'%';
   }
   function doneProg(id, total) {
     const el = document.getElementById(id); if (!el) return;
     el.querySelector('.prog-bar').classList.add('done');
-    el.querySelector('.pct').textContent = total ? `✅ ${total.toLocaleString()} selesai` : '✅ Selesai';
+    el.querySelector('.pct').textContent = total?`✅ ${total.toLocaleString()} selesai`:'✅ Selesai';
   }
   function errProg(id) {
     const el = document.getElementById(id); if (!el) return;
@@ -1080,27 +995,14 @@
     el.querySelector('.pct').textContent = '❌ Error';
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // EXPOSE
-  // ═══════════════════════════════════════════════════════════════
   window.initFirebase = initFirebase;
   window.handleDrop = handleDrop;
   window.handleFile = handleFile;
   window.startUpload = startUpload;
   window.clearSelected = clearSelected;
 
-  // ═══════════════════════════════════════════════════════════════
-  // INIT
-  // ═══════════════════════════════════════════════════════════════
-  renderScanTable();
-  updateScanStats();
-  updateFirestoreStatus();
-  setInterval(() => {
-    if (document.getElementById('page-scan').classList.contains('active')) {
-      updateScanStats();
-      updateFirestoreStatus();
-    }
-  }, 30000);
+  renderScanTable(); updateScanStats(); updateFirestoreStatus();
+  setInterval(() => { if (document.getElementById('page-scan').classList.contains('active')) { updateScanStats(); updateFirestoreStatus(); } }, 30000);
 </script>
 </body>
 </html>
