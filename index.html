@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MASTER DATA — Firebase Uploader (Optimized)</title>
+  <title>MASTER DATA — Firebase Uploader (FIX)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     :root {
@@ -53,7 +53,6 @@
     .btn-primary{background:var(--accent);color:#fff;}
     .btn-danger{background:var(--red);color:#fff;}
     .btn-secondary{background:var(--border);color:var(--text);}
-    .btn-stop{background:#facc15;color:#000;display:none;}
     .progress-wrap{display:none;flex-direction:column;gap:12px;margin-top:16px;}
     .prog-label{display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:4px;}
     .prog-label .col-name{font-weight:600;}
@@ -88,12 +87,11 @@
     <div class="config-form">
       <div><label>API Key</label><input id="cfgApiKey" placeholder="AIzaSy..." /></div>
       <div><label>Project ID</label><input id="cfgProjectId" placeholder="my-project-id" /></div>
-      <div><label>App ID</label><input id="cfgAppId" placeholder="1:123456789:web:abcdef" /></div>
-      <div><label>Sender ID (messagingSenderId)</label><input id="cfgSenderId" placeholder="123456789" /></div>
+      <div><label>Auth Domain (opsional)</label><input id="cfgAuthDomain" placeholder="my-project.firebaseapp.com" /></div>
       <div><button class="btn btn-secondary" onclick="initFirebase()">🔌 Sambungkan ke Firebase</button></div>
       <div id="configStatus"></div>
     </div>
-    <p style="color:var(--muted);font-size:.75rem;margin-top:10px;">Config disimpan di localStorage — tidak dikirim ke mana pun kecuali Firebase.</p>
+    <p style="color:var(--muted);font-size:.75rem;margin-top:10px;">Config disimpan di localStorage.</p>
   </div>
 
   <!-- STEP 2 -->
@@ -128,7 +126,6 @@
     </div>
     <div class="row-actions" style="margin-top:14px;">
       <button class="btn btn-primary" id="btnUpload" onclick="startUpload()">⬆ Mulai Upload ke Firestore</button>
-      <button class="btn btn-stop" id="btnStop" onclick="stopUpload()">⏹ Stop Upload</button>
       <button class="btn btn-danger"  id="btnClear"  onclick="clearSelected()">🗑 Hapus Koleksi</button>
     </div>
     <div class="progress-wrap" id="progressWrap"></div>
@@ -143,17 +140,19 @@
 </div>
 
 <script type="module">
+  // ⬇️ PAKAI IMPORT SAMA PERSIS SEPERTI KODE NOTA ⬇️
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import {
+    getFirestore, collection, writeBatch,
+    doc, getDocs
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
   // ─── Konstanta ────────────────────────────────────────────────
-  const BATCH_SIZE = 50;           // batch kecil untuk koneksi lambat
-  const MAX_RETRIES = 2;
-  const BATCH_TIMEOUT = 60000;     // 60 detik
-  const DELAY_BETWEEN_BATCHES = 800; // ms, kasih jeda biar nggak overload
+  const BATCH_SIZE = 200;
 
   // ─── State ───────────────────────────────────────────────────
   let db = null;
-  let fsLib = null;
   let parsedSheets = {};
-  let stopRequested = false;       // flag untuk stop
 
   // ─── Helpers ─────────────────────────────────────────────────
   function sanitize(v) {
@@ -203,58 +202,53 @@
     el.style.display = 'block';
   }
 
-  // ─── Firebase init ────────────────────────────────────────────
+  // ─── Firebase init (SAMA PERSIS DENGAN KODE NOTA) ───────────
   async function initFirebase() {
     const apiKey    = document.getElementById('cfgApiKey').value.trim();
     const projectId = document.getElementById('cfgProjectId').value.trim();
-    const appId     = document.getElementById('cfgAppId').value.trim();
-    const senderId  = document.getElementById('cfgSenderId').value.trim();
+    const authDomain = document.getElementById('cfgAuthDomain').value.trim() || `${projectId}.firebaseapp.com`;
 
-    if (!apiKey || !projectId || !appId) {
-      setStatus('❌ API Key, Project ID, dan App ID wajib diisi!', 'err');
+    if (!apiKey || !projectId) {
+      setStatus('❌ API Key dan Project ID wajib diisi!', 'err');
       return;
     }
     setStatus('⏳ Menghubungkan…', 'info');
 
     try {
-      const appMod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
-      const fsMod  = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-
-      const appName = 'uploader_' + Date.now();
-      const firebaseApp = appMod.initializeApp({
+      // ⬇️ CONFIG SEDERHANA — SAMA SEPERTI KODE NOTA ⬇️
+      const firebaseConfig = {
         apiKey,
-        authDomain:        `${projectId}.firebaseapp.com`,
-        projectId,
-        storageBucket:     `${projectId}.appspot.com`,
-        messagingSenderId: senderId,
-        appId,
-      }, appName);
+        authDomain,
+        projectId
+      };
 
-      db    = fsMod.getFirestore(firebaseApp);
-      fsLib = fsMod;
+      const firebaseApp = initializeApp(firebaseConfig);
+      db = getFirestore(firebaseApp);
 
-      // Test koneksi dengan operasi ringan
-      const testSnap = await fsMod.getDocs(fsMod.collection(db, 'SIZE'));
-      log(`🔌 Koneksi OK — ${testSnap.docs.length} dokumen di koleksi SIZE`, 'ok');
+      // Test koneksi
+      const colRef = collection(db, 'SIZE');
+      const testSnap = await getDocs(colRef);
+      log(`🔌 Koneksi OK — ${testSnap.size} dokumen di koleksi SIZE`, 'ok');
 
-      localStorage.setItem('fb_config', JSON.stringify({ apiKey, projectId, appId, messagingSenderId: senderId }));
+      localStorage.setItem('fb_config', JSON.stringify({ apiKey, projectId, authDomain }));
       setStatus(`✅ Terhubung ke project: ${projectId}`, 'ok');
     } catch (err) {
       setStatus('❌ Gagal konek: ' + err.message, 'err');
       log('❌ Firebase error: ' + err.message, 'err');
-      db = null; fsLib = null;
+      db = null;
     }
   }
 
   // ─── Load saved config ────────────────────────────────────────
   const saved = localStorage.getItem('fb_config');
   if (saved) {
-    const cfg = JSON.parse(saved);
-    document.getElementById('cfgApiKey').value    = cfg.apiKey || '';
-    document.getElementById('cfgProjectId').value = cfg.projectId || '';
-    document.getElementById('cfgAppId').value     = cfg.appId || '';
-    document.getElementById('cfgSenderId').value  = cfg.messagingSenderId || '';
-    initFirebase();
+    try {
+      const cfg = JSON.parse(saved);
+      document.getElementById('cfgApiKey').value    = cfg.apiKey || '';
+      document.getElementById('cfgProjectId').value = cfg.projectId || '';
+      document.getElementById('cfgAuthDomain').value = cfg.authDomain || '';
+      initFirebase();
+    } catch(e) {}
   }
 
   // ─── File handling ────────────────────────────────────────────
@@ -312,103 +306,46 @@
     reader.readAsArrayBuffer(file);
   }
 
-  // ─── Upload satu batch ────────────────────────────────────────
-  async function commitBatch(colName, chunk) {
-    const { collection, writeBatch, doc } = fsLib;
-    const batch = writeBatch(db);
-    
-    chunk.forEach(row => {
-      batch.set(doc(db, colName, makeDocId(colName, row)), row);
-    });
-
-    // Timeout promise
-    const commitPromise = batch.commit();
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Timeout')), BATCH_TIMEOUT)
-    );
-
-    await Promise.race([commitPromise, timeoutPromise]);
-  }
-
-  // ─── Upload dengan retry & delay ──────────────────────────────
+  // ─── Batch upload ─────────────────────────────────────────────
   async function uploadBatched(colName, rows, onProgress) {
     let done = 0;
-
     for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-      if (stopRequested) {
-        log(`⏹ Upload ${colName} dihentikan oleh user.`, 'warn');
-        break;
-      }
-
+      const batch = writeBatch(db);
       const chunk = rows.slice(i, i + BATCH_SIZE);
-      let success = false;
-
-      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-        try {
-          await commitBatch(colName, chunk);
-          success = true;
-          break;
-        } catch (err) {
-          log(`   ⚠️ Batch ${Math.floor(i/BATCH_SIZE)+1} gagal (${attempt}/${MAX_RETRIES}): ${err.message}`, 'warn');
-          if (attempt === MAX_RETRIES) {
-            throw new Error(`Batch gagal setelah ${MAX_RETRIES}x: ${err.message}`);
-          }
-          // Tunggu lebih lama sebelum retry
-          await new Promise(r => setTimeout(r, 2000 * attempt));
-        }
-      }
-
+      chunk.forEach(row => {
+        batch.set(doc(db, colName, makeDocId(colName, row)), row);
+      });
+      await batch.commit();
       done += chunk.length;
       onProgress(done, rows.length);
-
-      // Log tiap 20 batch
-      if ((i / BATCH_SIZE) % 20 === 0 && i > 0) {
-        const pct = Math.round(done / rows.length * 100);
-        log(`   📊 ${colName} — ${done.toLocaleString()}/${rows.length.toLocaleString()} (${pct}%)`, 'info');
-      }
-
-      // Delay antar batch untuk menghindari throttle
-      if (i + BATCH_SIZE < rows.length) {
-        await new Promise(r => setTimeout(r, DELAY_BETWEEN_BATCHES));
-      }
     }
   }
 
   // ─── Delete collection ────────────────────────────────────────
   async function deleteCollection(colName, onProgress) {
-    const { collection, writeBatch, getDocs } = fsLib;
-    const snap  = await getDocs(collection(db, colName));
-    if (!snap.docs.length) { onProgress(0, 0); return; }
+    const snap = await getDocs(collection(db, colName));
+    if (snap.empty) { onProgress(0, 0); return; }
+    
     let done = 0;
-    for (let i = 0; i < snap.docs.length; i += BATCH_SIZE) {
-      if (stopRequested) break;
+    const docs = snap.docs;
+    for (let i = 0; i < docs.length; i += BATCH_SIZE) {
       const batch = writeBatch(db);
-      snap.docs.slice(i, i + BATCH_SIZE).forEach(d => batch.delete(d.ref));
+      docs.slice(i, i + BATCH_SIZE).forEach(d => batch.delete(d.ref));
       await batch.commit();
-      done += Math.min(BATCH_SIZE, snap.docs.length - i);
-      onProgress(done, snap.docs.length);
+      done += Math.min(BATCH_SIZE, docs.length - i);
+      onProgress(done, docs.length);
     }
-  }
-
-  // ─── Stop upload ──────────────────────────────────────────────
-  function stopUpload() {
-    stopRequested = true;
-    log('⏹ Menghentikan upload...', 'warn');
-    document.getElementById('btnStop').style.display = 'none';
   }
 
   // ─── Start upload ─────────────────────────────────────────────
   async function startUpload() {
-    if (!db || !fsLib) { log('❌ Firebase belum terhubung. Selesaikan Step 1.', 'err'); return; }
+    if (!db) { log('❌ Firebase belum terhubung.', 'err'); return; }
     const selected = [...document.querySelectorAll('.sheetCheck:checked')].map(c => c.value);
     if (!selected.length) { log('⚠️ Pilih minimal 1 sheet.', 'warn'); return; }
 
     const clearFirst = document.getElementById('optClear').checked;
-    stopRequested = false;
-    
     document.getElementById('btnUpload').disabled = true;
     document.getElementById('btnClear').disabled  = true;
-    document.getElementById('btnStop').style.display = 'inline-flex';
 
     const pw = document.getElementById('progressWrap');
     pw.innerHTML = '';
@@ -420,8 +357,6 @@
     let totalDocs = 0;
 
     for (const name of selected) {
-      if (stopRequested) break;
-
       const rows = parsedSheets[name];
       if (!rows?.length) { log(`⚠️ ${name}: tidak ada data.`, 'warn'); continue; }
       const pid = 'pg_' + name.replace(/\W/g,'_');
@@ -432,14 +367,11 @@
           log(`🗑 Menghapus data lama: ${name}…`, 'warn');
           await deleteCollection(name, (d,t) => updateProg(pid, d, t, '🗑'));
         }
-        log(`⬆ Uploading ${name} (${rows.length.toLocaleString()} dok, batch size: ${BATCH_SIZE})…`, 'info');
+        log(`⬆ Uploading ${name} (${rows.length.toLocaleString()} dok)…`, 'info');
         await uploadBatched(name, rows, (d,t) => updateProg(pid, d, t, '⬆'));
-        
-        if (!stopRequested) {
-          totalDocs += rows.length;
-          doneProg(pid, rows.length);
-          log(`✅ ${name} selesai — ${rows.length.toLocaleString()} dokumen`, 'ok');
-        }
+        totalDocs += rows.length;
+        doneProg(pid, rows.length);
+        log(`✅ ${name} selesai — ${rows.length.toLocaleString()} dokumen`, 'ok');
       } catch (err) {
         errProg(pid);
         log(`❌ ${name}: ${err.message}`, 'err');
@@ -456,16 +388,13 @@
 
     document.getElementById('btnUpload').disabled = false;
     document.getElementById('btnClear').disabled  = false;
-    document.getElementById('btnStop').style.display = 'none';
-    stopRequested = false;
   }
 
   async function clearSelected() {
-    if (!db || !fsLib) { log('❌ Firebase belum terhubung.', 'err'); return; }
+    if (!db) { log('❌ Firebase belum terhubung.', 'err'); return; }
     const selected = [...document.querySelectorAll('.sheetCheck:checked')].map(c => c.value);
     if (!selected.length || !confirm(`Hapus: ${selected.join(', ')}?`)) return;
 
-    stopRequested = false;
     const pw = document.getElementById('progressWrap');
     pw.innerHTML = '';
     pw.style.display = 'flex';
@@ -515,7 +444,6 @@
   window.handleDrop    = handleDrop;
   window.handleFile    = handleFile;
   window.startUpload   = startUpload;
-  window.stopUpload    = stopUpload;
   window.clearSelected = clearSelected;
 </script>
 </body>
