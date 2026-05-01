@@ -1,465 +1,980 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MASTER DATA — Firebase Uploader (FINAL FIX)</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WMS LEAGUE - Master & Scan</title>
+  
+  <!-- Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import {
+      getFirestore, collection, addDoc, getDocs,
+      writeBatch, doc, serverTimestamp, query, orderBy, limit,
+      enableIndexedDbPersistence
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // ═══════════════════════════════════════════════════
+    // KONFIGURASI FIREBASE
+    // ═══════════════════════════════════════════════════
+    const firebaseConfig = {
+      apiKey: "AIzaSyB9P_kMUNRoYMpApX3H5N-0Jvr-6_1Tzuw", // GANTI dengan API Key wms-league
+      authDomain: "wms-league.firebaseapp.com",
+      projectId: "wms-league"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Aktifkan offline persistence
+    enableIndexedDbPersistence(db).catch((err) => {
+      if (err.code === 'failed-precondition') {
+        console.warn('Persistence gagal: multiple tabs open');
+      }
+    });
+
+    // ═══════════════════════════════════════════════════
+    // STATE GLOBAL
+    // ═══════════════════════════════════════════════════
+    let DB = { bc: [], pr: [], sz: [] };  // Cache master lokal
+    let scanQueue = [];
+    let uploadSheets = {};
+    let systemLocked = false;
+    let cameraActive = false;
+    let currentTab = 'upload';
+
+    // ═══════════════════════════════════════════════════
+    // EXPOSE KE WINDOW
+    // ═══════════════════════════════════════════════════
+    window.db = db;
+    window.DB = DB;
+    window.scanQueue = scanQueue;
+    window.uploadSheets = uploadSheets;
+
+    console.log('🚀 WMS LEAGUE - Siap!');
+  </script>
+
   <style>
     :root {
-      --bg:#0f1117;--card:#1a1d27;--border:#2a2d3a;
-      --accent:#f97316;--accent2:#3b82f6;
-      --green:#22c55e;--red:#ef4444;
-      --text:#e2e8f0;--muted:#64748b;--radius:12px;
+      --bg: #0d0f14;
+      --surface: #13161e;
+      --border: #2a2f3f;
+      --accent: #00e5ff;
+      --green: #00e676;
+      --red: #ff3d5a;
+      --amber: #ffb300;
+      --text: #e2e8f0;
+      --muted: #64748b;
     }
-    *{box-sizing:border-box;margin:0;padding:0;}
-    body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;min-height:100vh;padding:24px 16px;}
-    header{text-align:center;margin-bottom:32px;}
-    header h1{font-size:1.8rem;font-weight:700;}
-    header h1 span{color:var(--accent);}
-    header p{color:var(--muted);margin-top:6px;font-size:.9rem;}
-    .container{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:20px;}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;}
-    .card h2{font-size:1rem;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
-    .step-tag{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:.7rem;font-weight:700;background:var(--accent);color:#fff;flex-shrink:0;}
-    .badge{font-size:.65rem;font-weight:700;letter-spacing:.06em;padding:2px 8px;border-radius:99px;text-transform:uppercase;}
-    .badge-blue{background:#1d4ed8;color:#bfdbfe;}
-    .badge-orange{background:#c2410c;color:#fed7aa;}
-    .config-form{display:flex;flex-direction:column;gap:10px;}
-    .config-form label{font-size:.8rem;color:var(--muted);margin-bottom:2px;display:block;}
-    .config-form input{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.875rem;font-family:monospace;}
-    .config-form input:focus{outline:none;border-color:var(--accent2);}
-    #configStatus{font-size:.82rem;margin-top:8px;padding:8px 12px;border-radius:8px;display:none;}
-    #configStatus.ok{background:#14532d33;color:var(--green);border:1px solid #166534;}
-    #configStatus.err{background:#7f1d1d33;color:var(--red);border:1px solid #991b1b;}
-    #configStatus.info{background:#1e3a5f33;color:var(--accent2);border:1px solid #1d4ed8;}
-    .dropzone{border:2px dashed var(--border);border-radius:10px;padding:36px 20px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;}
-    .dropzone:hover,.dropzone.over{border-color:var(--accent);background:rgba(249,115,22,.06);}
-    .dropzone svg{color:var(--muted);margin-bottom:10px;}
-    .dropzone p{color:var(--muted);font-size:.9rem;}
-    .dropzone p strong{color:var(--text);}
-    #fileInput{display:none;}
-    .sheets-grid{display:none;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-top:16px;}
-    .sheet-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;}
-    .sheet-card .name{font-weight:600;font-size:.95rem;margin-bottom:4px;}
-    .sheet-card .meta{color:var(--muted);font-size:.8rem;}
-    .options{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
-    label.opt{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 16px;cursor:pointer;font-size:.875rem;transition:border-color .2s;}
-    label.opt:hover{border-color:var(--accent2);}
-    label.opt input[type=checkbox]{accent-color:var(--accent2);width:16px;height:16px;}
-    .btn{padding:11px 24px;border-radius:9px;font-weight:600;font-size:.9rem;border:none;cursor:pointer;transition:opacity .2s,transform .1s;}
-    .btn:active{transform:scale(.97);}
-    .btn:disabled{opacity:.4;cursor:not-allowed;}
-    .btn-primary{background:var(--accent);color:#fff;}
-    .btn-danger{background:var(--red);color:#fff;}
-    .btn-secondary{background:var(--border);color:var(--text);}
-    .progress-wrap{display:none;flex-direction:column;gap:12px;margin-top:16px;}
-    .prog-label{display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:4px;}
-    .prog-label .col-name{font-weight:600;}
-    .prog-bar-bg{background:var(--border);border-radius:99px;height:8px;overflow:hidden;}
-    .prog-bar{height:100%;border-radius:99px;background:var(--accent2);transition:width .2s;width:0%;}
-    .prog-bar.done{background:var(--green);}
-    .prog-bar.error{background:var(--red);}
-    .log{background:#0a0c12;border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-size:.78rem;font-family:monospace;max-height:240px;overflow-y:auto;line-height:1.7;margin-top:16px;display:none;}
-    .log .ok{color:var(--green);}
-    .log .err{color:var(--red);}
-    .log .info{color:var(--accent2);}
-    .log .warn{color:#facc15;}
-    .summary-grid{display:none;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;}
-    .sum-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;}
-    .sum-box .val{font-size:1.6rem;font-weight:700;color:var(--accent);}
-    .sum-box .lbl{color:var(--muted);font-size:.78rem;margin-top:4px;}
-    .divider{border:none;border-top:1px solid var(--border);margin:12px 0;}
-    .row-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      font-size: 14px;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-logo {
+      width: 36px;
+      height: 36px;
+      background: rgba(0,229,255,0.1);
+      border: 2px solid var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      font-size: 16px;
+    }
+    .header-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: 1px;
+    }
+    .header-subtitle {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .status-badge {
+      font-size: 10px;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-weight: 700;
+      background: rgba(0,230,118,0.1);
+      color: var(--green);
+      border: 1px solid rgba(0,230,118,0.3);
+      white-space: nowrap;
+    }
+    .status-badge.err {
+      background: rgba(255,61,90,0.1);
+      color: var(--red);
+      border-color: rgba(255,61,90,0.3);
+    }
+    .status-badge.warn {
+      background: rgba(255,179,0,0.1);
+      color: var(--amber);
+      border-color: rgba(255,179,0,0.3);
+    }
+
+    /* ── TAB NAV ── */
+    .tab-nav {
+      display: flex;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      gap: 0;
+      position: sticky;
+      top: 60px;
+      z-index: 99;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 12px 16px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .tab-btn:hover {
+      color: var(--text);
+      background: rgba(255,255,255,0.02);
+    }
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+      background: rgba(0,229,255,0.03);
+    }
+    .tab-badge {
+      font-size: 9px;
+      padding: 2px 7px;
+      border-radius: 10px;
+      background: rgba(0,230,118,0.15);
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    /* ── PAGES ── */
+    .page {
+      display: none;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px 16px;
+    }
+    .page.active {
+      display: block;
+      animation: fadeIn 0.2s;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title .icon {
+      color: var(--accent);
+    }
+
+    /* ── FORM ── */
+    .form-group {
+      margin-bottom: 12px;
+    }
+    .form-label {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,229,255,0.08);
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* ── BUTTONS ── */
+    .btn {
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: none;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-accent {
+      background: rgba(0,229,255,0.15);
+      border: 1px solid rgba(0,229,255,0.3);
+      color: var(--accent);
+    }
+    .btn-accent:hover { background: rgba(0,229,255,0.22); }
+    .btn-green {
+      background: rgba(0,230,118,0.15);
+      border: 1px solid rgba(0,230,118,0.3);
+      color: var(--green);
+    }
+    .btn-red {
+      background: rgba(255,61,90,0.15);
+      border: 1px solid rgba(255,61,90,0.3);
+      color: var(--red);
+    }
+    .btn-amber {
+      background: rgba(255,179,0,0.15);
+      border: 1px solid rgba(255,179,0,0.3);
+      color: var(--amber);
+    }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-block { width: 100%; justify-content: center; }
+
+    /* ── STATS ── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+    }
+    .stat-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .stat-value {
+      font-size: 26px;
+      font-weight: 800;
+    }
+    .stat-value.cyan { color: var(--accent); }
+    .stat-value.green { color: var(--green); }
+    .stat-value.amber { color: var(--amber); }
+
+    /* ── TABLE ── */
+    .table-wrap {
+      overflow-x: auto;
+      max-height: 400px;
+      overflow-y: auto;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    thead {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+    th {
+      background: var(--surface);
+      border-bottom: 2px solid var(--border);
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 10px 12px;
+      text-align: left;
+    }
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+    tr:hover td {
+      background: rgba(255,255,255,0.02);
+    }
+
+    /* ── DROPZONE ── */
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 30px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .dropzone:hover {
+      border-color: var(--accent);
+      background: rgba(0,229,255,0.03);
+    }
+    .dropzone p {
+      color: var(--muted);
+      margin-top: 8px;
+    }
+    .dropzone p strong {
+      color: var(--text);
+    }
+
+    /* ── SCAN INPUT ── */
+    .scan-input {
+      font-family: 'Courier New', monospace;
+      font-size: 16px;
+      font-weight: 600;
+      background: rgba(0,230,118,0.03);
+      border: 1.5px solid rgba(0,230,118,0.3);
+      animation: scanPulse 2s infinite;
+    }
+    @keyframes scanPulse {
+      0%, 100% { box-shadow: 0 0 0 3px rgba(0,230,118,0.08); }
+      50% { box-shadow: 0 0 0 6px rgba(0,230,118,0.04); }
+    }
+    #reader {
+      border-radius: 10px;
+      overflow: hidden;
+      border: 2px solid var(--accent);
+      margin-top: 12px;
+      display: none;
+    }
+
+    /* ── LOG ── */
+    .log-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 11px;
+      font-family: 'Courier New', monospace;
+      max-height: 200px;
+      overflow-y: auto;
+      line-height: 1.6;
+    }
+    .log-ok { color: var(--green); }
+    .log-err { color: var(--red); }
+    .log-info { color: var(--accent); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      .stats { grid-template-columns: 1fr 1fr; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .header { padding: 10px 14px; }
+      .header-title { font-size: 14px; }
+    }
   </style>
 </head>
 <body>
-<header>
-  <h1>MASTER DATA <span>⬆</span> Firestore</h1>
-  <p>Upload MASTER_BARCODE · MASTER_PRODUK · SIZE ke Firebase Firestore</p>
-</header>
 
-<div class="container">
-
-  <!-- STEP 1 -->
-  <div class="card">
-    <h2><span class="step-tag">1</span> Konfigurasi Firebase <span class="badge badge-blue">Setup Sekali</span></h2>
-    <div class="config-form">
-      <div><label>API Key</label><input id="cfgApiKey" placeholder="AIzaSy..." /></div>
-      <div><button class="btn btn-secondary" onclick="initFirebase()">🔌 Sambungkan ke Firebase</button></div>
-      <div id="configStatus"></div>
+  <!-- ═══════════════ HEADER ═══════════════ -->
+  <div class="header">
+    <div class="header-brand">
+      <div class="header-logo">📦</div>
+      <div>
+        <div class="header-title">WMS LEAGUE</div>
+        <div class="header-subtitle">Master Data & Scan System</div>
+      </div>
     </div>
-    <p style="color:var(--muted);font-size:.75rem;margin-top:10px;">
-      Project ID: <b>wms-league</b> (hardcode) — Hanya perlu API Key dari Firebase Console
-    </p>
+    <span class="status-badge" id="statusBadge">⚡ Online</span>
   </div>
 
-  <!-- STEP 2 -->
-  <div class="card">
-    <h2><span class="step-tag">2</span> Pilih File Excel <span class="badge badge-orange">.xlsx</span></h2>
-    <div class="dropzone" id="dropzone"
-         onclick="document.getElementById('fileInput').click()"
-         ondragover="event.preventDefault();this.classList.add('over')"
-         ondragleave="this.classList.remove('over')"
-         ondrop="handleDrop(event)">
-      <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round"
-          d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
-      </svg>
-      <p><strong>Klik atau drop file di sini</strong></p>
-      <p style="margin-top:4px;">Mendukung sheet: MASTER_BARCODE · MASTER_PRODUK · SIZE</p>
-    </div>
-    <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFile(this.files[0])" />
-    <div class="sheets-grid" id="sheetsGrid"></div>
+  <!-- ═══════════════ TAB NAV ═══════════════ -->
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('upload')">
+      📤 Upload Master
+    </button>
+    <button class="tab-btn" onclick="switchTab('scan')">
+      📡 Scan Barcode
+    </button>
+    <button class="tab-btn" onclick="switchTab('data')">
+      📊 Lihat Data
+    </button>
   </div>
 
-  <!-- STEP 3 -->
-  <div class="card" id="uploadCard" style="display:none">
-    <h2><span class="step-tag">3</span> Pilih Sheet &amp; Upload</h2>
-    <div class="options" id="sheetOptions"></div>
-    <hr class="divider" />
-    <div class="options">
-      <label class="opt">
-        <input type="checkbox" id="optClear" />
-        Hapus data lama sebelum upload (replace all)
-      </label>
-    </div>
-    <div class="row-actions" style="margin-top:14px;">
-      <button class="btn btn-primary" id="btnUpload" onclick="startUpload()">⬆ Mulai Upload ke Firestore</button>
-      <button class="btn btn-danger"  id="btnClear"  onclick="clearSelected()">🗑 Hapus Koleksi</button>
-    </div>
-    <div class="progress-wrap" id="progressWrap"></div>
-    <div class="log" id="logBox"></div>
-    <div class="summary-grid" id="summaryGrid">
-      <div class="sum-box"><div class="val" id="sumDocs">0</div><div class="lbl">Dokumen Diupload</div></div>
-      <div class="sum-box"><div class="val" id="sumCols">0</div><div class="lbl">Koleksi</div></div>
-      <div class="sum-box"><div class="val" id="sumTime">0s</div><div class="lbl">Waktu Total</div></div>
-    </div>
-  </div>
-
-</div>
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import {
-    getFirestore, collection, writeBatch,
-    doc, getDocs
-  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-  const PROJECT_ID = "wms-league";
-  const BATCH_SIZE = 200;
-
-  let db = null;
-  let parsedSheets = {};
-
-  function sanitize(v) {
-    if (v === null || v === undefined || v === '') return null;
-    if (typeof v === 'number' && isNaN(v)) return null;
-    if (v instanceof Date) return v.toISOString().split('T')[0];
-    return v;
-  }
-
-  function makeDocId(sheetName, row) {
-  // ─── SIZE: gabungan US_Size + Gender ───
-  if (sheetName === 'SIZE') {
-    const usSize = row['US_Size'] != null ? String(row['US_Size']).trim() : '';
-    const gender = row['Gender'] != null ? String(row['Gender']).trim() : '';
+  <!-- ═══════════════ PAGE: UPLOAD ═══════════════ -->
+  <div class="page active" id="page-upload">
     
-    if (usSize && gender) {
-      // Contoh: "095_Laki-laki", "095_Perempuan"
-      let id = `${usSize}_${gender}`;
-      id = id.replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
-      return id;
-    }
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">BARCODE</div>
+        <div class="stat-value cyan" id="statBc">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">PRODUK</div>
+        <div class="stat-value green" id="statPr">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">SIZE</div>
+        <div class="stat-value amber" id="statSz">0</div>
+      </div>
+    </div>
+
+    <!-- Dropzone -->
+    <div class="card">
+      <div class="card-title"><span class="icon">📂</span> Pilih File Excel</div>
+      <div class="dropzone" onclick="document.getElementById('fileInput').click()"
+           ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+        <span style="font-size:32px;">📥</span>
+        <p><strong>Klik atau drop file .xlsx di sini</strong></p>
+        <p>Sheet: MASTER_BARCODE · MASTER_PRODUK · SIZE</p>
+      </div>
+      <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFile(this.files[0])" style="display:none;">
+      
+      <!-- Sheet list -->
+      <div id="sheetList" style="margin-top:14px;"></div>
+    </div>
+
+    <!-- Upload Actions -->
+    <div class="card" id="uploadActions" style="display:none;">
+      <div class="card-title"><span class="icon">⚡</span> Upload ke Firestore</div>
+      <div class="grid-2" style="margin-bottom:14px;">
+        <button class="btn btn-accent btn-block" onclick="startUpload()">⬆ Upload Semua</button>
+        <button class="btn btn-red btn-block" onclick="clearSelected()">🗑 Hapus Koleksi</button>
+      </div>
+      <div id="uploadProgress"></div>
+      <div class="log-box" id="logBox" style="display:none; margin-top:12px;"></div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════ PAGE: SCAN ═══════════════ -->
+  <div class="page" id="page-scan">
     
-    // Fallback kalau salah satu kosong
-    const ts = Date.now().toString(36);
-    const rnd = Math.random().toString(36).substring(2, 8);
-    return `SIZE_${ts}_${rnd}`;
-  }
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Total Scan</div>
+        <div class="stat-value cyan" id="scanTotal">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">BIN Aktif</div>
+        <div class="stat-value green" id="scanBinQty">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Queue</div>
+        <div class="stat-value amber" id="scanQueueTotal">0</div>
+      </div>
+    </div>
 
-  // ─── MASTER_BARCODE ───
-  if (sheetName === 'MASTER_BARCODE') {
-    const keys = ['Barcode', 'Article'];
-    for (const k of keys) {
-      const raw = row[k];
-      if (raw != null) {
-        let id = String(raw).trim();
-        if (id.length > 0) {
-          id = id.replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
-          return id;
-        }
+    <!-- Config -->
+    <div class="card">
+      <div class="card-title"><span class="icon">⚙️</span> Konfigurasi Scan</div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label class="form-label">BIN</label>
+          <input type="text" id="scanBin" placeholder="BIN-01" oninput="onScanConfigChange()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Lokasi</label>
+          <select id="scanLokasi" onchange="onScanConfigChange()">
+            <option value="Gudang">Gudang</option>
+            <option value="Display">Display</option>
+            <option value="Riject">Riject</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scan Input -->
+    <div class="card">
+      <div class="card-title"><span class="icon">🎯</span> Scan Barcode</div>
+      <input type="text" id="scanInput" class="scan-input"
+             placeholder="Scan atau ketik barcode → Enter"
+             autocomplete="off"
+             onkeydown="handleScanEnter(event)">
+      <div style="margin-top:10px;">
+        <button class="btn btn-accent" onclick="toggleCamera()">
+          <span id="camBtnText">📷 Buka Kamera</span>
+        </button>
+        <button class="btn btn-ghost" onclick="loadMasterForScan()" style="margin-left:8px;">
+          🔄 Refresh Master
+        </button>
+      </div>
+      <div id="reader"></div>
+    </div>
+
+    <!-- Recent Scans -->
+    <div class="card">
+      <div class="card-title"><span class="icon">📋</span> Scan Terbaru</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Article</th>
+              <th>Deskripsi</th>
+              <th>Size</th>
+              <th>BIN</th>
+            </tr>
+          </thead>
+          <tbody id="recentScanBody">
+            <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">Belum ada scan</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════ PAGE: DATA ═══════════════ -->
+  <div class="page" id="page-data">
+    
+    <div class="card">
+      <div class="card-title"><span class="icon">📊</span> Data di Firestore</div>
+      <div class="grid-2">
+        <button class="btn btn-accent" onclick="loadCollectionSize('MASTER_BARCODE')">BARCODE</button>
+        <button class="btn btn-green" onclick="loadCollectionSize('MASTER_PRODUK')">PRODUK</button>
+        <button class="btn btn-amber" onclick="loadCollectionSize('SIZE')">SIZE</button>
+        <button class="btn btn-ghost" onclick="loadCollectionSize('SCAN_RESULTS')">SCAN</button>
+      </div>
+      <div id="collectionInfo" style="margin-top:12px;color:var(--muted);font-size:12px;"></div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════ SCRIPTS ═══════════════ -->
+  <script>
+    // ── Tab Navigation ──────────────────────────────────
+    function switchTab(tab) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('page-' + tab).classList.add('active');
+      event.target.classList.add('active');
+      currentTab = tab;
+    }
+    window.switchTab = switchTab;
+
+    // ── Status Badge ────────────────────────────────────
+    function setStatus(msg, type) {
+      const el = document.getElementById('statusBadge');
+      el.textContent = msg;
+      el.className = 'status-badge';
+      if (type === 'err') el.classList.add('err');
+      else if (type === 'warn') el.classList.add('warn');
+    }
+    window.setStatus = setStatus;
+
+    // ── Log ─────────────────────────────────────────────
+    function log(msg, type) {
+      const box = document.getElementById('logBox');
+      box.style.display = 'block';
+      const line = document.createElement('div');
+      line.className = 'log-' + (type || 'info');
+      line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      box.appendChild(line);
+      box.scrollTop = box.scrollHeight;
+    }
+    window.log = log;
+
+    // ═══════════════════════════════════════════════════
+    // UPLOADER FUNCTIONS
+    // ═══════════════════════════════════════════════════
+    
+    function sanitize(v) {
+      if (v === null || v === undefined || v === '') return null;
+      if (typeof v === 'number' && isNaN(v)) return null;
+      return v;
+    }
+
+    function makeDocId(sheetName, row) {
+      if (sheetName === 'SIZE') {
+        const us = row['US_Size'] != null ? String(row['US_Size']).trim() : '';
+        const gd = row['Gender'] != null ? String(row['Gender']).trim() : '';
+        if (us && gd) return (us + '_' + gd).replace(/[\/?#\[\]@!$&'()*+,;=]/g, '_');
       }
-    }
-  }
-
-  // ─── MASTER_PRODUK ───
-  if (sheetName === 'MASTER_PRODUK') {
-    const raw = row['Article'];
-    if (raw != null) {
-      let id = String(raw).trim();
-      if (id.length > 0) {
-        id = id.replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
-        return id;
+      const keys = sheetName === 'MASTER_BARCODE' ? ['Barcode','Article'] : ['Article'];
+      for (const k of keys) {
+        if (row[k] != null) return String(row[k]).trim().replace(/[\/?#\[\]@!$&'()*+,;=]/g, '_');
       }
+      return sheetName + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2,6);
     }
-  }
+    window.makeDocId = makeDocId;
 
-  // ─── Fallback ───
-  const ts = Date.now().toString(36);
-  const rnd = Math.random().toString(36).substring(2, 8);
-  return `${sheetName}_${ts}_${rnd}`;
-}
-
-  function log(msg, type = 'info') {
-    const box = document.getElementById('logBox');
-    box.style.display = 'block';
-    const line = document.createElement('div');
-    line.className = type;
-    line.textContent = `[${new Date().toLocaleTimeString('id-ID')}] ${msg}`;
-    box.appendChild(line);
-    box.scrollTop = box.scrollHeight;
-  }
-
-  function setStatus(msg, cls) {
-    const el = document.getElementById('configStatus');
-    el.textContent = msg;
-    el.className = cls;
-    el.style.display = 'block';
-  }
-
-  // ─── Firebase init ────────────────────────────────────────────
-  async function initFirebase() {
-    const apiKey = document.getElementById('cfgApiKey').value.trim();
-    if (!apiKey) {
-      setStatus('❌ API Key wajib diisi!', 'err');
-      return;
+    function handleDrop(e) {
+      e.preventDefault();
+      handleFile(e.dataTransfer.files[0]);
     }
-    setStatus('⏳ Menghubungkan…', 'info');
+    window.handleDrop = handleDrop;
 
-    try {
-      const firebaseConfig = {
-        apiKey,
-        authDomain: `${PROJECT_ID}.firebaseapp.com`,
-        projectId: PROJECT_ID
-      };
-
-      const firebaseApp = initializeApp(firebaseConfig);
-      db = getFirestore(firebaseApp);
-
-      // TEST TULIS langsung
-      const testRef = doc(db, 'test_write', 'conn_test');
-      const testBatch = writeBatch(db);
-      testBatch.set(testRef, { 
-        test: 'connection_test',
-        timestamp: new Date().toISOString()
-      });
-      await testBatch.commit();
-
-      localStorage.setItem('fb_api_key', apiKey);
-      setStatus(`✅ Terhubung & BISA MENULIS ke ${PROJECT_ID}`, 'ok');
-      log('✅ TEST WRITE BERHASIL — Upload siap digunakan!', 'ok');
-    } catch (err) {
-      setStatus('❌ Gagal: ' + err.message, 'err');
-      log('❌ Error: ' + err.code + ' - ' + err.message, 'err');
-      db = null;
-    }
-  }
-
-  // ─── Load saved config ────────────────────────────────────────
-  const savedApiKey = localStorage.getItem('fb_api_key');
-  if (savedApiKey) {
-    document.getElementById('cfgApiKey').value = savedApiKey;
-    initFirebase();
-  }
-
-  // ─── File handling ────────────────────────────────────────────
-  function handleDrop(e) {
-    e.preventDefault();
-    document.getElementById('dropzone').classList.remove('over');
-    handleFile(e.dataTransfer.files[0]);
-  }
-
-  function handleFile(file) {
-    if (!file) return;
-    log(`📂 Membaca: ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)…`, 'info');
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
+    function handleFile(file) {
+      if (!file) return;
+      log('📂 Membaca: ' + file.name, 'info');
+      const reader = new FileReader();
+      reader.onload = (ev) => {
         const wb = XLSX.read(ev.target.result, { type: 'array', cellDates: true });
-        parsedSheets = {};
-        document.getElementById('sheetsGrid').innerHTML = '';
-        document.getElementById('sheetOptions').innerHTML = '';
-
+        uploadSheets = {};
+        
+        const listEl = document.getElementById('sheetList');
+        listEl.innerHTML = '';
+        
         wb.SheetNames.forEach(name => {
           const raw = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: null });
           if (raw.length < 2) return;
-
-          const headers = raw[0].map(h => String(h ?? '').trim().replace(/[\s.]+/g, '_'));
+          
+          const headers = raw[0].map(h => String(h || '').trim().replace(/[\s.]+/g, '_'));
           const rows = raw.slice(1)
             .map(r => { const o={}; headers.forEach((h,i)=>{ o[h]=sanitize(r[i]); }); return o; })
             .filter(r => Object.values(r).some(v => v !== null));
-
-          parsedSheets[name] = rows;
-
-          const card = document.createElement('div');
-          card.className = 'sheet-card';
-          card.innerHTML = `<div class="name">📋 ${name}</div>
-            <div class="meta">${rows.length.toLocaleString()} baris · ${headers.length} kolom</div>`;
-          document.getElementById('sheetsGrid').appendChild(card);
-
-          const lbl = document.createElement('label');
-          lbl.className = 'opt';
-          lbl.innerHTML = `<input type="checkbox" checked value="${name}" class="sheetCheck" />
-            ${name} <span style="color:var(--muted);font-size:.75rem;">(${rows.length.toLocaleString()})</span>`;
-          document.getElementById('sheetOptions').appendChild(lbl);
+          
+          uploadSheets[name] = rows;
+          
+          listEl.innerHTML += `
+            <div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:6px;
+                        display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <strong>📋 ${name}</strong>
+                <span style="color:var(--muted);font-size:11px;margin-left:8px;">
+                  ${rows.length.toLocaleString()} baris
+                </span>
+              </div>
+              <label style="display:flex;align-items:center;gap:6px;color:var(--muted);font-size:11px;">
+                <input type="checkbox" checked class="sheetCheck" value="${name}"> Upload
+              </label>
+            </div>`;
         });
-
-        document.getElementById('sheetsGrid').style.display = 'grid';
-        document.getElementById('uploadCard').style.display = 'block';
-        log(`✅ ${Object.keys(parsedSheets).length} sheet terbaca. Siap upload.`, 'ok');
-      } catch (err) {
-        log('❌ Gagal baca file: ' + err.message, 'err');
-      }
-    };
-    reader.readAsArrayBuffer(file);
-  }
-
-  // ─── Batch upload ─────────────────────────────────────────────
-  async function uploadBatched(colName, rows, onProgress) {
-    let done = 0;
-    for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-      const batch = writeBatch(db);
-      const chunk = rows.slice(i, i + BATCH_SIZE);
-      chunk.forEach(row => {
-        batch.set(doc(db, colName, makeDocId(colName, row)), row);
-      });
-      await batch.commit();
-      done += chunk.length;
-      onProgress(done, rows.length);
+        
+        document.getElementById('uploadActions').style.display = 'block';
+        log('✅ ' + Object.keys(uploadSheets).length + ' sheet terbaca', 'ok');
+      };
+      reader.readAsArrayBuffer(file);
     }
-  }
+    window.handleFile = handleFile;
 
-  // ─── Delete collection ────────────────────────────────────────
-  async function deleteCollection(colName, onProgress) {
-    const snap = await getDocs(collection(db, colName));
-    if (snap.empty) { onProgress(0, 0); return; }
-    let done = 0;
-    const docs = snap.docs;
-    for (let i = 0; i < docs.length; i += BATCH_SIZE) {
-      const batch = writeBatch(db);
-      docs.slice(i, i + BATCH_SIZE).forEach(d => batch.delete(d.ref));
-      await batch.commit();
-      done += Math.min(BATCH_SIZE, docs.length - i);
-      onProgress(done, docs.length);
-    }
-  }
-
-  // ─── Start upload ─────────────────────────────────────────────
-  async function startUpload() {
-    if (!db) { log('❌ Firebase belum terhubung.', 'err'); return; }
-    const selected = [...document.querySelectorAll('.sheetCheck:checked')].map(c => c.value);
-    if (!selected.length) { log('⚠️ Pilih minimal 1 sheet.', 'warn'); return; }
-
-    const clearFirst = document.getElementById('optClear').checked;
-    document.getElementById('btnUpload').disabled = true;
-    document.getElementById('btnClear').disabled = true;
-
-    const pw = document.getElementById('progressWrap');
-    pw.innerHTML = '';
-    pw.style.display = 'flex';
-    pw.style.flexDirection = 'column';
-    document.getElementById('summaryGrid').style.display = 'none';
-
-    const t0 = Date.now();
-    let totalDocs = 0;
-
-    for (const name of selected) {
-      const rows = parsedSheets[name];
-      if (!rows?.length) { log(`⚠️ ${name}: tidak ada data.`, 'warn'); continue; }
-      const pid = 'pg_' + name.replace(/\W/g,'_');
-      addProg(pid, name, rows.length);
-
-      try {
-        if (clearFirst) {
-          log(`🗑 Menghapus data lama: ${name}…`, 'warn');
-          await deleteCollection(name, (d,t) => updateProg(pid, d, t, '🗑'));
+    async function startUpload() {
+      if (!db) { log('❌ Firebase belum terhubung', 'err'); return; }
+      const selected = [...document.querySelectorAll('.sheetCheck:checked')].map(c => c.value);
+      if (!selected.length) { log('⚠️ Pilih minimal 1 sheet', 'warn'); return; }
+      
+      const BATCH_SIZE = 200;
+      let totalDocs = 0;
+      const t0 = Date.now();
+      
+      for (const name of selected) {
+        const rows = uploadSheets[name];
+        if (!rows?.length) continue;
+        
+        log(`⬆ Upload ${name} (${rows.length.toLocaleString()} dok)...`, 'info');
+        
+        for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+          const batch = writeBatch(db);
+          rows.slice(i, i + BATCH_SIZE).forEach(row => {
+            batch.set(doc(db, name, makeDocId(name, row)), row);
+          });
+          await batch.commit();
         }
-        log(`⬆ Uploading ${name} (${rows.length.toLocaleString()} dok)…`, 'info');
-        await uploadBatched(name, rows, (d,t) => updateProg(pid, d, t, '⬆'));
+        
         totalDocs += rows.length;
-        doneProg(pid, rows.length);
-        log(`✅ ${name} selesai — ${rows.length.toLocaleString()} dokumen`, 'ok');
-      } catch (err) {
-        errProg(pid);
-        log(`❌ ${name}: ${err.message}`, 'err');
+        log(`✅ ${name} selesai — ${rows.length.toLocaleString()} dok`, 'ok');
+      }
+      
+      const elapsed = ((Date.now()-t0)/1000).toFixed(1);
+      log(`🎉 Total ${totalDocs.toLocaleString()} dok dalam ${elapsed}s`, 'ok');
+      setStatus(`✅ ${totalDocs.toLocaleString()} dok`, 'ok');
+      
+      // Update stats
+      loadCollectionCounts();
+    }
+    window.startUpload = startUpload;
+
+    async function clearSelected() {
+      if (!db) { log('❌ Firebase belum terhubung', 'err'); return; }
+      const selected = [...document.querySelectorAll('.sheetCheck:checked')].map(c => c.value);
+      if (!selected.length || !confirm('Hapus koleksi: ' + selected.join(', ') + '?')) return;
+      
+      for (const name of selected) {
+        const snap = await getDocs(collection(db, name));
+        for (let i = 0; i < snap.docs.length; i += 200) {
+          const batch = writeBatch(db);
+          snap.docs.slice(i, i + 200).forEach(d => batch.delete(d.ref));
+          await batch.commit();
+        }
+        log('🗑 ' + name + ' dihapus', 'warn');
       }
     }
+    window.clearSelected = clearSelected;
 
-    const elapsed = ((Date.now()-t0)/1000).toFixed(1);
-    document.getElementById('sumDocs').textContent = totalDocs.toLocaleString();
-    document.getElementById('sumCols').textContent = selected.length;
-    document.getElementById('sumTime').textContent = elapsed + 's';
-    document.getElementById('summaryGrid').style.display = 'grid';
-    log(`🎉 Selesai! ${totalDocs.toLocaleString()} dokumen dalam ${elapsed}s`, 'ok');
-
-    document.getElementById('btnUpload').disabled = false;
-    document.getElementById('btnClear').disabled = false;
-  }
-
-  async function clearSelected() {
-    if (!db) { log('❌ Firebase belum terhubung.', 'err'); return; }
-    const selected = [...document.querySelectorAll('.sheetCheck:checked')].map(c => c.value);
-    if (!selected.length || !confirm(`Hapus: ${selected.join(', ')}?`)) return;
-
-    const pw = document.getElementById('progressWrap');
-    pw.innerHTML = '';
-    pw.style.display = 'flex';
-    pw.style.flexDirection = 'column';
-
-    for (const name of selected) {
-      const pid = 'pgd_' + name.replace(/\W/g,'_');
-      addProg(pid, `${name} (hapus)`, 100);
+    async function loadCollectionCounts() {
       try {
-        await deleteCollection(name, (d,t) => updateProg(pid, d, t, '🗑'));
-        doneProg(pid, 0);
-        log(`✅ ${name} dihapus.`, 'ok');
-      } catch(err) {
-        errProg(pid);
-        log(`❌ ${name}: ${err.message}`, 'err');
+        const bc = await getDocs(collection(db, 'MASTER_BARCODE'));
+        const pr = await getDocs(collection(db, 'MASTER_PRODUK'));
+        const sz = await getDocs(collection(db, 'SIZE'));
+        document.getElementById('statBc').textContent = bc.size;
+        document.getElementById('statPr').textContent = pr.size;
+        document.getElementById('statSz').textContent = sz.size;
+      } catch(e) {}
+    }
+
+    // ═══════════════════════════════════════════════════
+    // SCAN FUNCTIONS
+    // ═══════════════════════════════════════════════════
+    
+    async function loadMasterForScan() {
+      try {
+        setStatus('⏳ Memuat master...', 'warn');
+        
+        const bcSnap = await getDocs(collection(db, 'MASTER_BARCODE'));
+        DB.bc = [];
+        bcSnap.forEach(d => {
+          const dt = d.data();
+          DB.bc.push([dt.CompCd, dt.Brand, dt.Article, dt.Description, dt.Barcode]);
+        });
+        
+        const prSnap = await getDocs(collection(db, 'MASTER_PRODUK'));
+        DB.pr = [];
+        prSnap.forEach(d => {
+          const dt = d.data();
+          DB.pr.push([dt.Article, dt.Description, dt.Brand, dt.Brand_Name, dt.rch_Cat]);
+        });
+        
+        const szSnap = await getDocs(collection(db, 'SIZE'));
+        DB.sz = [];
+        szSnap.forEach(d => {
+          const dt = d.data();
+          DB.sz.push([dt.US_Size, dt.UK_Size, dt.Gender]);
+        });
+        
+        setStatus(`✅ Master siap: ${DB.bc.length} barcode`, 'ok');
+        log(`Master dimuat: ${DB.bc.length} barcode, ${DB.pr.length} produk, ${DB.sz.length} size`, 'ok');
+      } catch(e) {
+        setStatus('❌ Gagal load master', 'err');
+        log('Gagal load: ' + e.message, 'err');
       }
     }
-  }
+    window.loadMasterForScan = loadMasterForScan;
 
-  function addProg(id, name, total) {
-    const el = document.createElement('div');
-    el.id = id;
-    el.innerHTML = `<div class="prog-label"><span class="col-name">${name}</span><span class="pct">0/${total.toLocaleString()}</span></div>
-      <div class="prog-bar-bg"><div class="prog-bar" style="width:0%"></div></div>`;
-    document.getElementById('progressWrap').appendChild(el);
-  }
-  function updateProg(id, done, total, lbl) {
-    const el = document.getElementById(id); if (!el) return;
-    const pct = total ? Math.round(done/total*100) : 0;
-    el.querySelector('.pct').textContent = `${lbl} ${done.toLocaleString()}/${total.toLocaleString()} (${pct}%)`;
-    el.querySelector('.prog-bar').style.width = pct + '%';
-  }
-  function doneProg(id, total) {
-    const el = document.getElementById(id); if (!el) return;
-    el.querySelector('.prog-bar').classList.add('done');
-    el.querySelector('.pct').textContent = total ? `✅ ${total.toLocaleString()} selesai` : '✅ Selesai';
-  }
-  function errProg(id) {
-    const el = document.getElementById(id); if (!el) return;
-    el.querySelector('.prog-bar').classList.add('error');
-    el.querySelector('.pct').textContent = '❌ Error';
-  }
+    function onScanConfigChange() {
+      document.getElementById('scanBinQty').textContent = 
+        scanQueue.filter(i => i.bin === document.getElementById('scanBin').value.toUpperCase().trim()).length;
+    }
+    window.onScanConfigChange = onScanConfigChange;
 
-  window.initFirebase  = initFirebase;
-  window.handleDrop    = handleDrop;
-  window.handleFile    = handleFile;
-  window.startUpload   = startUpload;
-  window.clearSelected = clearSelected;
-</script>
+    async function handleScanEnter(e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      if (systemLocked) return;
+      
+      const inp = document.getElementById('scanInput');
+      const val = inp.value.toUpperCase().trim();
+      const bin = document.getElementById('scanBin').value.toUpperCase().trim();
+      const lokasi = document.getElementById('scanLokasi').value;
+      
+      if (!val || !bin) { alert('Isi BIN dan barcode!'); return; }
+      inp.value = '';
+      
+      await processScan(val, bin, lokasi);
+    }
+    window.handleScanEnter = handleScanEnter;
+
+    async function processScan(input, bin, lokasi) {
+      const bcRow = DB.bc.find(r => 
+        String(r[4] || '').trim() === input || String(r[2] || '').trim() === input
+      );
+      const article = bcRow ? String(bcRow[2]).toUpperCase().trim() : input;
+      const best = DB.pr.find(r => r[0] && article.startsWith(String(r[0]).trim()));
+      
+      if (!best) {
+        systemLocked = true;
+        document.getElementById('scanInput').disabled = true;
+        alert('🚫 Artikel tidak terdaftar: ' + input);
+        document.getElementById('scanInput').disabled = false;
+        document.getElementById('scanInput').focus();
+        systemLocked = false;
+        return;
+      }
+      
+      const scanData = {
+        barcode: input,
+        article: article,
+        description: best[1] || '',
+        brand: best[3] || '',
+        cat: String(best[4] || '').charAt(1) || '',
+        bin: bin,
+        lokasi: lokasi,
+        date: new Date().toLocaleDateString('id-ID'),
+        timestamp: new Date().toISOString()
+      };
+      
+      scanQueue.unshift(scanData);
+      
+      // Simpan ke Firestore
+      try {
+        await addDoc(collection(db, 'SCAN_RESULTS'), {
+          ...scanData,
+          scanned_at: serverTimestamp()
+        });
+      } catch(e) {}
+      
+      // Update UI
+      document.getElementById('scanTotal').textContent = scanQueue.length;
+      document.getElementById('scanBinQty').textContent = scanQueue.filter(i => i.bin === bin).length;
+      document.getElementById('scanQueueTotal').textContent = scanQueue.length;
+      
+      renderRecentScans(bin);
+      
+      // Beep
+      try {
+        const ctx = new AudioContext();
+        const o = ctx.createOscillator();
+        o.connect(ctx.destination);
+        o.frequency.value = 1000;
+        o.start(); o.stop(ctx.currentTime + 0.08);
+      } catch(e) {}
+    }
+    window.processScan = processScan;
+
+    function renderRecentScans(bin) {
+      const filtered = bin ? scanQueue.filter(i => i.bin === bin) : scanQueue;
+      const tbody = document.getElementById('recentScanBody');
+      
+      if (!filtered.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">Belum ada scan</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = filtered.slice(0, 50).map((item, idx) => `
+        <tr>
+          <td style="color:var(--muted)">${idx + 1}</td>
+          <td style="font-weight:700;color:var(--accent)">${item.article}</td>
+          <td>${item.description}</td>
+          <td style="color:var(--amber)">${item.cat || '-'}</td>
+          <td>${item.bin}</td>
+        </tr>
+      `).join('');
+    }
+    window.renderRecentScans = renderRecentScans;
+
+    // ── Camera ──────────────────────────────────────────
+    function toggleCamera() {
+      if (!cameraActive) {
+        const bin = document.getElementById('scanBin').value.trim();
+        if (!bin) { alert('Isi BIN dulu!'); return; }
+        
+        document.getElementById('reader').style.display = 'block';
+        document.getElementById('camBtnText').textContent = '📷 Matikan Kamera';
+        cameraActive = true;
+        
+        const qr = new Html5Qrcode('reader');
+        qr.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 250, height: 150 } },
+          async (txt) => {
+            const bin = document.getElementById('scanBin').value.toUpperCase().trim();
+            const lokasi = document.getElementById('scanLokasi').value;
+            await processScan(txt, bin, lokasi);
+          }
+        ).catch(err => {
+          alert('Gagal kamera: ' + err);
+          cameraActive = false;
+        });
+        
+        window.cameraInstance = qr;
+      } else {
+        document.getElementById('reader').style.display = 'none';
+        document.getElementById('camBtnText').textContent = '📷 Buka Kamera';
+        cameraActive = false;
+        if (window.cameraInstance) {
+          window.cameraInstance.stop().catch(() => {});
+        }
+      }
+    }
+    window.toggleCamera = toggleCamera;
+
+    // ── Collection Info ─────────────────────────────────
+    async function loadCollectionSize(colName) {
+      try {
+        const snap = await getDocs(collection(db, colName));
+        document.getElementById('collectionInfo').innerHTML = `
+          <strong style="color:var(--accent)">${colName}</strong>: 
+          ${snap.size} dokumen
+        `;
+      } catch(e) {
+        document.getElementById('collectionInfo').textContent = 'Error: ' + e.message;
+      }
+    }
+    window.loadCollectionSize = loadCollectionSize;
+
+    // ═══════════════════════════════════════════════════
+    // INIT
+    // ═══════════════════════════════════════════════════
+    loadCollectionCounts();
+    console.log('🚀 WMS LEAGUE - Unified UI Ready');
+  </script>
+
 </body>
 </html>
