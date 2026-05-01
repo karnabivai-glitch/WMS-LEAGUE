@@ -136,9 +136,11 @@
       display: flex;
       gap: 12px;
       align-items: flex-end;
+      flex-wrap: wrap;
     }
     .scan-input-group {
       flex: 1;
+      min-width: 140px;
     }
     .scan-input-group label {
       display: block;
@@ -210,6 +212,42 @@
     .product-info-item .value.highlight {
       color: var(--accent);
       font-size: 1.1rem;
+    }
+    
+    /* Derived Info */
+    .derived-info {
+      background: rgba(59, 130, 246, 0.08);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 12px;
+    }
+    .derived-info .di-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--accent2);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .derived-info .di-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+    }
+    .derived-info .di-item {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .derived-info .di-item .label {
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .derived-info .di-item .value {
+      font-weight: 600;
+      font-size: 0.9rem;
     }
     
     /* Search Status */
@@ -293,7 +331,7 @@
       width: 100%;
       border-collapse: collapse;
       font-size: 0.82rem;
-      min-width: 1000px;
+      min-width: 1200px;
     }
     .scan-table thead {
       background: var(--bg);
@@ -335,9 +373,13 @@
     }
     .scan-table .col-barcode { font-family: monospace; font-weight: 500; color: var(--accent); }
     .scan-table .col-lokasi { color: var(--accent2); }
+    .scan-table .col-bin { font-weight: 600; color: #a78bfa; }
     .scan-table .col-article { font-family: monospace; }
-    .scan-table .col-bin { font-weight: 600; }
     .scan-table .col-date { color: var(--muted); font-size: 0.78rem; }
+    .scan-table .col-gender { font-weight: 600; }
+    .scan-table .gender-laki { color: #60a5fa; }
+    .scan-table .gender-perempuan { color: #f472b6; }
+    .scan-table .gender-anak { color: #fbbf24; }
     .scan-table .source-badge {
       display: inline-block;
       font-size: 0.6rem;
@@ -356,6 +398,11 @@
       background: #1d4ed833;
       color: #bfdbfe;
       border: 1px solid #1d4ed8;
+    }
+    .source-badge.derived {
+      background: #7c3aed33;
+      color: #ddd6fe;
+      border: 1px solid #7c3aed;
     }
     .actions-cell {
       display: flex;
@@ -540,21 +587,25 @@
       <div class="product-info-card" id="productInfoCard">
         <div class="product-info-header">
           <h3>📦 Data dari Master</h3>
-          <span class="badge badge-orange" id="productDataSource">MASTER_BARCODE</span>
+          <span class="badge badge-orange" id="productDataSource">MASTER</span>
         </div>
         <div class="product-info-grid" id="productInfoGrid"></div>
+        <div class="derived-info" id="derivedInfo" style="display:none;">
+          <div class="di-title">🔍 Data Turunan (Derived)</div>
+          <div class="di-grid" id="derivedInfoGrid"></div>
+        </div>
       </div>
       
       <!-- Quick Info -->
-      <div style="margin-top: 12px; display: flex; gap: 12px; align-items: center;">
+      <div style="margin-top: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
         <span style="font-size: 0.75rem; color: var(--muted);">
-          💡 Tekan <strong>Enter</strong> untuk scan & cari otomatis dari Master Data
+          💡 Tekan <strong>Enter</strong> untuk scan & cari otomatis
         </span>
         <span style="font-size: 0.75rem; color: var(--muted);">
           | Total hari ini: <strong id="todayCount">0</strong> scan
         </span>
         <span style="font-size: 0.75rem; color: var(--muted);">
-          | Status DB: <strong id="firestoreStatus">-</strong>
+          | DB: <strong id="firestoreStatus">-</strong>
         </span>
       </div>
     </div>
@@ -603,10 +654,11 @@
               <th>#</th>
               <th>BARCODE</th>
               <th>LOKASI</th>
-              <th>ARTICLE</th>
               <th>BIN</th>
+              <th>ARTICLE</th>
               <th>SIZE US</th>
               <th>SIZE UK</th>
+              <th>GENDER</th>
               <th>DESCRIPTION</th>
               <th>BRAND</th>
               <th>CAT</th>
@@ -619,7 +671,7 @@
           </thead>
           <tbody id="scanTableBody">
             <tr class="empty-state">
-              <td colspan="15">
+              <td colspan="16">
                 <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                 </svg>
@@ -661,7 +713,127 @@
   let db = null;
   let parsedSheets = {};
   let scanDataArray = [];
-  let lastFoundProduct = null; // Store last found product for reuse
+  let lastFoundProduct = null;
+
+  // ═══════════════════════════════════════════════════════════════
+  // HELPER: Derive data dari Article
+  // ═══════════════════════════════════════════════════════════════
+  
+  /**
+   * Extract 3 digit terakhir dari Article sebagai SIZE US
+   * Contoh: 1011824003N100 → "100", 202018261LAN085 → "085"
+   */
+  function extractSizeUS(article) {
+    if (!article) return '';
+    const str = String(article).trim();
+    // Cari 3 digit terakhir (bisa di akhir atau sebelum karakter non-digit)
+    const match = str.match(/(\d{3})\D*$/);
+    return match ? match[1] : '';
+  }
+
+  /**
+   * Tentukan Gender dari digit pertama Article
+   * 1 = Laki-laki, 2 = Perempuan, 3 = Anak-anak
+   */
+  function extractGender(article) {
+    if (!article) return { code: '', label: '' };
+    const str = String(article).trim();
+    const firstDigit = str.charAt(0);
+    
+    switch(firstDigit) {
+      case '1': return { code: '1', label: 'Laki-laki' };
+      case '2': return { code: '2', label: 'Perempuan' };
+      case '3': return { code: '3', label: 'Anak-anak' };
+      default: return { code: firstDigit, label: 'Unknown' };
+    }
+  }
+
+  /**
+   * Cari SIZE UK dari koleksi SIZE berdasarkan US_Size dan Gender
+   */
+  async function findSizeUK(usSize, genderLabel) {
+    if (!db || !usSize || !genderLabel) return '';
+    
+    try {
+      // Cari di koleksi SIZE dimana US_Size = usSize dan Gender = genderLabel
+      const q = query(
+        collection(db, 'SIZE'), 
+        where('US_Size', '==', usSize),
+        where('Gender', '==', genderLabel)
+      );
+      const snapshot = await getDocs(q);
+      
+      if (!snapshot.empty) {
+        const doc = snapshot.docs[0];
+        const data = doc.data();
+        // Return UK_Size atau Size_UK field
+        return data.UK_Size || data.Size_UK || data['UK_Size'] || '';
+      }
+      
+      // Coba cari dengan query lebih fleksibel (hanya US_Size)
+      const q2 = query(collection(db, 'SIZE'), where('US_Size', '==', usSize));
+      const snapshot2 = await getDocs(q2);
+      
+      if (!snapshot2.empty) {
+        // Cari yang gendernya match
+        for (const doc of snapshot2.docs) {
+          const data = doc.data();
+          if (data.Gender === genderLabel) {
+            return data.UK_Size || data.Size_UK || data['UK_Size'] || '';
+          }
+        }
+        // Fallback: ambil yang pertama
+        const firstData = snapshot2.docs[0].data();
+        return firstData.UK_Size || firstData.Size_UK || firstData['UK_Size'] || '';
+      }
+    } catch (err) {
+      console.warn('Error mencari SIZE UK:', err.message);
+    }
+    
+    return '';
+  }
+
+  /**
+   * Cari Brand Name dari MASTER_PRODUK berdasarkan Article
+   */
+  async function findBrandName(article) {
+    if (!db || !article) return '';
+    
+    try {
+      const q = query(collection(db, 'MASTER_PRODUK'), where('Article', '==', article));
+      const snapshot = await getDocs(q);
+      
+      if (!snapshot.empty) {
+        const data = snapshot.docs[0].data();
+        return data['Brand Name'] || data.Brand_Name || data.BrandName || data.Brand || '';
+      }
+    } catch (err) {
+      console.warn('Error mencari Brand Name:', err.message);
+    }
+    
+    return '';
+  }
+
+  /**
+   * Cari Season Yr dari MASTER_PRODUK berdasarkan Article
+   */
+  async function findSeasonYr(article) {
+    if (!db || !article) return '';
+    
+    try {
+      const q = query(collection(db, 'MASTER_PRODUK'), where('Article', '==', article));
+      const snapshot = await getDocs(q);
+      
+      if (!snapshot.empty) {
+        const data = snapshot.docs[0].data();
+        return data['Season Yr'] || data.Season_Yr || data.SeasonYr || data.Season || '';
+      }
+    } catch (err) {
+      console.warn('Error mencari Season Yr:', err.message);
+    }
+    
+    return '';
+  }
 
   // ─── Page Navigation ──────────────────────────────────────────
   window.switchPage = function(page) {
@@ -836,7 +1008,7 @@
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // MASTER DATA SEARCH — Cari barcode di Firestore
+  // MASTER DATA SEARCH — Cari barcode di Firestore + Derived Data
   // ═══════════════════════════════════════════════════════════════
 
   async function searchBarcodeInMaster(barcode) {
@@ -850,6 +1022,8 @@
     const productInfoCard = document.getElementById('productInfoCard');
     const productInfoGrid = document.getElementById('productInfoGrid');
     const productDataSource = document.getElementById('productDataSource');
+    const derivedInfo = document.getElementById('derivedInfo');
+    const derivedInfoGrid = document.getElementById('derivedInfoGrid');
 
     // Show searching status
     searchStatus.style.display = 'flex';
@@ -857,28 +1031,84 @@
     searchSpinner.style.display = 'inline-block';
     searchStatusText.textContent = `Mencari "${barcode}" di Master Data...`;
     productInfoCard.classList.remove('show');
+    derivedInfo.style.display = 'none';
 
     try {
       // Search in MASTER_BARCODE first (by Barcode field)
       let result = await searchInCollection('MASTER_BARCODE', 'Barcode', barcode);
       
       if (result.found) {
-        displayProductInfo(result.data, 'MASTER_BARCODE');
+        // Dapatkan article dari hasil
+        const article = result.data.Article || result.data.article || '';
+        
+        // Derive data dari article
+        const sizeUS = extractSizeUS(article);
+        const gender = extractGender(article);
+        
+        // Cari SIZE UK dari koleksi SIZE
+        const sizeUK = await findSizeUK(sizeUS, gender.label);
+        
+        // Cari Brand Name dari MASTER_PRODUK
+        const brandName = await findBrandName(article);
+        
+        // Cari Season Yr dari MASTER_PRODUK
+        const seasonYr = await findSeasonYr(article);
+        
+        // Gabungkan semua data
+        const enrichedData = {
+          ...result.data,
+          _derived: {
+            sizeUS: sizeUS,
+            sizeUK: sizeUK,
+            gender: gender,
+            brandName: brandName || result.data.Brand || result.data.brand || 'LEAGUE',
+            seasonYr: seasonYr || result.data.Season || result.data.season || ''
+          }
+        };
+        
+        displayProductInfo(enrichedData, 'MASTER_BARCODE');
         searchStatus.className = 'search-status found';
         searchSpinner.style.display = 'none';
-        searchStatusText.textContent = `✅ Ditemukan di MASTER_BARCODE`;
-        return result;
+        searchStatusText.textContent = `✅ Ditemukan di MASTER_BARCODE | Size US: ${sizeUS} | UK: ${sizeUK || '?'} | ${gender.label}`;
+        
+        return { 
+          found: true, 
+          data: enrichedData, 
+          source: 'MASTER_BARCODE' 
+        };
       }
 
       // If not found, try MASTER_PRODUK (by Article field)
       result = await searchInCollection('MASTER_PRODUK', 'Article', barcode);
       
       if (result.found) {
-        displayProductInfo(result.data, 'MASTER_PRODUK');
+        const article = result.data.Article || result.data.article || barcode;
+        const sizeUS = extractSizeUS(article);
+        const gender = extractGender(article);
+        const sizeUK = await findSizeUK(sizeUS, gender.label);
+        
+        const enrichedData = {
+          ...result.data,
+          Barcode: barcode,
+          _derived: {
+            sizeUS: sizeUS,
+            sizeUK: sizeUK,
+            gender: gender,
+            brandName: result.data['Brand Name'] || result.data.Brand_Name || result.data.Brand || 'LEAGUE',
+            seasonYr: result.data['Season Yr'] || result.data.Season_Yr || result.data.Season || ''
+          }
+        };
+        
+        displayProductInfo(enrichedData, 'MASTER_PRODUK');
         searchStatus.className = 'search-status found';
         searchSpinner.style.display = 'none';
-        searchStatusText.textContent = `✅ Ditemukan di MASTER_PRODUK`;
-        return result;
+        searchStatusText.textContent = `✅ Ditemukan di MASTER_PRODUK | Size US: ${sizeUS} | ${gender.label}`;
+        
+        return { 
+          found: true, 
+          data: enrichedData, 
+          source: 'MASTER_PRODUK' 
+        };
       }
 
       // Not found in any collection
@@ -924,38 +1154,32 @@
     const card = document.getElementById('productInfoCard');
     const grid = document.getElementById('productInfoGrid');
     const dataSource = document.getElementById('productDataSource');
+    const derivedInfo = document.getElementById('derivedInfo');
+    const derivedInfoGrid = document.getElementById('derivedInfoGrid');
     
-    // Determine which fields to show based on source
+    // Fields from master
     let fields = [];
     
     if (source === 'MASTER_BARCODE') {
       fields = [
         { key: 'Barcode', label: 'Barcode', highlight: true },
         { key: 'Article', label: 'Article' },
-        { key: 'Brand', label: 'Brand' },
         { key: 'Description', label: 'Description' },
+        { key: 'BIN', label: 'BIN (Master)' },
         { key: 'Category', label: 'Category' },
-        { key: 'Season', label: 'Season' },
-        { key: 'SIZE_US', label: 'Size US' },
-        { key: 'SIZE_UK', label: 'Size UK' },
-        { key: 'BIN', label: 'BIN' },
-        { key: 'Color', label: 'Color' },
-        { key: 'Price', label: 'Price' },
       ];
     } else if (source === 'MASTER_PRODUK') {
       fields = [
         { key: 'Article', label: 'Article', highlight: true },
-        { key: 'Brand', label: 'Brand' },
+        { key: 'Brand Name', label: 'Brand Name' },
         { key: 'Description', label: 'Description' },
-        { key: 'Category', label: 'Category' },
-        { key: 'Season', label: 'Season' },
-        { key: 'Price', label: 'Price' },
+        { key: 'Season Yr', label: 'Season Yr' },
       ];
     }
     
     // Build grid HTML
     grid.innerHTML = fields
-      .filter(f => data[f.key] !== undefined && data[f.key] !== null)
+      .filter(f => data[f.key] !== undefined && data[f.key] !== null && data[f.key] !== '')
       .map(f => `
         <div class="product-info-item">
           <div class="label">${f.label}</div>
@@ -964,6 +1188,43 @@
       `).join('');
     
     dataSource.textContent = source;
+    
+    // Show derived info
+    if (data._derived) {
+      const d = data._derived;
+      const article = data.Article || data.article || '';
+      
+      derivedInfoGrid.innerHTML = `
+        <div class="di-item">
+          <div class="label">Article</div>
+          <div class="value" style="font-family:monospace;">${article}</div>
+        </div>
+        <div class="di-item">
+          <div class="label">Digit 1 → Gender</div>
+          <div class="value">${article.charAt(0)} → <strong>${d.gender.label}</strong></div>
+        </div>
+        <div class="di-item">
+          <div class="label">3 Digit Terakhir → SIZE US</div>
+          <div class="value" style="color:var(--accent);font-size:1.1rem;">${d.sizeUS || '?'}</div>
+        </div>
+        <div class="di-item">
+          <div class="label">SIZE UK (dari SIZE sheet)</div>
+          <div class="value" style="color:var(--accent2);">${d.sizeUK || 'Tidak ditemukan'}</div>
+        </div>
+        <div class="di-item">
+          <div class="label">Brand (dari MASTER_PRODUK)</div>
+          <div class="value">${d.brandName || '?'}</div>
+        </div>
+        <div class="di-item">
+          <div class="label">Season (dari MASTER_PRODUK)</div>
+          <div class="value">${d.seasonYr || '?'}</div>
+        </div>
+      `;
+      derivedInfo.style.display = 'block';
+    } else {
+      derivedInfo.style.display = 'none';
+    }
+    
     card.classList.add('show');
     
     // Store for later use
@@ -994,31 +1255,48 @@
       return;
     }
 
+    // Check duplicate
+    const isDuplicate = scanDataArray.some(row => row.BARCODE === barcode);
+    if (isDuplicate) {
+      const proceed = confirm(`Barcode "${barcode}" sudah ada di daftar. Tambah lagi?`);
+      if (!proceed) {
+        barcodeInput.value = '';
+        barcodeInput.focus();
+        return;
+      }
+    }
+
     // Disable input while searching
     barcodeInput.disabled = true;
+    const addBtn = document.querySelector('#page-scan .btn-primary');
+    if (addBtn) addBtn.disabled = true;
     
     // Search in Master Data
     const masterResult = await searchBarcodeInMaster(barcode);
     
-    // Build new row with master data if found
+    // Build new row with derived data
     const now = new Date();
     let newRow;
     
     if (masterResult.found && masterResult.data) {
       const md = masterResult.data;
+      const d = md._derived || {};
+      const article = md.Article || md.article || '';
       
       newRow = {
         id: Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
         BARCODE: barcode,
         LOKASI: lokasi,
-        ARTICLE: md.Article || md.article || '',
         BIN: md.BIN || md.bin || md.Bin || '',
-        SIZE_US: md.SIZE_US || md.size_us || md['US_Size'] || '',
-        SIZE_UK: md.SIZE_UK || md.size_uk || md['UK_Size'] || '',
+        ARTICLE: article,
+        SIZE_US: d.sizeUS || extractSizeUS(article),
+        SIZE_UK: d.sizeUK || '',
+        GENDER: d.gender?.label || extractGender(article).label,
+        GENDER_CODE: d.gender?.code || extractGender(article).code,
         DESCRIPTION: md.Description || md.description || md.DESCRIPTION || '',
-        BRAND: md.Brand || md.brand || md.BRAND || 'LEAGUE',
+        BRAND: d.brandName || md.Brand || md.brand || 'LEAGUE',
         CAT: md.Category || md.category || md.CAT || md.Cat || 'F',
-        SEASON: md.Season || md.season || md.SEASON || String(now.getFullYear()),
+        SEASON: d.seasonYr || md.Season || md.season || md.SEASON || String(now.getFullYear()),
         DATE: getTodayDate(),
         USER: user,
         SOURCE: 'MASTER',
@@ -1026,17 +1304,22 @@
         timestamp: now.toISOString()
       };
       
-      showToast(`✅ Data dari ${masterResult.source}`, 'success');
+      showToast(`✅ Data dari ${masterResult.source} | US:${d.sizeUS} UK:${d.sizeUK || '?'} ${d.gender?.label || ''}`, 'success');
     } else {
-      // Manual entry (not found in master)
+      // Manual entry (not found in master) - tetap derive dari barcode jika memungkinkan
+      const sizeUS = extractSizeUS(barcode);
+      const gender = extractGender(barcode);
+      
       newRow = {
         id: Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
         BARCODE: barcode,
         LOKASI: lokasi,
-        ARTICLE: '',
         BIN: '',
-        SIZE_US: '',
+        ARTICLE: barcode,
+        SIZE_US: sizeUS,
         SIZE_UK: '',
+        GENDER: gender.label,
+        GENDER_CODE: gender.code,
         DESCRIPTION: '',
         BRAND: 'LEAGUE',
         CAT: 'F',
@@ -1062,6 +1345,7 @@
     // Reset input
     barcodeInput.value = '';
     barcodeInput.disabled = false;
+    if (addBtn) addBtn.disabled = false;
     barcodeInput.focus();
     
     // Update UI
@@ -1087,10 +1371,23 @@
     const row = scanDataArray.find(r => r.id === id);
     if (!row) return;
     
-    const newValue = prompt(`Edit ${field}:`, row[field] || '');
+    const currentValue = row[field] || '';
+    const newValue = prompt(`Edit ${field}:`, currentValue);
     if (newValue === null) return;
     
     row[field] = newValue;
+    
+    // Jika yang diedit ARTICLE, update derived fields
+    if (field === 'ARTICLE') {
+      row.SIZE_US = extractSizeUS(newValue);
+      const gender = extractGender(newValue);
+      row.GENDER = gender.label;
+      row.GENDER_CODE = gender.code;
+      
+      // Note: SIZE UK, Brand, Season tidak diupdate otomatis saat edit manual
+      // karena memerlukan query ke Firestore
+    }
+    
     saveScanData();
     renderScanTable();
     showToast('✅ Data diupdate', 'success');
@@ -1127,13 +1424,22 @@
     document.getElementById('rowCount').textContent = `${total} row`;
   }
 
+  function getGenderClass(genderLabel) {
+    switch(genderLabel) {
+      case 'Laki-laki': return 'gender-laki';
+      case 'Perempuan': return 'gender-perempuan';
+      case 'Anak-anak': return 'gender-anak';
+      default: return '';
+    }
+  }
+
   function renderScanTable() {
     const tbody = document.getElementById('scanTableBody');
     
     if (scanDataArray.length === 0) {
       tbody.innerHTML = `
         <tr class="empty-state">
-          <td colspan="15">
+          <td colspan="16">
             <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
             </svg>
@@ -1148,18 +1454,19 @@
         <td>${index + 1}</td>
         <td class="col-barcode" onclick="editScanCell('${row.id}', 'BARCODE')" title="Klik untuk edit">${row.BARCODE}</td>
         <td class="col-lokasi" onclick="editScanCell('${row.id}', 'LOKASI')" title="Klik untuk edit">${row.LOKASI}</td>
-        <td class="col-article" onclick="editScanCell('${row.id}', 'ARTICLE')" title="Klik untuk edit">${row.ARTICLE || '-'}</td>
         <td class="col-bin" onclick="editScanCell('${row.id}', 'BIN')" title="Klik untuk edit">${row.BIN || '-'}</td>
-        <td onclick="editScanCell('${row.id}', 'SIZE_US')" title="Klik untuk edit">${row.SIZE_US || '-'}</td>
-        <td onclick="editScanCell('${row.id}', 'SIZE_UK')" title="Klik untuk edit">${row.SIZE_UK || '-'}</td>
+        <td class="col-article" onclick="editScanCell('${row.id}', 'ARTICLE')" title="Klik untuk edit">${row.ARTICLE || '-'}</td>
+        <td style="font-weight:600;color:var(--accent);" onclick="editScanCell('${row.id}', 'SIZE_US')" title="Klik untuk edit">${row.SIZE_US || '-'}</td>
+        <td style="font-weight:600;color:var(--accent2);" onclick="editScanCell('${row.id}', 'SIZE_UK')" title="Klik untuk edit">${row.SIZE_UK || '-'}</td>
+        <td class="col-gender ${getGenderClass(row.GENDER)}" onclick="editScanCell('${row.id}', 'GENDER')" title="Klik untuk edit">${row.GENDER || '-'}</td>
         <td onclick="editScanCell('${row.id}', 'DESCRIPTION')" title="Klik untuk edit">${row.DESCRIPTION || '-'}</td>
-        <td onclick="editScanCell('${row.id}', 'BRAND')" title="Klik untuk edit">${row.BRAND}</td>
-        <td onclick="editScanCell('${row.id}', 'CAT')" title="Klik untuk edit">${row.CAT}</td>
-        <td onclick="editScanCell('${row.id}', 'SEASON')" title="Klik untuk edit">${row.SEASON}</td>
+        <td onclick="editScanCell('${row.id}', 'BRAND')" title="Klik untuk edit">${row.BRAND || '-'}</td>
+        <td onclick="editScanCell('${row.id}', 'CAT')" title="Klik untuk edit">${row.CAT || '-'}</td>
+        <td onclick="editScanCell('${row.id}', 'SEASON')" title="Klik untuk edit">${row.SEASON || '-'}</td>
         <td class="col-date">${row.DATE}</td>
         <td>${row.USER}</td>
         <td>
-          <span class="source-badge ${row.SOURCE === 'MASTER' ? 'master' : 'manual'}">
+          <span class="source-badge ${row.SOURCE === 'MASTER' ? 'master' : row.SOURCE === 'DERIVED' ? 'derived' : 'manual'}">
             ${row.SOURCE === 'MASTER' ? '📦 MASTER' : '✏️ MANUAL'}
           </span>
         </td>
@@ -1181,10 +1488,11 @@
     const exportData = scanDataArray.map(row => ({
       BARCODE: row.BARCODE,
       LOKASI: row.LOKASI,
-      ARTICLE: row.ARTICLE,
       BIN: row.BIN,
+      ARTICLE: row.ARTICLE,
       'SIZE US': row.SIZE_US,
       'SIZE UK': row.SIZE_UK,
+      GENDER: row.GENDER,
       DESCRIPTION: row.DESCRIPTION,
       BRAND: row.BRAND,
       CAT: row.CAT,
@@ -1230,10 +1538,12 @@
           const docData = {
             BARCODE: row.BARCODE,
             LOKASI: row.LOKASI,
-            ARTICLE: row.ARTICLE || '',
             BIN: row.BIN || '',
+            ARTICLE: row.ARTICLE || '',
             SIZE_US: row.SIZE_US || '',
             SIZE_UK: row.SIZE_UK || '',
+            GENDER: row.GENDER || '',
+            GENDER_CODE: row.GENDER_CODE || '',
             DESCRIPTION: row.DESCRIPTION || '',
             BRAND: row.BRAND || 'LEAGUE',
             CAT: row.CAT || 'F',
