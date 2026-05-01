@@ -4,241 +4,73 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MASTER DATA — Firebase Uploader</title>
-
-  <!-- Firebase SDK -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import {
-      getFirestore,
-      collection,
-      writeBatch,
-      doc,
-      getDocs,
-      deleteDoc,
-      getDoc,
-      setDoc,
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-    // ──────────────────────────────────────────────
-    //  🔧 GANTI CONFIG INI dengan config Firebase Anda
-    // ──────────────────────────────────────────────
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT_ID.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID",
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // ── Util ──────────────────────────────────────
-    const BATCH_SIZE = 400; // Firestore max 500/batch
-
-    function sanitize(val) {
-      if (val === null || val === undefined || val === "" || (typeof val === "number" && isNaN(val))) return null;
-      if (val instanceof Date) return val.toISOString().split("T")[0];
-      if (typeof val === "object" && val.toString) return val.toString();
-      return val;
-    }
-
-    function rowToObj(headers, row) {
-      const obj = {};
-      headers.forEach((h, i) => {
-        obj[h.trim().replace(/\s+/g, "_")] = sanitize(row[i]);
-      });
-      return obj;
-    }
-
-    function docId(sheetName, row) {
-      if (sheetName === "MASTER_BARCODE") return String(row["Barcode"] ?? row["Article"] ?? Math.random());
-      if (sheetName === "MASTER_PRODUK") return String(row["Article"] ?? Math.random());
-      if (sheetName === "SIZE") return String(row["US_Size"] ?? Math.random());
-      return String(Math.random());
-    }
-
-    async function uploadBatched(sheetName, rows, onProgress) {
-      let done = 0;
-      for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-        const batch = writeBatch(db);
-        const chunk = rows.slice(i, i + BATCH_SIZE);
-        chunk.forEach((row) => {
-          const id = docId(sheetName, row);
-          const ref = doc(db, sheetName, id);
-          batch.set(ref, row);
-        });
-        await batch.commit();
-        done += chunk.length;
-        onProgress(done, rows.length);
-      }
-    }
-
-    async function deleteCollection(colName, onProgress) {
-      const snap = await getDocs(collection(db, colName));
-      let done = 0;
-      for (let i = 0; i < snap.docs.length; i += BATCH_SIZE) {
-        const batch = writeBatch(db);
-        snap.docs.slice(i, i + BATCH_SIZE).forEach((d) => batch.delete(d.ref));
-        await batch.commit();
-        done += Math.min(BATCH_SIZE, snap.docs.length - i);
-        onProgress(done, snap.docs.length);
-      }
-    }
-
-    // ── Expose to window ─────────────────────────
-    window._db = db;
-    window._uploadBatched = uploadBatched;
-    window._deleteCollection = deleteCollection;
-    window._firebaseReady = true;
-  </script>
-
-  <!-- SheetJS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
   <style>
     :root {
-      --bg: #0f1117;
-      --card: #1a1d27;
-      --border: #2a2d3a;
-      --accent: #f97316;
-      --accent2: #3b82f6;
-      --green: #22c55e;
-      --red: #ef4444;
-      --text: #e2e8f0;
-      --muted: #64748b;
-      --radius: 12px;
+      --bg:#0f1117;--card:#1a1d27;--border:#2a2d3a;
+      --accent:#f97316;--accent2:#3b82f6;
+      --green:#22c55e;--red:#ef4444;
+      --text:#e2e8f0;--muted:#64748b;--radius:12px;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Inter', system-ui, sans-serif;
-      min-height: 100vh;
-      padding: 24px 16px;
-    }
-    header {
-      text-align: center;
-      margin-bottom: 32px;
-    }
-    header h1 { font-size: 1.8rem; font-weight: 700; }
-    header h1 span { color: var(--accent); }
-    header p { color: var(--muted); margin-top: 6px; font-size: .9rem; }
-
-    .container { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px;
-    }
-    .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-    .badge {
-      font-size: .65rem; font-weight: 700; letter-spacing: .06em;
-      padding: 2px 8px; border-radius: 99px; text-transform: uppercase;
-    }
-    .badge-blue { background: #1d4ed8; color: #bfdbfe; }
-    .badge-orange { background: #c2410c; color: #fed7aa; }
-    .badge-green { background: #15803d; color: #bbf7d0; }
-
-    /* Drop zone */
-    .dropzone {
-      border: 2px dashed var(--border);
-      border-radius: 10px;
-      padding: 36px 20px;
-      text-align: center;
-      cursor: pointer;
-      transition: border-color .2s, background .2s;
-    }
-    .dropzone:hover, .dropzone.over { border-color: var(--accent); background: rgba(249,115,22,.06); }
-    .dropzone svg { color: var(--muted); margin-bottom: 10px; }
-    .dropzone p { color: var(--muted); font-size: .9rem; }
-    .dropzone p strong { color: var(--text); }
-    #fileInput { display: none; }
-
-    /* Sheet cards */
-    .sheets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin-top: 16px; }
-    .sheet-card {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px;
-    }
-    .sheet-card .name { font-weight: 600; font-size: .95rem; margin-bottom: 4px; }
-    .sheet-card .meta { color: var(--muted); font-size: .8rem; }
-
-    /* Options */
-    .options { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
-    label.opt {
-      display: flex; align-items: center; gap: 8px;
-      background: var(--bg); border: 1px solid var(--border);
-      border-radius: 8px; padding: 10px 16px; cursor: pointer;
-      font-size: .875rem; transition: border-color .2s;
-    }
-    label.opt:hover { border-color: var(--accent2); }
-    label.opt input[type=checkbox] { accent-color: var(--accent2); width: 16px; height: 16px; }
-
-    /* Buttons */
-    .btn {
-      padding: 11px 24px; border-radius: 9px; font-weight: 600;
-      font-size: .9rem; border: none; cursor: pointer; transition: opacity .2s, transform .1s;
-    }
-    .btn:active { transform: scale(.97); }
-    .btn:disabled { opacity: .4; cursor: not-allowed; }
-    .btn-primary { background: var(--accent); color: #fff; }
-    .btn-danger  { background: var(--red);   color: #fff; }
-    .btn-secondary { background: var(--border); color: var(--text); }
-
-    /* Progress */
-    .progress-wrap { margin-top: 16px; display: flex; flex-direction: column; gap: 12px; }
-    .prog-item {}
-    .prog-label { display: flex; justify-content: space-between; font-size: .8rem; margin-bottom: 4px; }
-    .prog-label .col-name { font-weight: 600; }
-    .prog-bar-bg { background: var(--border); border-radius: 99px; height: 8px; overflow: hidden; }
-    .prog-bar    { height: 100%; border-radius: 99px; background: var(--accent2); transition: width .3s; width: 0%; }
-    .prog-bar.done { background: var(--green); }
-    .prog-bar.error { background: var(--red); }
-
-    /* Log */
-    .log {
-      background: #0a0c12; border: 1px solid var(--border); border-radius: 8px;
-      padding: 14px 16px; font-size: .78rem; font-family: monospace;
-      max-height: 220px; overflow-y: auto; line-height: 1.6;
-      margin-top: 16px;
-    }
-    .log .ok   { color: var(--green); }
-    .log .err  { color: var(--red); }
-    .log .info { color: var(--accent2); }
-    .log .warn { color: #facc15; }
-
-    /* Summary */
-    .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
-    .sum-box { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 16px; text-align: center; }
-    .sum-box .val { font-size: 1.6rem; font-weight: 700; color: var(--accent); }
-    .sum-box .lbl { color: var(--muted); font-size: .78rem; margin-top: 4px; }
-
-    /* Config setup */
-    .config-form { display: flex; flex-direction: column; gap: 12px; }
-    .config-form label { font-size: .8rem; color: var(--muted); margin-bottom: 2px; display: block; }
-    .config-form input {
-      width: 100%; padding: 10px 12px; border-radius: 8px;
-      border: 1px solid var(--border); background: var(--bg);
-      color: var(--text); font-size: .875rem;
-    }
-    .config-form input:focus { outline: none; border-color: var(--accent2); }
-    .config-saved { color: var(--green); font-size: .8rem; margin-top: 6px; display: none; }
-
-    .row-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    .divider { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
-
-    .step-tag {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 22px; height: 22px; border-radius: 50%;
-      font-size: .7rem; font-weight: 700;
-      background: var(--accent); color: #fff;
-    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;min-height:100vh;padding:24px 16px;}
+    header{text-align:center;margin-bottom:32px;}
+    header h1{font-size:1.8rem;font-weight:700;}
+    header h1 span{color:var(--accent);}
+    header p{color:var(--muted);margin-top:6px;font-size:.9rem;}
+    .container{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:20px;}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;}
+    .card h2{font-size:1rem;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+    .step-tag{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:.7rem;font-weight:700;background:var(--accent);color:#fff;flex-shrink:0;}
+    .badge{font-size:.65rem;font-weight:700;letter-spacing:.06em;padding:2px 8px;border-radius:99px;text-transform:uppercase;}
+    .badge-blue{background:#1d4ed8;color:#bfdbfe;}
+    .badge-orange{background:#c2410c;color:#fed7aa;}
+    .config-form{display:flex;flex-direction:column;gap:10px;}
+    .config-form label{font-size:.8rem;color:var(--muted);margin-bottom:2px;display:block;}
+    .config-form input{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.875rem;font-family:monospace;}
+    .config-form input:focus{outline:none;border-color:var(--accent2);}
+    #configStatus{font-size:.82rem;margin-top:8px;padding:8px 12px;border-radius:8px;display:none;}
+    #configStatus.ok{background:#14532d33;color:var(--green);border:1px solid #166534;}
+    #configStatus.err{background:#7f1d1d33;color:var(--red);border:1px solid #991b1b;}
+    #configStatus.info{background:#1e3a5f33;color:var(--accent2);border:1px solid #1d4ed8;}
+    .dropzone{border:2px dashed var(--border);border-radius:10px;padding:36px 20px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;}
+    .dropzone:hover,.dropzone.over{border-color:var(--accent);background:rgba(249,115,22,.06);}
+    .dropzone svg{color:var(--muted);margin-bottom:10px;}
+    .dropzone p{color:var(--muted);font-size:.9rem;}
+    .dropzone p strong{color:var(--text);}
+    #fileInput{display:none;}
+    .sheets-grid{display:none;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-top:16px;}
+    .sheet-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;}
+    .sheet-card .name{font-weight:600;font-size:.95rem;margin-bottom:4px;}
+    .sheet-card .meta{color:var(--muted);font-size:.8rem;}
+    .options{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+    label.opt{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 16px;cursor:pointer;font-size:.875rem;transition:border-color .2s;}
+    label.opt:hover{border-color:var(--accent2);}
+    label.opt input[type=checkbox]{accent-color:var(--accent2);width:16px;height:16px;}
+    .btn{padding:11px 24px;border-radius:9px;font-weight:600;font-size:.9rem;border:none;cursor:pointer;transition:opacity .2s,transform .1s;}
+    .btn:active{transform:scale(.97);}
+    .btn:disabled{opacity:.4;cursor:not-allowed;}
+    .btn-primary{background:var(--accent);color:#fff;}
+    .btn-danger{background:var(--red);color:#fff;}
+    .btn-secondary{background:var(--border);color:var(--text);}
+    .progress-wrap{display:none;flex-direction:column;gap:12px;margin-top:16px;}
+    .prog-label{display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:4px;}
+    .prog-label .col-name{font-weight:600;}
+    .prog-bar-bg{background:var(--border);border-radius:99px;height:8px;overflow:hidden;}
+    .prog-bar{height:100%;border-radius:99px;background:var(--accent2);transition:width .2s;width:0%;}
+    .prog-bar.done{background:var(--green);}
+    .prog-bar.error{background:var(--red);}
+    .log{background:#0a0c12;border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-size:.78rem;font-family:monospace;max-height:240px;overflow-y:auto;line-height:1.7;margin-top:16px;display:none;}
+    .log .ok{color:var(--green);}
+    .log .err{color:var(--red);}
+    .log .info{color:var(--accent2);}
+    .log .warn{color:#facc15;}
+    .summary-grid{display:none;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;}
+    .sum-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;}
+    .sum-box .val{font-size:1.6rem;font-weight:700;color:var(--accent);}
+    .sum-box .lbl{color:var(--muted);font-size:.78rem;margin-top:4px;}
+    .divider{border:none;border-top:1px solid var(--border);margin:12px 0;}
+    .row-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
   </style>
 </head>
 <body>
@@ -249,40 +81,25 @@
 
 <div class="container">
 
-  <!-- Step 1: Firebase Config -->
-  <div class="card" id="configCard">
+  <!-- STEP 1 -->
+  <div class="card">
     <h2><span class="step-tag">1</span> Konfigurasi Firebase <span class="badge badge-blue">Setup Sekali</span></h2>
     <div class="config-form">
-      <div>
-        <label>API Key</label>
-        <input id="cfgApiKey" placeholder="AIzaSy..." />
-      </div>
-      <div>
-        <label>Project ID</label>
-        <input id="cfgProjectId" placeholder="my-project-id" />
-      </div>
-      <div>
-        <label>App ID</label>
-        <input id="cfgAppId" placeholder="1:123456:web:abcdef" />
-      </div>
-      <div>
-        <label>Sender ID (messagingSenderId)</label>
-        <input id="cfgSenderId" placeholder="123456789" />
-      </div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-        <button class="btn btn-secondary" onclick="saveConfig()">💾 Simpan Config</button>
-        <span class="config-saved" id="configSaved">✅ Config tersimpan di localStorage</span>
-      </div>
+      <div><label>API Key</label><input id="cfgApiKey" placeholder="AIzaSy..." /></div>
+      <div><label>Project ID</label><input id="cfgProjectId" placeholder="my-project-id" /></div>
+      <div><label>App ID</label><input id="cfgAppId" placeholder="1:123456789:web:abcdef" /></div>
+      <div><label>Sender ID (messagingSenderId)</label><input id="cfgSenderId" placeholder="123456789" /></div>
+      <div><button class="btn btn-secondary" onclick="initFirebase()">🔌 Sambungkan ke Firebase</button></div>
+      <div id="configStatus"></div>
     </div>
-    <p style="color:var(--muted);font-size:.78rem;margin-top:12px;">
-      ⚠️ Config disimpan di localStorage browser Anda saja. Tidak dikirim ke mana pun kecuali Firebase.
-    </p>
+    <p style="color:var(--muted);font-size:.75rem;margin-top:10px;">Config disimpan di localStorage — tidak dikirim ke mana pun kecuali Firebase.</p>
   </div>
 
-  <!-- Step 2: Upload File -->
+  <!-- STEP 2 -->
   <div class="card">
     <h2><span class="step-tag">2</span> Pilih File Excel <span class="badge badge-orange">.xlsx</span></h2>
-    <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()"
+    <div class="dropzone" id="dropzone"
+         onclick="document.getElementById('fileInput').click()"
          ondragover="event.preventDefault();this.classList.add('over')"
          ondragleave="this.classList.remove('over')"
          ondrop="handleDrop(event)">
@@ -291,105 +108,139 @@
           d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
       </svg>
       <p><strong>Klik atau drop file di sini</strong></p>
-      <p style="margin-top:4px;">MASTER_ALL.xlsx · Mendukung sheet: MASTER_BARCODE, MASTER_PRODUK, SIZE</p>
+      <p style="margin-top:4px;">Mendukung sheet: MASTER_BARCODE · MASTER_PRODUK · SIZE</p>
     </div>
     <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFile(this.files[0])" />
-
-    <div class="sheets-grid" id="sheetsGrid" style="display:none"></div>
+    <div class="sheets-grid" id="sheetsGrid"></div>
   </div>
 
-  <!-- Step 3: Upload Options -->
+  <!-- STEP 3 -->
   <div class="card" id="uploadCard" style="display:none">
-    <h2><span class="step-tag">3</span> Pilih Sheet & Upload</h2>
-
+    <h2><span class="step-tag">3</span> Pilih Sheet &amp; Upload</h2>
     <div class="options" id="sheetOptions"></div>
     <hr class="divider" />
-
-    <div class="options" style="margin-top:12px;">
+    <div class="options">
       <label class="opt">
         <input type="checkbox" id="optClear" />
         Hapus data lama sebelum upload (replace all)
       </label>
     </div>
-
-    <div class="row-actions" style="margin-top:16px;">
+    <div class="row-actions" style="margin-top:14px;">
       <button class="btn btn-primary" id="btnUpload" onclick="startUpload()">⬆ Mulai Upload ke Firestore</button>
-      <button class="btn btn-danger"  id="btnClear"  onclick="clearSelected()">🗑 Hapus Koleksi Terpilih</button>
+      <button class="btn btn-danger"  id="btnClear"  onclick="clearSelected()">🗑 Hapus Koleksi</button>
     </div>
-
-    <div class="progress-wrap" id="progressWrap" style="display:none"></div>
-    <div class="log" id="logBox" style="display:none"></div>
-
-    <!-- Summary -->
-    <div class="summary-grid" id="summaryGrid" style="display:none">
+    <div class="progress-wrap" id="progressWrap"></div>
+    <div class="log" id="logBox"></div>
+    <div class="summary-grid" id="summaryGrid">
       <div class="sum-box"><div class="val" id="sumDocs">0</div><div class="lbl">Dokumen Diupload</div></div>
       <div class="sum-box"><div class="val" id="sumCols">0</div><div class="lbl">Koleksi</div></div>
       <div class="sum-box"><div class="val" id="sumTime">0s</div><div class="lbl">Waktu Total</div></div>
     </div>
   </div>
 
-</div><!-- /container -->
+</div>
 
-<script>
-  // ── State ────────────────────────────────────
-  let parsedSheets = {};   // { sheetName: [rowObjs] }
-  let startTime = 0;
+<script type="module">
+  // ─── Konstanta ────────────────────────────────────────────────
+  const BATCH_SIZE = 400;
 
-  // ── Config ───────────────────────────────────
-  function saveConfig() {
-    const cfg = {
-      apiKey:            document.getElementById('cfgApiKey').value.trim(),
-      projectId:         document.getElementById('cfgProjectId').value.trim(),
-      appId:             document.getElementById('cfgAppId').value.trim(),
-      messagingSenderId: document.getElementById('cfgSenderId').value.trim(),
+  // ─── State ───────────────────────────────────────────────────
+  let db = null;
+  let fsLib = null;          // { collection, writeBatch, doc, getDocs }
+  let parsedSheets = {};
+
+  // ─── Helpers ─────────────────────────────────────────────────
+  function sanitize(v) {
+    if (v === null || v === undefined || v === '') return null;
+    if (typeof v === 'number' && isNaN(v)) return null;
+    if (v instanceof Date) return v.toISOString().split('T')[0];
+    return v;
+  }
+
+  function makeDocId(sheetName, row) {
+    const map = {
+      MASTER_BARCODE: ['Barcode','Article'],
+      MASTER_PRODUK:  ['Article'],
+      SIZE:           ['US_Size'],
     };
-    if (!cfg.apiKey || !cfg.projectId) { alert('API Key dan Project ID wajib diisi!'); return; }
-    localStorage.setItem('fb_config', JSON.stringify(cfg));
-    document.getElementById('configSaved').style.display = 'inline';
-    log('✅ Config Firebase disimpan.', 'ok');
-    applyConfig(cfg);
-  }
-
-  function applyConfig(cfg) {
-    // Patch the already-loaded Firebase config by re-initialising via script injection
-    const script = document.createElement('script');
-    script.type = 'module';
-    script.textContent = `
-      import { initializeApp, getApps, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-      import { getFirestore, collection, writeBatch, doc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-      const cfg = ${JSON.stringify({
-        apiKey: cfg.apiKey,
-        authDomain: cfg.projectId + '.firebaseapp.com',
-        projectId: cfg.projectId,
-        storageBucket: cfg.projectId + '.appspot.com',
-        messagingSenderId: cfg.messagingSenderId,
-        appId: cfg.appId,
-      })};
-      const apps = getApps();
-      if (apps.length) { for (const a of apps) await deleteApp(a); }
-      const app2 = initializeApp(cfg, 'dynamic');
-      const db2 = getFirestore(app2);
-      window._db = db2;
-      window._firebaseReady = true;
-    `;
-    document.head.appendChild(script);
-  }
-
-  // Load saved config on start
-  window.addEventListener('load', () => {
-    const saved = localStorage.getItem('fb_config');
-    if (saved) {
-      const cfg = JSON.parse(saved);
-      document.getElementById('cfgApiKey').value    = cfg.apiKey || '';
-      document.getElementById('cfgProjectId').value = cfg.projectId || '';
-      document.getElementById('cfgAppId').value     = cfg.appId || '';
-      document.getElementById('cfgSenderId').value  = cfg.messagingSenderId || '';
-      document.getElementById('configSaved').style.display = 'inline';
-      applyConfig(cfg);
+    for (const k of (map[sheetName] || [])) {
+      if (row[k] != null) return String(row[k]);
     }
-  });
+    return crypto.randomUUID();
+  }
 
-  // ── File handling ─────────────────────────────
+  function log(msg, type = 'info') {
+    const box = document.getElementById('logBox');
+    box.style.display = 'block';
+    const line = document.createElement('div');
+    line.className = type;
+    line.textContent = `[${new Date().toLocaleTimeString('id-ID')}] ${msg}`;
+    box.appendChild(line);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function setStatus(msg, cls) {
+    const el = document.getElementById('configStatus');
+    el.textContent = msg;
+    el.className = cls;
+    el.style.display = 'block';
+  }
+
+  // ─── Firebase init ────────────────────────────────────────────
+  async function initFirebase() {
+    const apiKey    = document.getElementById('cfgApiKey').value.trim();
+    const projectId = document.getElementById('cfgProjectId').value.trim();
+    const appId     = document.getElementById('cfgAppId').value.trim();
+    const senderId  = document.getElementById('cfgSenderId').value.trim();
+
+    if (!apiKey || !projectId || !appId) {
+      setStatus('❌ API Key, Project ID, dan App ID wajib diisi!', 'err');
+      return;
+    }
+    setStatus('⏳ Menghubungkan…', 'info');
+
+    try {
+      const appMod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+      const fsMod  = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+
+      // Gunakan nama unik agar tidak bentrok dengan instance lama
+      const appName = 'uploader_' + Date.now();
+      const firebaseApp = appMod.initializeApp({
+        apiKey,
+        authDomain:        `${projectId}.firebaseapp.com`,
+        projectId,
+        storageBucket:     `${projectId}.appspot.com`,
+        messagingSenderId: senderId,
+        appId,
+      }, appName);
+
+      db    = fsMod.getFirestore(firebaseApp);
+      fsLib = fsMod;
+
+      // Simpan config
+      localStorage.setItem('fb_config', JSON.stringify({ apiKey, projectId, appId, messagingSenderId: senderId }));
+
+      setStatus(`✅ Terhubung ke project: ${projectId}`, 'ok');
+      log(`🔌 Firebase OK — project: ${projectId}`, 'ok');
+    } catch (err) {
+      setStatus('❌ Gagal konek: ' + err.message, 'err');
+      log('❌ Firebase error: ' + err.message, 'err');
+      db = null; fsLib = null;
+    }
+  }
+
+  // ─── Load saved config ────────────────────────────────────────
+  const saved = localStorage.getItem('fb_config');
+  if (saved) {
+    const cfg = JSON.parse(saved);
+    document.getElementById('cfgApiKey').value    = cfg.apiKey || '';
+    document.getElementById('cfgProjectId').value = cfg.projectId || '';
+    document.getElementById('cfgAppId').value     = cfg.appId || '';
+    document.getElementById('cfgSenderId').value  = cfg.messagingSenderId || '';
+    initFirebase();   // auto-connect
+  }
+
+  // ─── File handling ────────────────────────────────────────────
   function handleDrop(e) {
     e.preventDefault();
     document.getElementById('dropzone').classList.remove('over');
@@ -398,109 +249,127 @@
 
   function handleFile(file) {
     if (!file) return;
-    log(`📂 Membaca file: ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)`, 'info');
+    log(`📂 Membaca: ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)…`, 'info');
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = (ev) => {
       try {
-        const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+        const wb = XLSX.read(ev.target.result, { type: 'array', cellDates: true });
         parsedSheets = {};
-        const grid = document.getElementById('sheetsGrid');
-        const opts = document.getElementById('sheetOptions');
-        grid.innerHTML = '';
-        opts.innerHTML = '';
+        document.getElementById('sheetsGrid').innerHTML = '';
+        document.getElementById('sheetOptions').innerHTML = '';
 
         wb.SheetNames.forEach(name => {
-          const ws = wb.Sheets[name];
-          const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+          const raw = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: null });
           if (raw.length < 2) return;
-          const headers = raw[0].map(h => String(h).trim().replace(/\s+/g,'_').replace(/\./g,''));
-          const rows = raw.slice(1).map(r => {
-            const obj = {};
-            headers.forEach((h,i) => {
-              let v = r[i];
-              if (v instanceof Date) v = v.toISOString().split('T')[0];
-              if (v === '' || v === undefined) v = null;
-              obj[h] = v;
-            });
-            return obj;
-          }).filter(r => Object.values(r).some(v => v !== null));
+
+          const headers = raw[0].map(h => String(h ?? '').trim().replace(/[\s.]+/g, '_'));
+          const rows    = raw.slice(1)
+            .map(r => { const o={}; headers.forEach((h,i)=>{ o[h]=sanitize(r[i]); }); return o; })
+            .filter(r => Object.values(r).some(v => v !== null));
 
           parsedSheets[name] = rows;
 
-          // Sheet info card
+          // Sheet card
           const card = document.createElement('div');
           card.className = 'sheet-card';
           card.innerHTML = `<div class="name">📋 ${name}</div>
             <div class="meta">${rows.length.toLocaleString()} baris · ${headers.length} kolom</div>
-            <div class="meta" style="margin-top:6px;word-break:break-all;">${headers.slice(0,5).join(', ')}${headers.length>5?' …':''}</div>`;
-          grid.appendChild(card);
+            <div class="meta" style="margin-top:5px;font-size:.72rem;word-break:break-all;">
+              ${headers.slice(0,6).join(', ')}${headers.length>6?' …':''}
+            </div>`;
+          document.getElementById('sheetsGrid').appendChild(card);
 
-          // Checkbox option
+          // Checkbox
           const lbl = document.createElement('label');
           lbl.className = 'opt';
-          lbl.innerHTML = `<input type="checkbox" checked value="${name}" class="sheetCheck" /> ${name} <span style="color:var(--muted);font-size:.75rem;">(${rows.length.toLocaleString()})</span>`;
-          opts.appendChild(lbl);
+          lbl.innerHTML = `<input type="checkbox" checked value="${name}" class="sheetCheck" />
+            ${name} <span style="color:var(--muted);font-size:.75rem;">(${rows.length.toLocaleString()})</span>`;
+          document.getElementById('sheetOptions').appendChild(lbl);
         });
 
-        grid.style.display = 'grid';
-        document.getElementById('uploadCard').style.display = 'block';
-        log(`✅ Berhasil membaca ${wb.SheetNames.length} sheet.`, 'ok');
-      } catch(err) {
-        log('❌ Error membaca file: ' + err.message, 'err');
+        document.getElementById('sheetsGrid').style.display  = 'grid';
+        document.getElementById('uploadCard').style.display  = 'block';
+        log(`✅ ${wb.SheetNames.length} sheet terbaca. Siap upload.`, 'ok');
+      } catch (err) {
+        log('❌ Gagal baca file: ' + err.message, 'err');
       }
     };
     reader.readAsArrayBuffer(file);
   }
 
-  // ── Upload ────────────────────────────────────
-  async function startUpload() {
-    if (!window._firebaseReady || !window._db) {
-      log('❌ Firebase belum siap. Cek config di Step 1.', 'err');
-      return;
+  // ─── Batch upload ─────────────────────────────────────────────
+  async function uploadBatched(colName, rows, onProgress) {
+    const { collection, writeBatch, doc } = fsLib;
+    let done = 0;
+    for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+      const batch = writeBatch(db);
+      rows.slice(i, i + BATCH_SIZE).forEach(row => {
+        batch.set(doc(db, colName, makeDocId(colName, row)), row);
+      });
+      await batch.commit();
+      done += Math.min(BATCH_SIZE, rows.length - i);
+      onProgress(done, rows.length);
     }
+  }
+
+  // ─── Delete collection ────────────────────────────────────────
+  async function deleteCollection(colName, onProgress) {
+    const { collection, writeBatch, getDocs } = fsLib;
+    const snap  = await getDocs(collection(db, colName));
+    if (!snap.docs.length) { onProgress(0, 0); return; }
+    let done = 0;
+    for (let i = 0; i < snap.docs.length; i += BATCH_SIZE) {
+      const batch = writeBatch(db);
+      snap.docs.slice(i, i + BATCH_SIZE).forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      done += Math.min(BATCH_SIZE, snap.docs.length - i);
+      onProgress(done, snap.docs.length);
+    }
+  }
+
+  // ─── Start upload ─────────────────────────────────────────────
+  async function startUpload() {
+    if (!db || !fsLib) { log('❌ Firebase belum terhubung. Selesaikan Step 1.', 'err'); return; }
     const selected = [...document.querySelectorAll('.sheetCheck:checked')].map(c => c.value);
     if (!selected.length) { log('⚠️ Pilih minimal 1 sheet.', 'warn'); return; }
 
     const clearFirst = document.getElementById('optClear').checked;
     document.getElementById('btnUpload').disabled = true;
     document.getElementById('btnClear').disabled  = true;
-    document.getElementById('progressWrap').style.display = 'flex';
-    document.getElementById('progressWrap').style.flexDirection = 'column';
-    document.getElementById('logBox').style.display = 'block';
+
+    const pw = document.getElementById('progressWrap');
+    pw.innerHTML = '';
+    pw.style.display = 'flex';
+    pw.style.flexDirection = 'column';
     document.getElementById('summaryGrid').style.display = 'none';
 
-    startTime = Date.now();
+    const t0 = Date.now();
     let totalDocs = 0;
 
     for (const name of selected) {
       const rows = parsedSheets[name];
-      if (!rows || !rows.length) { log(`⚠️ ${name}: tidak ada data.`, 'warn'); continue; }
-
-      const progId = 'prog_' + name;
-      addProgressBar(progId, name, rows.length);
+      if (!rows?.length) { log(`⚠️ ${name}: tidak ada data.`, 'warn'); continue; }
+      const pid = 'pg_' + name.replace(/\W/g,'_');
+      addProg(pid, name, rows.length);
 
       try {
         if (clearFirst) {
-          log(`🗑 Menghapus koleksi lama: ${name}…`, 'info');
-          await window._deleteCollection(name, (d, t) => updateProg(progId, d, t, '🗑 Hapus'));
+          log(`🗑 Menghapus data lama: ${name}…`, 'warn');
+          await deleteCollection(name, (d,t) => updateProg(pid, d, t, '🗑'));
         }
-
-        log(`⬆ Upload ${name}: ${rows.length.toLocaleString()} dokumen…`, 'info');
-        await window._uploadBatched(name, rows, (d, t) => {
-          updateProg(progId, d, t, '⬆ Upload');
-        });
-
+        log(`⬆ Uploading ${name} (${rows.length.toLocaleString()} dok)…`, 'info');
+        await uploadBatched(name, rows, (d,t) => updateProg(pid, d, t, '⬆'));
         totalDocs += rows.length;
-        markProgDone(progId, name, rows.length);
-        log(`✅ ${name} selesai: ${rows.length.toLocaleString()} dokumen.`, 'ok');
-      } catch(err) {
-        markProgError(progId, name);
-        log(`❌ ${name} error: ${err.message}`, 'err');
+        doneProg(pid, rows.length);
+        log(`✅ ${name} selesai — ${rows.length.toLocaleString()} dokumen`, 'ok');
+      } catch (err) {
+        errProg(pid);
+        log(`❌ ${name}: ${err.message}`, 'err');
         console.error(err);
       }
     }
 
-    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    const elapsed = ((Date.now()-t0)/1000).toFixed(1);
     document.getElementById('sumDocs').textContent = totalDocs.toLocaleString();
     document.getElementById('sumCols').textContent = selected.length;
     document.getElementById('sumTime').textContent = elapsed + 's';
@@ -512,75 +381,60 @@
   }
 
   async function clearSelected() {
-    if (!window._firebaseReady || !window._db) { log('❌ Firebase belum siap.', 'err'); return; }
+    if (!db || !fsLib) { log('❌ Firebase belum terhubung.', 'err'); return; }
     const selected = [...document.querySelectorAll('.sheetCheck:checked')].map(c => c.value);
-    if (!selected.length || !confirm(`Hapus koleksi: ${selected.join(', ')}?`)) return;
+    if (!selected.length || !confirm(`Hapus: ${selected.join(', ')}?`)) return;
 
-    document.getElementById('progressWrap').style.display = 'flex';
-    document.getElementById('logBox').style.display = 'block';
+    const pw = document.getElementById('progressWrap');
+    pw.innerHTML = '';
+    pw.style.display = 'flex';
+    pw.style.flexDirection = 'column';
 
     for (const name of selected) {
-      const progId = 'prog_del_' + name;
-      addProgressBar(progId, name + ' (hapus)', 100);
+      const pid = 'pgd_' + name.replace(/\W/g,'_');
+      addProg(pid, `${name} (hapus)`, 100);
       try {
-        await window._deleteCollection(name, (d,t) => updateProg(progId, d, t, '🗑'));
-        markProgDone(progId, name + ' (hapus)', 0);
-        log(`✅ Koleksi ${name} dihapus.`, 'ok');
+        await deleteCollection(name, (d,t) => updateProg(pid, d, t, '🗑'));
+        doneProg(pid, 0);
+        log(`✅ ${name} dihapus.`, 'ok');
       } catch(err) {
-        markProgError(progId, name);
-        log(`❌ Gagal hapus ${name}: ${err.message}`, 'err');
+        errProg(pid);
+        log(`❌ ${name}: ${err.message}`, 'err');
       }
     }
   }
 
-  // ── Progress helpers ──────────────────────────
-  function addProgressBar(id, name, total) {
-    const wrap = document.getElementById('progressWrap');
+  // ─── Progress helpers ─────────────────────────────────────────
+  function addProg(id, name, total) {
     const el = document.createElement('div');
-    el.className = 'prog-item';
     el.id = id;
-    el.innerHTML = `
-      <div class="prog-label">
-        <span class="col-name">${name}</span>
-        <span class="pct">0 / ${total.toLocaleString()}</span>
-      </div>
+    el.innerHTML = `<div class="prog-label"><span class="col-name">${name}</span><span class="pct">0/${total.toLocaleString()}</span></div>
       <div class="prog-bar-bg"><div class="prog-bar" style="width:0%"></div></div>`;
-    wrap.appendChild(el);
+    document.getElementById('progressWrap').appendChild(el);
   }
-
-  function updateProg(id, done, total, label) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const pct = total ? Math.round(done / total * 100) : 0;
-    el.querySelector('.pct').textContent = `${label} ${done.toLocaleString()} / ${total.toLocaleString()} (${pct}%)`;
+  function updateProg(id, done, total, lbl) {
+    const el = document.getElementById(id); if (!el) return;
+    const pct = total ? Math.round(done/total*100) : 0;
+    el.querySelector('.pct').textContent = `${lbl} ${done.toLocaleString()}/${total.toLocaleString()} (${pct}%)`;
     el.querySelector('.prog-bar').style.width = pct + '%';
   }
-
-  function markProgDone(id, name, total) {
-    const el = document.getElementById(id);
-    if (!el) return;
+  function doneProg(id, total) {
+    const el = document.getElementById(id); if (!el) return;
     el.querySelector('.prog-bar').classList.add('done');
-    el.querySelector('.pct').textContent = `✅ ${total.toLocaleString()} selesai`;
+    el.querySelector('.pct').textContent = total ? `✅ ${total.toLocaleString()} selesai` : '✅ Selesai';
   }
-
-  function markProgError(id, name) {
-    const el = document.getElementById(id);
-    if (!el) return;
+  function errProg(id) {
+    const el = document.getElementById(id); if (!el) return;
     el.querySelector('.prog-bar').classList.add('error');
     el.querySelector('.pct').textContent = '❌ Error';
   }
 
-  // ── Log ───────────────────────────────────────
-  function log(msg, type = 'info') {
-    const box = document.getElementById('logBox');
-    box.style.display = 'block';
-    const ts = new Date().toLocaleTimeString('id-ID');
-    const line = document.createElement('div');
-    line.className = type;
-    line.textContent = `[${ts}] ${msg}`;
-    box.appendChild(line);
-    box.scrollTop = box.scrollHeight;
-  }
+  // ─── Expose ke tombol HTML ────────────────────────────────────
+  window.initFirebase  = initFirebase;
+  window.handleDrop    = handleDrop;
+  window.handleFile    = handleFile;
+  window.startUpload   = startUpload;
+  window.clearSelected = clearSelected;
 </script>
 </body>
 </html>
