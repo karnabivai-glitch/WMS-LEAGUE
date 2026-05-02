@@ -16,277 +16,97 @@
     *{box-sizing:border-box;margin:0;padding:0;}
     body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;min-height:100vh;overflow:hidden;}
     
-    /* LAYOUT UTAMA */
-    .app-layout {
-      display: flex;
-      height: 100vh;
-      width: 100vw;
-    }
+    .app-layout { display: flex; height: 100vh; width: 100vw; }
     
-    /* SIDEBAR KIRI */
+    /* SIDEBAR */
     .sidebar {
-      width: var(--sidebar-width);
-      min-width: var(--sidebar-width);
-      height: 100vh;
-      background: var(--card);
+      width: var(--sidebar-width); min-width: var(--sidebar-width);
+      height: 100vh; background: var(--card);
       border-right: 2px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      overflow-y: auto;
-      overflow-x: hidden;
-      padding: 16px;
-      gap: 14px;
-      z-index: 10;
+      display: flex; flex-direction: column;
+      overflow-y: auto; overflow-x: hidden;
+      padding: 16px; gap: 12px; z-index: 10;
     }
-    .sidebar-header {
-      text-align: center;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--border);
-    }
-    .sidebar-header h1 {
-      font-size: 1.1rem;
-      font-weight: 700;
-    }
+    .sidebar-header { text-align: center; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .sidebar-header h1 { font-size: 1rem; font-weight: 700; }
     .sidebar-header h1 span { color: var(--accent); }
-    .sidebar-header .subtitle {
-      font-size: 0.65rem;
-      color: var(--muted);
-      margin-top: 2px;
-    }
+    .sidebar-header .subtitle { font-size: 0.6rem; color: var(--muted); margin-top: 2px; }
     
     .sidebar-section {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px;
     }
     .sidebar-section h3 {
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--muted);
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--muted); margin-bottom: 8px;
     }
-    .sidebar-section h3 .icon { font-size: 1rem; }
     
-    .input-group {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-      margin-bottom: 8px;
-    }
-    .input-group label {
-      font-size: 0.65rem;
-      color: var(--muted);
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
+    .input-group { display: flex; flex-direction: column; gap: 2px; margin-bottom: 7px; }
+    .input-group label { font-size: 0.62rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
     .input-group input, .input-group select {
-      padding: 9px 12px;
-      border-radius: 7px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: var(--text);
-      font-size: 0.85rem;
-      font-family: monospace;
-      width: 100%;
-      transition: all 0.2s;
+      padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--card); color: var(--text); font-size: 0.82rem;
+      font-family: monospace; width: 100%; transition: all 0.2s;
     }
-    .input-group input:focus, .input-group select:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
-    .input-group input.input-barcode {
-      font-size: 1rem;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-    }
-    .input-group input.input-bin {
-      text-align: center;
-      font-weight: 600;
-      color: #a78bfa;
-      text-transform: uppercase;
-    }
-    .input-hint {
-      font-size: 0.58rem;
-      color: var(--muted);
-      margin-top: 1px;
-    }
+    .input-group input:focus, .input-group select:focus { outline: none; border-color: var(--accent); }
+    .input-group input.input-barcode { font-size: 0.95rem; font-weight: 600; }
+    .input-group input.input-bin { text-align: center; font-weight: 600; color: #a78bfa; text-transform: uppercase; }
+    .input-hint { font-size: 0.55rem; color: var(--muted); margin-top: 1px; }
     
-    .btn {
-      padding: 9px 16px;
-      border-radius: 7px;
-      font-weight: 600;
-      font-size: 0.8rem;
-      border: none;
-      cursor: pointer;
-      transition: all 0.2s;
-      width: 100%;
-      text-align: center;
-    }
+    .btn { padding: 8px 14px; border-radius: 7px; font-weight: 600; font-size: 0.78rem; border: none; cursor: pointer; transition: all 0.2s; width: 100%; text-align: center; }
     .btn:active { transform: scale(0.97); }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-    .btn-primary { background: var(--accent); color: #fff; font-size: 0.9rem; padding: 11px; }
+    .btn-primary { background: var(--accent); color: #fff; font-size: 0.85rem; padding: 10px; }
     .btn-primary:hover { background: #fb923c; }
-    .btn-reset { background: linear-gradient(135deg,#6366f1,#8b5cf6); color: #fff; font-size: 0.75rem; }
-    .btn-reset:hover { background: linear-gradient(135deg,#818cf8,#a78bfa); }
+    .btn-reset { background: linear-gradient(135deg,#6366f1,#8b5cf6); color: #fff; font-size: 0.73rem; }
     .btn-reset:focus { outline: 3px solid #a78bfa; outline-offset: 2px; }
-    .btn-recall { background: #10b981; color: #fff; font-size: 0.75rem; }
-    .btn-recall:hover { background: #34d399; }
-    .btn-danger { background: var(--red); color: #fff; font-size: 0.75rem; }
-    .btn-export { background: var(--accent2); color: #fff; font-size: 0.75rem; }
-    .btn-upload { background: var(--green); color: #fff; font-size: 0.8rem; padding: 10px; }
+    .btn-recall { background: #10b981; color: #fff; font-size: 0.73rem; }
+    .btn-export { background: var(--accent2); color: #fff; font-size: 0.73rem; }
+    .btn-danger { background: var(--red); color: #fff; font-size: 0.73rem; }
+    .btn-upload { background: var(--green); color: #fff; font-size: 0.78rem; }
     
-    .btn-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      margin-top: 4px;
-    }
-    .btn-row .btn { padding: 7px 10px; font-size: 0.7rem; }
+    .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 3px; }
+    .btn-row .btn { padding: 6px 8px; font-size: 0.68rem; }
     
-    /* STATS DI SIDEBAR */
-    .stats-mini {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-    .stat-mini {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px;
-      text-align: center;
-    }
-    .stat-mini .val {
-      font-size: 1.3rem;
-      font-weight: 700;
-      color: var(--accent2);
-    }
-    .stat-mini .lbl {
-      font-size: 0.58rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      margin-top: 2px;
-    }
+    .stats-mini { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .stat-mini { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center; }
+    .stat-mini .val { font-size: 1.1rem; font-weight: 700; color: var(--accent2); }
+    .stat-mini .lbl { font-size: 0.55rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 1px; }
     .stat-mini.highlight .val { color: var(--accent); }
     
     .shortcut-hint {
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      background: rgba(99,102,241,0.2);
-      border: 1px solid rgba(99,102,241,0.4);
-      padding: 1px 6px;
-      border-radius: 3px;
-      font-size: 0.6rem;
-      font-family: monospace;
-      color: #a78bfa;
+      display: inline-flex; align-items: center; gap: 2px;
+      background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4);
+      padding: 1px 5px; border-radius: 3px; font-size: 0.58rem; font-family: monospace; color: #a78bfa;
     }
     
-    /* MAIN CONTENT - TABEL FULL */
-    .main-content {
-      flex: 1;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      padding: 16px;
-    }
+    /* MAIN CONTENT */
+    .main-content { flex: 1; height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding: 16px; }
+    .main-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-shrink: 0; }
+    .main-header h2 { font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 8px; }
     
-    .main-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-      flex-shrink: 0;
-    }
-    .main-header h2 {
-      font-size: 0.95rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .main-header .badge-row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-    
-    .badge {
-      font-size: 0.65rem;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      padding: 3px 10px;
-      border-radius: 99px;
-      text-transform: uppercase;
-    }
+    .badge { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.04em; padding: 2px 8px; border-radius: 99px; text-transform: uppercase; }
     .badge-green { background: #166534; color: #bbf7d0; }
-    .badge-purple {
-      background: rgba(99,102,241,0.2);
-      border: 1px solid rgba(99,102,241,0.4);
-      color: #a78bfa;
-    }
+    .badge-purple { background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4); color: #a78bfa; }
     
     .recall-status {
-      display: none;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 0.7rem;
-      background: rgba(16,185,129,0.15);
-      border: 1px solid rgba(16,185,129,0.3);
-      color: #34d399;
-      flex-shrink: 0;
-      margin-bottom: 8px;
+      display: none; align-items: center; gap: 6px; padding: 5px 10px;
+      border-radius: 6px; font-size: 0.68rem;
+      background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3);
+      color: #34d399; flex-shrink: 0; margin-bottom: 6px;
     }
     .recall-status.show { display: flex; }
     
-    .table-container {
-      flex: 1;
-      overflow: auto;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--card);
-    }
+    .table-container { flex: 1; overflow: auto; border-radius: 10px; border: 1px solid var(--border); background: var(--card); }
     
-    .scan-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.78rem;
-      min-width: 1200px;
-    }
-    .scan-table thead {
-      position: sticky;
-      top: 0;
-      z-index: 5;
-      background: #14161f;
-    }
+    .scan-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; min-width: 1200px; }
+    .scan-table thead { position: sticky; top: 0; z-index: 5; background: #14161f; }
     .scan-table th {
-      padding: 10px 8px;
-      text-align: left;
-      font-weight: 600;
-      font-size: 0.65rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--muted);
-      border-bottom: 2px solid var(--border);
-      white-space: nowrap;
-      background: #14161f;
+      padding: 9px 7px; text-align: left; font-weight: 600; font-size: 0.62rem;
+      text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted);
+      border-bottom: 2px solid var(--border); white-space: nowrap; background: #14161f;
     }
-    .scan-table td {
-      padding: 8px;
-      border-bottom: 1px solid rgba(42,45,58,0.5);
-      white-space: nowrap;
-    }
+    .scan-table td { padding: 7px; border-bottom: 1px solid rgba(42,45,58,0.5); white-space: nowrap; }
     .scan-table tbody tr { transition: background 0.15s; }
     .scan-table tbody tr:hover { background: rgba(59,130,246,0.05); }
     .scan-table .col-barcode { font-family: monospace; font-weight: 500; color: var(--accent); }
@@ -294,154 +114,66 @@
     .scan-table .col-lokasi { color: var(--accent2); font-weight: 500; }
     .scan-table .col-size-us { font-weight: 600; color: var(--accent); }
     .scan-table .col-brand { font-weight: 600; color: #f59e0b; }
-    .scan-table .col-season { font-weight: 600; color: #10b981; }
     .scan-table .col-cat { font-weight: 700; color: #f59e0b; }
-    .scan-table .col-date { color: var(--muted); font-size: 0.72rem; }
+    .scan-table .col-date { color: var(--muted); font-size: 0.7rem; }
     
-    .btn-sm {
-      padding: 3px 8px;
-      font-size: 0.65rem;
-      border-radius: 5px;
-      border: none;
-      cursor: pointer;
-      font-weight: 600;
-    }
+    .btn-sm { padding: 2px 7px; font-size: 0.62rem; border-radius: 4px; border: none; cursor: pointer; font-weight: 600; }
     .btn-sm-delete { background: var(--red); color: #fff; }
     .btn-sm:hover { opacity: 0.8; }
     
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      color: var(--muted);
-    }
-    .empty-state svg { margin-bottom: 12px; opacity: 0.4; }
-    .empty-state p { font-size: 0.85rem; }
-    .empty-state small { font-size: 0.7rem; }
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+    .empty-state p { font-size: 0.82rem; }
+    .empty-state small { font-size: 0.68rem; }
     
-    /* LOCK OVERLAY DI SIDEBAR */
+    /* LOCK OVERLAY */
     .lock-overlay {
-      display: none;
-      background: rgba(127,29,29,0.95);
-      border: 2px solid var(--red);
-      border-radius: 10px;
-      padding: 14px;
-      text-align: center;
-      animation: slideDown 0.3s ease-out;
+      display: none; background: rgba(127,29,29,0.95); border: 2px solid var(--red);
+      border-radius: 10px; padding: 12px; text-align: center; animation: slideDown 0.3s ease-out;
     }
     .lock-overlay.show { display: block; }
-    @keyframes slideDown {
-      from { opacity: 0; transform: translateY(-8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .lock-overlay .lock-icon { font-size: 1.5rem; margin-bottom: 4px; }
-    .lock-overlay .lock-title { font-weight: 700; color: #fecaca; font-size: 0.85rem; }
-    .lock-overlay .lock-msg { color: #fca5a5; font-size: 0.7rem; margin: 4px 0; }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+    .lock-overlay .lock-icon { font-size: 1.3rem; margin-bottom: 3px; }
+    .lock-overlay .lock-title { font-weight: 700; color: #fecaca; font-size: 0.8rem; }
+    .lock-overlay .lock-msg { color: #fca5a5; font-size: 0.65rem; margin: 3px 0; }
     .lock-overlay .lock-rejected {
-      font-family: monospace;
-      font-size: 0.8rem;
-      font-weight: 700;
-      color: #f87171;
-      background: rgba(0,0,0,0.3);
-      padding: 4px 10px;
-      border-radius: 5px;
-      display: inline-block;
-      margin: 4px 0;
+      font-family: monospace; font-size: 0.75rem; font-weight: 700; color: #f87171;
+      background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 5px; display: inline-block; margin: 3px 0;
     }
-    .btn-unlock-overlay {
-      display: inline-block;
-      padding: 8px 20px;
-      background: #eab308;
-      color: #000;
-      font-weight: 700;
-      font-size: 0.8rem;
-      border: none;
-      border-radius: 7px;
-      cursor: pointer;
-      margin-top: 6px;
-    }
+    .btn-unlock-overlay { display: inline-block; padding: 7px 18px; background: #eab308; color: #000; font-weight: 700; font-size: 0.75rem; border: none; border-radius: 6px; cursor: pointer; margin-top: 4px; }
     
-    .locked-input {
-      background: rgba(239,68,68,0.12) !important;
-      border-color: var(--red) !important;
-      color: var(--red) !important;
-      pointer-events: none;
-    }
+    .locked-input { background: rgba(239,68,68,0.12) !important; border-color: var(--red) !important; color: var(--red) !important; pointer-events: none; }
     
     /* TOAST */
     .toast {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      padding: 10px 18px;
-      border-radius: 8px;
-      font-size: 0.8rem;
-      font-weight: 500;
-      z-index: 1000;
-      animation: slideIn 0.3s ease-out;
-      display: none;
+      position: fixed; bottom: 20px; right: 20px; padding: 10px 18px;
+      border-radius: 8px; font-size: 0.8rem; font-weight: 500; z-index: 1000;
+      animation: slideIn 0.3s ease-out; display: none;
     }
     .toast.success { background: #166534; color: #bbf7d0; border: 1px solid #22c55e; }
     .toast.error { background: #7f1d1d; color: #fecaca; border: 1px solid #ef4444; }
     .toast.info { background: #1e3a5f; color: #bfdbfe; border: 1px solid #3b82f6; }
     @keyframes slideIn { from { transform: translateX(80px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     
-    /* TAB NAV */
-    .nav-tabs {
-      display: flex;
-      gap: 4px;
-      background: var(--bg);
-      border-radius: 8px;
-      padding: 3px;
-      border: 1px solid var(--border);
-    }
-    .nav-tab {
-      flex: 1;
-      padding: 7px 12px;
-      text-align: center;
-      cursor: pointer;
-      border-radius: 6px;
-      font-weight: 600;
-      font-size: 0.7rem;
-      transition: all 0.2s;
-      color: var(--muted);
-      border: none;
-      background: transparent;
-    }
+    /* NAV TABS */
+    .nav-tabs { display: flex; gap: 3px; background: var(--bg); border-radius: 7px; padding: 3px; border: 1px solid var(--border); }
+    .nav-tab { flex: 1; padding: 6px 10px; text-align: center; cursor: pointer; border-radius: 5px; font-weight: 600; font-size: 0.68rem; transition: all 0.2s; color: var(--muted); border: none; background: transparent; }
     .nav-tab.active { background: var(--accent); color: #fff; }
     
     /* SEARCH STATUS */
-    .search-status {
-      display: none;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 10px;
-      border-radius: 6px;
-      font-size: 0.68rem;
-      font-weight: 500;
-    }
+    .search-status { display: none; align-items: center; gap: 5px; padding: 5px 8px; border-radius: 5px; font-size: 0.65rem; font-weight: 500; margin-top: 6px; }
     .search-status.searching { background: #1e3a5f33; border: 1px solid #1d4ed8; color: var(--accent2); }
     .search-status.found { background: #14532d33; border: 1px solid #166534; color: var(--green); }
     .search-status.not-found { background: #7f1d1d33; border: 1px solid #991b1b; color: var(--red); }
     .search-status.locked-status { background: #7f1d1d; border: 2px solid #ef4444; color: #fff; }
     
-    .spinner {
-      display: inline-block;
-      width: 12px;
-      height: 12px;
-      border: 2px solid transparent;
-      border-top-color: currentColor;
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-    }
+    .spinner { display: inline-block; width: 10px; height: 10px; border: 2px solid transparent; border-top-color: currentColor; border-radius: 50%; animation: spin 0.6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     
-    .firebase-status {
-      font-size: 0.6rem;
-      padding: 2px 8px;
-      border-radius: 4px;
-    }
+    .firebase-status { font-size: 0.58rem; padding: 2px 6px; border-radius: 4px; }
     .firebase-status.online { background: #14532d33; color: var(--green); }
     .firebase-status.offline { background: #7f1d1d33; color: var(--red); }
+    
+    .step-tag-sm { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; font-size: 0.6rem; font-weight: 700; background: var(--accent); color: #fff; }
   </style>
 </head>
 <body>
@@ -452,27 +184,23 @@
   
   <!-- ═══════════════ SIDEBAR KIRI ═══════════════ -->
   <div class="sidebar" id="sidebar">
-    
-    <!-- Tab Navigasi -->
     <div class="nav-tabs">
       <button class="nav-tab active" onclick="switchPage('scan')">📱 SCAN</button>
       <button class="nav-tab" onclick="switchPage('master')">📦 MASTER</button>
     </div>
     
-    <!-- Header -->
     <div class="sidebar-header">
       <h1>SCAN <span>DATA</span></h1>
       <div class="subtitle">Scan barcode / article</div>
     </div>
     
-    <!-- Firebase Status -->
     <div style="text-align:center;">
       <span id="firestoreStatus" class="firebase-status offline">⚠️ Offline</span>
     </div>
     
     <!-- Input Section -->
     <div class="sidebar-section">
-      <h3><span class="icon">📱</span> Input Scan</h3>
+      <h3>📱 Input Scan</h3>
       
       <div class="input-group">
         <label>🔍 Barcode / Article</label>
@@ -508,8 +236,7 @@
       
       <button class="btn btn-primary" id="btnAddScan" onclick="addScanData()">➕ Tambah</button>
       
-      <!-- Search Status -->
-      <div class="search-status" id="searchStatus" style="display:none;margin-top:8px;">
+      <div class="search-status" id="searchStatus" style="display:none;margin-top:6px;">
         <span class="spinner" id="searchSpinner" style="display:none;"></span>
         <span id="searchStatusText"></span>
       </div>
@@ -517,9 +244,9 @@
     
     <!-- Tombol Aksi -->
     <div class="sidebar-section">
-      <h3><span class="icon">⚡</span> Aksi Cepat</h3>
+      <h3>⚡ Aksi Cepat</h3>
       
-      <button class="btn btn-reset" id="btnResetSession" onclick="resetSession()" style="margin-bottom:6px;">
+      <button class="btn btn-reset" id="btnResetSession" onclick="resetSession()" style="margin-bottom:4px;">
         🔄 Reset Sesi <span class="shortcut-hint">\</span>
       </button>
       
@@ -528,7 +255,7 @@
         <button class="btn btn-export" onclick="exportScanToExcel()">📥 Export</button>
       </div>
       
-      <div class="btn-row" style="margin-top:6px;">
+      <div class="btn-row" style="margin-top:4px;">
         <button class="btn btn-danger" onclick="clearScanData()">🗑 Hapus</button>
         <button class="btn btn-upload" onclick="uploadScanToFirebase()" id="btnUploadScan">⬆ Upload</button>
       </div>
@@ -560,50 +287,34 @@
     </div>
   </div>
   
-  <!-- ═══════════════ MAIN CONTENT - TABEL ═══════════════ -->
+  <!-- ═══════════════ MAIN CONTENT ═══════════════ -->
   <div class="main-content" id="mainContent">
-    
     <div class="main-header">
       <h2>
-        <span class="step-tag" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:.65rem;font-weight:700;background:var(--accent);color:#fff;">📋</span>
-        Data Scan
+        <span class="step-tag-sm">📋</span> Data Scan
         <span class="badge badge-green" id="rowCount">0 row</span>
         <span class="badge badge-purple">BIN: <strong id="currentBinBadge">-</strong></span>
       </h2>
     </div>
     
-    <!-- Recall Status -->
     <div class="recall-status" id="recallStatus">
       📋 Menampilkan BIN: <strong id="recallBinLabel">-</strong> (<span id="recallCount">0</span> item)
     </div>
     
-    <!-- Tabel -->
     <div class="table-container">
       <table class="scan-table">
         <thead>
           <tr>
-            <th>#</th>
-            <th>BARCODE</th>
-            <th>LOKASI</th>
-            <th>ARTICLE</th>
-            <th>BIN</th>
-            <th>SIZE US</th>
-            <th>SIZE UK</th>
-            <th>DESCRIPTION</th>
-            <th>BRAND</th>
-            <th>CAT</th>
-            <th>SEASON</th>
-            <th>DATE</th>
-            <th>USER</th>
-            <th>AKSI</th>
+            <th>#</th><th>BARCODE</th><th>LOKASI</th><th>ARTICLE</th><th>BIN</th>
+            <th>SIZE US</th><th>SIZE UK</th><th>DESCRIPTION</th><th>BRAND</th>
+            <th>CAT</th><th>SEASON</th><th>DATE</th><th>USER</th><th>AKSI</th>
           </tr>
         </thead>
         <tbody id="scanTableBody">
           <tr>
             <td colspan="14">
               <div class="empty-state">
-                <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                <p>Ketik BIN untuk recall data</p>
+                <p>📭 Ketik BIN untuk recall data</p>
                 <small>Total data tersimpan: <strong id="emptyTotalData">0</strong></small>
               </div>
             </td>
@@ -614,31 +325,31 @@
   </div>
 </div>
 
-<!-- PAGE MASTER (Hidden, akan ditampilkan saat switch) -->
+<!-- PAGE MASTER -->
 <div id="page-master" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:var(--bg);z-index:100;overflow-y:auto;padding:24px;">
   <div style="max-width:800px;margin:0 auto;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
       <h2>📦 MASTER DATA Upload</h2>
-      <button class="btn btn-secondary" onclick="switchPage('scan')" style="width:auto;">← Kembali ke Scan</button>
+      <button class="btn btn-primary" onclick="switchPage('scan')" style="width:auto;padding:8px 16px;">← Kembali</button>
     </div>
     <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
       <h3>Konfigurasi Firebase</h3>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
         <input id="cfgApiKey" placeholder="API Key..." style="padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);" />
-        <button class="btn btn-secondary" onclick="initFirebase()" style="width:auto;">🔌 Sambungkan</button>
+        <button class="btn btn-primary" onclick="initFirebase()" style="width:auto;">🔌 Sambungkan</button>
         <div id="configStatus" style="font-size:0.8rem;"></div>
       </div>
     </div>
-    <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
+    <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;">
       <h3>Upload Excel</h3>
-      <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()" style="border:2px dashed var(--border);border-radius:10px;padding:30px;text-align:center;cursor:pointer;margin-top:12px;">
+      <div id="dropzone" onclick="document.getElementById('fileInput').click()" style="border:2px dashed var(--border);border-radius:10px;padding:30px;text-align:center;cursor:pointer;margin-top:12px;">
         <p>📂 Klik atau drop file .xlsx</p>
       </div>
       <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFile(this.files[0])" style="display:none;" />
       <div id="sheetsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:12px;"></div>
       <div id="sheetOptions" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;"></div>
       <div id="uploadCard" style="display:none;margin-top:16px;">
-        <label><input type="checkbox" id="optClear" /> Hapus data lama</label>
+        <label style="font-size:0.85rem;"><input type="checkbox" id="optClear" /> Hapus data lama</label>
         <div style="display:flex;gap:8px;margin-top:10px;">
           <button class="btn btn-primary" onclick="startUpload()" style="width:auto;">⬆ Upload</button>
           <button class="btn btn-danger" onclick="clearSelected()" style="width:auto;">🗑 Hapus</button>
@@ -669,12 +380,11 @@
   function extractGender(article) {
     if (!article) return { code: '', label: '' };
     const str = String(article).trim();
-    const firstDigit = str.charAt(0);
-    switch(firstDigit) {
+    switch(str.charAt(0)) {
       case '1': return { code: '1', label: 'Laki-laki' };
       case '2': return { code: '2', label: 'Perempuan' };
       case '3': return { code: '3', label: 'Anak-anak' };
-      default: return { code: firstDigit, label: 'Unknown' };
+      default: return { code: str.charAt(0), label: 'Unknown' };
     }
   }
 
@@ -685,8 +395,7 @@
   }
 
   function extractSizeUS(article, cat) {
-    if (!article) return '';
-    if (cat === 'E') return '';
+    if (!article || cat === 'E') return '';
     const str = String(article).trim();
     return str.length >= 3 ? str.slice(-3) : '';
   }
@@ -696,6 +405,13 @@
   }
 
   window.autoUppercase = function(input) { input.value = input.value.toUpperCase(); };
+
+  // ═══════════════ SAFE GET ELEMENT ═══════════════
+  function safeSetText(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+    return el;
+  }
 
   // ═══════════════ RECALL BIN ═══════════════
   window.onBinChange = function() {
@@ -714,36 +430,48 @@
   };
 
   function recallBinDataInternal(bin) {
+    if (!bin) return;
     currentSessionData = scanDataArray.filter(r => r.BIN === bin);
     renderScanTable();
     updateScanStats();
     
     const rs = document.getElementById('recallStatus');
-    document.getElementById('recallBinLabel').textContent = bin;
-    document.getElementById('recallCount').textContent = currentSessionData.length;
-    rs.classList.add('show');
+    const rl = document.getElementById('recallBinLabel');
+    const rc = document.getElementById('recallCount');
+    
+    if (rs) rs.classList.add('show');
+    if (rl) rl.textContent = bin;
+    if (rc) rc.textContent = currentSessionData.length;
     
     document.getElementById('scanBIN').value = bin;
-    document.getElementById('scanBarcode').focus();
+    const bc = document.getElementById('scanBarcode');
+    if (bc) bc.focus();
   }
 
   // ═══════════════ LOCK / UNLOCK ═══════════════
   function lockScan(article) {
     isLocked = true;
     rejectedArticle = article;
-    document.getElementById('scanBarcode').classList.add('locked-input');
-    document.getElementById('scanBIN').classList.add('locked-input');
-    document.getElementById('scanLokasi').classList.add('locked-input');
-    document.getElementById('scanUser').classList.add('locked-input');
-    document.getElementById('btnAddScan').disabled = true;
-    document.getElementById('lockRejectedArticle').textContent = article;
-    document.getElementById('lockOverlay').classList.add('show');
+    
+    ['scanBarcode','scanBIN','scanLokasi','scanUser'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('locked-input');
+    });
+    
+    const addBtn = document.getElementById('btnAddScan');
+    if (addBtn) addBtn.disabled = true;
+    
+    const lockOverlay = document.getElementById('lockOverlay');
+    const lockRejected = document.getElementById('lockRejectedArticle');
+    if (lockOverlay) lockOverlay.classList.add('show');
+    if (lockRejected) lockRejected.textContent = article;
     
     const ss = document.getElementById('searchStatus');
-    ss.className = 'search-status locked-status';
-    ss.style.display = 'flex';
-    document.getElementById('searchSpinner').style.display = 'none';
-    document.getElementById('searchStatusText').textContent = `🔒 "${article}" tidak ada di Master`;
+    if (ss) {
+      ss.className = 'search-status locked-status';
+      ss.style.display = 'flex';
+    }
+    safeSetText('searchStatusText', `🔒 "${article}" tidak ada di Master`);
     
     showToast('🔒 SCAN TERKUNCI!', 'error');
   }
@@ -751,32 +479,44 @@
   window.unlockScan = function() {
     isLocked = false;
     rejectedArticle = '';
-    document.getElementById('scanBarcode').classList.remove('locked-input');
-    document.getElementById('scanBIN').classList.remove('locked-input');
-    document.getElementById('scanLokasi').classList.remove('locked-input');
-    document.getElementById('scanUser').classList.remove('locked-input');
-    document.getElementById('btnAddScan').disabled = false;
-    document.getElementById('lockOverlay').classList.remove('show');
-    document.getElementById('searchStatus').style.display = 'none';
-    document.getElementById('scanBarcode').value = '';
-    document.getElementById('scanBarcode').focus();
+    
+    ['scanBarcode','scanBIN','scanLokasi','scanUser'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('locked-input');
+    });
+    
+    const addBtn = document.getElementById('btnAddScan');
+    if (addBtn) addBtn.disabled = false;
+    
+    const lockOverlay = document.getElementById('lockOverlay');
+    if (lockOverlay) lockOverlay.classList.remove('show');
+    
+    const ss = document.getElementById('searchStatus');
+    if (ss) ss.style.display = 'none';
+    
+    const bc = document.getElementById('scanBarcode');
+    if (bc) { bc.value = ''; bc.focus(); }
+    
     showToast('🔓 Scan dibuka!', 'success');
   };
 
   // ═══════════════ RESET SESI ═══════════════
   window.resetSession = function() {
     const count = currentSessionData.length;
-    if (count === 0) { showToast('📭 Sesi kosong', 'info'); document.getElementById('scanBarcode').focus(); return; }
+    if (count === 0) { 
+      showToast('📭 Sesi kosong', 'info'); 
+      const bc = document.getElementById('scanBarcode');
+      if (bc) bc.focus(); 
+      return; 
+    }
     currentSessionData = [];
     renderScanTable();
     updateScanStats();
-    showToast(`🔄 Sesi direset! Qty BIN ${currentBin}: ${getQtyBinFromAll()}`, 'info');
-    document.getElementById('scanBarcode').focus();
+    const qty = scanDataArray.filter(r => r.BIN === currentBin).length;
+    showToast(`🔄 Sesi direset! Qty BIN ${currentBin}: ${qty}`, 'info');
+    const bc = document.getElementById('scanBarcode');
+    if (bc) bc.focus();
   };
-
-  function getQtyBinFromAll() {
-    return scanDataArray.filter(r => r.BIN === currentBin).length;
-  }
 
   // ═══════════════ SHORTCUT \ ═══════════════
   document.addEventListener('keydown', function(e) {
@@ -789,8 +529,9 @@
     }
     if ((e.key === 'Enter' || e.key === ' ') && document.activeElement === document.getElementById('btnResetSession')) {
       e.preventDefault();
-      resetSession();
-      document.getElementById('scanBarcode').focus();
+      window.resetSession();
+      const bc = document.getElementById('scanBarcode');
+      if (bc) bc.focus();
     }
   });
 
@@ -850,10 +591,13 @@
     if (!db) return { found: false, error: 'Firebase tidak terhubung' };
     
     const ss = document.getElementById('searchStatus');
-    ss.style.display = 'flex';
-    ss.className = 'search-status searching';
-    document.getElementById('searchSpinner').style.display = 'inline-block';
-    document.getElementById('searchStatusText').textContent = `Mencari "${input}"...`;
+    if (ss) {
+      ss.style.display = 'flex';
+      ss.className = 'search-status searching';
+    }
+    const spinner = document.getElementById('searchSpinner');
+    if (spinner) spinner.style.display = 'inline-block';
+    safeSetText('searchStatusText', `Mencari "${input}"...`);
 
     const inputStr = String(input).trim();
     try {
@@ -878,14 +622,14 @@
         return await processFoundResult(result, inputStr);
       }
       
-      ss.className = 'search-status not-found';
-      document.getElementById('searchSpinner').style.display = 'none';
-      document.getElementById('searchStatusText').textContent = `⛔ "${inputStr}" tidak ditemukan`;
+      if (ss) ss.className = 'search-status not-found';
+      if (spinner) spinner.style.display = 'none';
+      safeSetText('searchStatusText', `⛔ "${inputStr}" tidak ditemukan`);
       return { found: false, data: null, source: null };
     } catch(err) {
-      ss.className = 'search-status not-found';
-      document.getElementById('searchSpinner').style.display = 'none';
-      document.getElementById('searchStatusText').textContent = `❌ Error`;
+      if (ss) ss.className = 'search-status not-found';
+      if (spinner) spinner.style.display = 'none';
+      safeSetText('searchStatusText', '❌ Error');
       return { found: false, error: err.message };
     }
   }
@@ -907,9 +651,10 @@
     }
     
     const ss = document.getElementById('searchStatus');
-    ss.className = 'search-status found';
-    document.getElementById('searchSpinner').style.display = 'none';
-    document.getElementById('searchStatusText').textContent = `✅ ${article} | Size:${sizeUS||'N/A'} | CAT:${productInfo.cat||'-'}`;
+    if (ss) ss.className = 'search-status found';
+    const spinner = document.getElementById('searchSpinner');
+    if (spinner) spinner.style.display = 'none';
+    safeSetText('searchStatusText', `✅ ${article} | Size:${sizeUS||'N/A'} | CAT:${productInfo.cat||'-'}`);
     
     return {
       found: true,
@@ -923,18 +668,20 @@
     const sidebar = document.getElementById('sidebar');
     const mainContent = document.getElementById('mainContent');
     const masterPage = document.getElementById('page-master');
+    const tabs = document.querySelectorAll('.nav-tab');
     
     if (page === 'master') {
-      sidebar.style.display = 'none';
-      mainContent.style.display = 'none';
-      masterPage.style.display = 'block';
-      document.querySelectorAll('.nav-tab').forEach((t,i) => t.classList.toggle('active', i === 1));
+      if (sidebar) sidebar.style.display = 'none';
+      if (mainContent) mainContent.style.display = 'none';
+      if (masterPage) masterPage.style.display = 'block';
+      tabs.forEach((t,i) => t.classList.toggle('active', i === 1));
     } else {
-      sidebar.style.display = 'flex';
-      mainContent.style.display = 'flex';
-      masterPage.style.display = 'none';
-      document.querySelectorAll('.nav-tab').forEach((t,i) => t.classList.toggle('active', i === 0));
-      document.getElementById('scanBarcode')?.focus();
+      if (sidebar) sidebar.style.display = 'flex';
+      if (mainContent) mainContent.style.display = 'flex';
+      if (masterPage) masterPage.style.display = 'none';
+      tabs.forEach((t,i) => t.classList.toggle('active', i === 0));
+      const bc = document.getElementById('scanBarcode');
+      if (bc) bc.focus();
       updateScanStats();
       updateFirestoreStatus();
     }
@@ -943,6 +690,7 @@
   // ═══════════════ TOAST ═══════════════
   function showToast(msg, type = 'info') {
     const toast = document.getElementById('toast');
+    if (!toast) return;
     toast.textContent = msg; toast.className = `toast ${type}`; toast.style.display = 'block';
     setTimeout(() => { toast.style.display = 'none'; }, 3000);
   }
@@ -951,19 +699,23 @@
   function getTodayDate() { return formatDate(new Date()); }
 
   // ═══════════════ SCAN HANDLER ═══════════════
-  window.handleBarcodeKeydown = async function(e) { if (e.key === 'Enter') { e.preventDefault(); await addScanData(); } };
+  window.handleBarcodeKeydown = async function(e) { 
+    if (e.key === 'Enter') { e.preventDefault(); await addScanData(); } 
+  };
 
   window.addScanData = async function() {
     if (isLocked) { showToast('🔒 SCAN TERKUNCI!', 'error'); return; }
     
     const barcodeInput = document.getElementById('scanBarcode');
     const binInput = document.getElementById('scanBIN');
+    if (!barcodeInput || !binInput) return;
+    
     const barcode = barcodeInput.value.trim();
     let binManual = binInput.value.trim().toUpperCase();
     binInput.value = binManual;
     
-    const lokasi = document.getElementById('scanLokasi').value;
-    const user = document.getElementById('scanUser').value;
+    const lokasi = document.getElementById('scanLokasi')?.value || 'Gudang';
+    const user = document.getElementById('scanUser')?.value || 'LOCAL';
     
     if (!barcode) { showToast('⚠️ Input barcode dulu', 'error'); barcodeInput.focus(); return; }
     if (!binManual) { showToast('⚠️ Isi BIN dulu', 'error'); binInput.focus(); return; }
@@ -971,7 +723,8 @@
     if (binManual !== currentBin) { currentBin = binManual; recallBinDataInternal(binManual); }
     
     barcodeInput.disabled = true; binInput.disabled = true;
-    document.getElementById('btnAddScan').disabled = true;
+    const addBtn = document.getElementById('btnAddScan');
+    if (addBtn) addBtn.disabled = true;
     
     const masterResult = await searchBarcodeInMaster(barcode);
     
@@ -1001,11 +754,13 @@
     }
     
     barcodeInput.disabled = false; binInput.disabled = false;
-    document.getElementById('btnAddScan').disabled = isLocked;
+    if (addBtn) addBtn.disabled = isLocked;
     barcodeInput.focus();
   };
 
-  function saveScanData() { localStorage.setItem('scan_data', JSON.stringify(scanDataArray)); }
+  function saveScanData() { 
+    try { localStorage.setItem('scan_data', JSON.stringify(scanDataArray)); } catch(e) {} 
+  }
 
   window.deleteScanRow = function(id) {
     if (!confirm('Hapus?')) return;
@@ -1030,36 +785,42 @@
     if (!confirm(`Hapus SEMUA ${scanDataArray.length} data?`)) return;
     scanDataArray = []; currentSessionData = []; currentBin = '';
     saveScanData(); renderScanTable(); updateScanStats();
-    document.getElementById('recallStatus').classList.remove('show');
-    document.getElementById('scanBIN').value = '';
+    const rs = document.getElementById('recallStatus');
+    if (rs) rs.classList.remove('show');
+    const binInput = document.getElementById('scanBIN');
+    if (binInput) binInput.value = '';
     showToast('🗑 Semua data dihapus', 'info');
   };
 
   function updateScanStats() {
-    document.getElementById('statTotalAll').textContent = scanDataArray.length.toLocaleString();
-    document.getElementById('statSession').textContent = currentSessionData.length.toLocaleString();
-    document.getElementById('statQtyBin').textContent = getQtyBinFromAll().toLocaleString();
-    document.getElementById('statBinLabel').textContent = currentBin || '-';
-    document.getElementById('currentBinBadge').textContent = currentBin || '-';
-    document.getElementById('rowCount').textContent = `${currentSessionData.length} row`;
-    document.getElementById('emptyTotalData').textContent = scanDataArray.length.toLocaleString();
+    safeSetText('statTotalAll', scanDataArray.length.toLocaleString());
+    safeSetText('statSession', currentSessionData.length.toLocaleString());
+    
+    const qty = scanDataArray.filter(r => r.BIN === currentBin).length;
+    safeSetText('statQtyBin', qty.toLocaleString());
+    safeSetText('statBinLabel', currentBin || '-');
+    safeSetText('currentBinBadge', currentBin || '-');
+    safeSetText('rowCount', `${currentSessionData.length} row`);
+    safeSetText('emptyTotalData', scanDataArray.length.toLocaleString());
   }
 
   function renderScanTable() {
     const tbody = document.getElementById('scanTableBody');
+    if (!tbody) return;
+    
     if (!currentSessionData.length) {
       tbody.innerHTML = `<tr><td colspan="14"><div class="empty-state">
-        <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-        <p>Ketik BIN untuk recall data</p>
+        <p>📭 Ketik BIN untuk recall data</p>
         <small>Total data tersimpan: <strong>${scanDataArray.length.toLocaleString()}</strong></small>
       </div></td></tr>`;
       return;
     }
+    
     tbody.innerHTML = currentSessionData.map((row, i) => `
       <tr>
         <td>${i+1}</td>
-        <td class="col-barcode" onclick="editScanCell('${row.id}','BARCODE')" title="Edit">${row.BARCODE}</td>
-        <td class="col-lokasi" onclick="editScanCell('${row.id}','LOKASI')" title="Edit">${row.LOKASI}</td>
+        <td class="col-barcode" onclick="editScanCell('${row.id}','BARCODE')" title="Edit">${row.BARCODE||'-'}</td>
+        <td class="col-lokasi" onclick="editScanCell('${row.id}','LOKASI')" title="Edit">${row.LOKASI||'-'}</td>
         <td style="font-family:monospace;" onclick="editScanCell('${row.id}','ARTICLE')" title="Edit">${row.ARTICLE||'-'}</td>
         <td class="col-bin" onclick="editScanCell('${row.id}','BIN')" title="Edit">${row.BIN||'-'}</td>
         <td class="col-size-us" onclick="editScanCell('${row.id}','SIZE_US')" title="Edit">${row.SIZE_US||(row.CAT==='E'?'EQ':'')}</td>
@@ -1068,8 +829,8 @@
         <td class="col-brand" onclick="editScanCell('${row.id}','BRAND')" title="Edit">${row.BRAND||'-'}</td>
         <td class="col-cat" onclick="editScanCell('${row.id}','CAT')" title="Edit">${row.CAT||'-'}</td>
         <td class="col-season" onclick="editScanCell('${row.id}','SEASON')" title="Edit">${row.SEASON||'-'}</td>
-        <td class="col-date">${row.DATE}</td>
-        <td>${row.USER}</td>
+        <td class="col-date">${row.DATE||'-'}</td>
+        <td>${row.USER||'-'}</td>
         <td><button class="btn-sm btn-sm-delete" onclick="deleteScanRow('${row.id}')">🗑</button></td>
       </tr>
     `).join('');
@@ -1093,7 +854,8 @@
   window.uploadScanToFirebase = async function() {
     if (!db) { showToast('❌ DB offline', 'error'); return; }
     if (!scanDataArray.length) { showToast('📭 Kosong', 'error'); return; }
-    const btn = document.getElementById('btnUploadScan'); btn.disabled = true; btn.textContent = '⏳...';
+    const btn = document.getElementById('btnUploadScan'); 
+    if (btn) { btn.disabled = true; btn.textContent = '⏳...'; }
     try {
       let up = 0;
       for (let i = 0; i < scanDataArray.length; i += BATCH_SIZE) {
@@ -1111,13 +873,19 @@
       }
       showToast(`✅ ${up} terupload!`, 'success');
     } catch(err) { showToast('❌ Gagal', 'error'); }
-    finally { btn.disabled = false; btn.textContent = '⬆ Upload'; }
+    finally { 
+      if (btn) { btn.disabled = false; btn.textContent = '⬆ Upload'; }
+    }
   };
 
   // ═══════════════ FIREBASE INIT ═══════════════
   async function initFirebase() {
-    const apiKey = document.getElementById('cfgApiKey').value.trim();
-    if (!apiKey) { document.getElementById('configStatus').textContent = '❌ API Key wajib diisi!'; return; }
+    const apiKey = document.getElementById('cfgApiKey')?.value?.trim();
+    if (!apiKey) { 
+      const cs = document.getElementById('configStatus');
+      if (cs) cs.textContent = '❌ API Key wajib diisi!'; 
+      return; 
+    }
     try {
       const app = initializeApp({ apiKey, authDomain: `${PROJECT_ID}.firebaseapp.com`, projectId: PROJECT_ID });
       db = getFirestore(app);
@@ -1125,11 +893,13 @@
       tb.set(doc(db, 'test_write', 'conn_test'), { test: 'connection_test', timestamp: new Date().toISOString() });
       await tb.commit();
       localStorage.setItem('fb_api_key', apiKey);
-      document.getElementById('configStatus').textContent = '✅ Terhubung!';
+      const cs = document.getElementById('configStatus');
+      if (cs) cs.textContent = '✅ Terhubung!';
       updateFirestoreStatus();
       showToast('✅ Firebase terhubung!', 'success');
     } catch(err) {
-      document.getElementById('configStatus').textContent = '❌ Gagal: ' + err.message;
+      const cs = document.getElementById('configStatus');
+      if (cs) cs.textContent = '❌ Gagal: ' + err.message;
       db = null; updateFirestoreStatus();
     }
   }
@@ -1144,7 +914,11 @@
 
   // ═══════════════ INIT ═══════════════
   const savedKey = localStorage.getItem('fb_api_key');
-  if (savedKey) { document.getElementById('cfgApiKey').value = savedKey; initFirebase(); }
+  if (savedKey) { 
+    const apiKeyInput = document.getElementById('cfgApiKey');
+    if (apiKeyInput) apiKeyInput.value = savedKey; 
+    initFirebase(); 
+  }
   
   const saved = localStorage.getItem('scan_data');
   if (saved) { try { scanDataArray = JSON.parse(saved); } catch(e) { scanDataArray = []; } }
@@ -1169,8 +943,7 @@
     return `${sheetName}_${Date.now().toString(36)}`;
   }
 
-  function handleDrop(e) { e.preventDefault(); handleFile(e.dataTransfer.files[0]); }
-  window.handleDrop = handleDrop;
+  window.handleDrop = function(e) { e.preventDefault(); handleFile(e.dataTransfer.files[0]); };
   
   function handleFile(file) {
     if (!file) return;
@@ -1179,18 +952,22 @@
       try {
         const wb = XLSX.read(ev.target.result, { type: 'array', cellDates: true });
         parsedSheets = {};
-        document.getElementById('sheetsGrid').innerHTML = '';
-        document.getElementById('sheetOptions').innerHTML = '';
+        const sheetsGrid = document.getElementById('sheetsGrid');
+        const sheetOptions = document.getElementById('sheetOptions');
+        if (sheetsGrid) sheetsGrid.innerHTML = '';
+        if (sheetOptions) sheetOptions.innerHTML = '';
+        
         wb.SheetNames.forEach(name => {
           const raw = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: null });
           if (raw.length < 2) return;
           const headers = raw[0].map(h => String(h??'').trim().replace(/[\s.]+/g,'_'));
           const rows = raw.slice(1).map(r => { const o={}; headers.forEach((h,i)=>{o[h]=sanitize(r[i]);}); return o; }).filter(r => Object.values(r).some(v=>v!==null));
           parsedSheets[name] = rows;
-          document.getElementById('sheetsGrid').innerHTML += `<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;"><strong>📋 ${name}</strong><br><small>${rows.length} baris</small></div>`;
-          document.getElementById('sheetOptions').innerHTML += `<label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;"><input type="checkbox" checked value="${name}" class="sheetCheck" />${name} (${rows.length})</label>`;
+          if (sheetsGrid) sheetsGrid.innerHTML += `<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;"><strong>📋 ${name}</strong><br><small>${rows.length} baris</small></div>`;
+          if (sheetOptions) sheetOptions.innerHTML += `<label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;"><input type="checkbox" checked value="${name}" class="sheetCheck" />${name} (${rows.length})</label>`;
         });
-        document.getElementById('uploadCard').style.display='block';
+        const uploadCard = document.getElementById('uploadCard');
+        if (uploadCard) uploadCard.style.display = 'block';
       } catch(err) { console.error(err); }
     };
     reader.readAsArrayBuffer(file);
@@ -1223,17 +1000,20 @@
     if (!db) { showToast('❌ DB offline', 'error'); return; }
     const selected = [...document.querySelectorAll('.sheetCheck:checked')].map(c=>c.value);
     if (!selected.length) { showToast('⚠️ Pilih sheet', 'error'); return; }
-    const clearFirst = document.getElementById('optClear').checked;
-    const pw = document.getElementById('progressWrap'); pw.innerHTML = '';
-    const t0 = Date.now(); let total = 0;
+    const clearFirst = document.getElementById('optClear')?.checked || false;
+    const pw = document.getElementById('progressWrap');
+    if (pw) pw.innerHTML = '';
+    let total = 0;
     for (const name of selected) {
       const rows = parsedSheets[name]; if (!rows?.length) continue;
       try {
         if (clearFirst) await deleteCollection(name, (d,t) => {});
         await uploadBatched(name, rows, (d,t) => {});
         total += rows.length;
-        pw.innerHTML += `<div style="color:var(--green);font-size:0.75rem;">✅ ${name} — ${rows.length} row</div>`;
-      } catch(err) { pw.innerHTML += `<div style="color:var(--red);font-size:0.75rem;">❌ ${name}: ${err.message}</div>`; }
+        if (pw) pw.innerHTML += `<div style="color:var(--green);font-size:0.75rem;">✅ ${name} — ${rows.length} row</div>`;
+      } catch(err) {
+        if (pw) pw.innerHTML += `<div style="color:var(--red);font-size:0.75rem;">❌ ${name}: ${err.message}</div>`;
+      }
     }
     showToast(`✅ ${total} data terupload!`, 'success');
   }
