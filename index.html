@@ -842,7 +842,7 @@
         <td class="col-lokasi" onclick="editScanCell('${row.id}','LOKASI')" title="Edit">${row.LOKASI}</td>
         <td style="font-family:monospace;" onclick="editScanCell('${row.id}','ARTICLE')" title="Edit">${row.ARTICLE||'-'}</td>
         <td class="col-bin" onclick="editScanCell('${row.id}','BIN')" title="Edit">${row.BIN||'-'}</td>
-        <td class="col-size-us" onclick="editScanCell('${row.id}','SIZE_US')" title="Edit">${row.SIZE_US||(row.CAT==='E'?'EQ':'')}</td>
+        <td class="col-size-us" onclick="editScanCell('${row.id}','SIZE_US')" title="Edit">${row.SIZE_US||(row.CAT==='E'?'-':'')}</td>
         <td style="color:var(--accent2);font-weight:600;" onclick="editScanCell('${row.id}','SIZE_UK')" title="Edit">${row.SIZE_UK||'-'}</td>
         <td onclick="editScanCell('${row.id}','DESCRIPTION')" title="Edit">${row.DESCRIPTION||'-'}</td>
         <td class="col-brand" onclick="editScanCell('${row.id}','BRAND')" title="Edit">${row.BRAND||'-'}</td>
