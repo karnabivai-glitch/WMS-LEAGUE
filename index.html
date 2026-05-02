@@ -63,11 +63,17 @@
     
     .btn{padding:11px 24px;border-radius:9px;font-weight:600;font-size:.9rem;border:none;cursor:pointer;transition:opacity .2s,transform .1s;}
     .btn:active{transform:scale(.97);}
-    .btn:disabled{opacity:.4;cursor:not-allowed;}
+    .btn:disabled{opacity:.4;cursor:not-allowed!important;transform:none!important;}
     .btn-primary{background:var(--accent);color:#fff;}
     .btn-danger{background:var(--red);color:#fff;}
     .btn-secondary{background:var(--border);color:var(--text);}
     .btn-success{background:var(--green);color:#fff;}
+    .btn-warning{background:#eab308;color:#000;font-weight:700;}
+    .btn-unlock{background:linear-gradient(135deg,#ef4444,#f97316);color:#fff;font-weight:700;animation:pulse-unlock 1.5s ease-in-out infinite;}
+    @keyframes pulse-unlock {
+      0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.6);}
+      50%{box-shadow:0 0 20px 6px rgba(239,68,68,.4);}
+    }
     
     .progress-wrap{display:none;flex-direction:column;gap:12px;margin-top:16px;}
     .prog-label{display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:4px;}
@@ -95,28 +101,91 @@
     .scan-input-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
     .scan-input-group { display: flex; flex-direction: column; gap: 4px; }
     .scan-input-group label { font-size: 0.75rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-    .scan-input-group input, .scan-input-group select { padding: 11px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 1rem; font-family: monospace; width: 100%; }
+    .scan-input-group input, .scan-input-group select { padding: 11px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 1rem; font-family: monospace; width: 100%; transition: all 0.3s; }
     .scan-input-group input:focus, .scan-input-group select:focus { outline: none; border-color: var(--accent); }
     .scan-input-group input.input-barcode { min-width: 220px; font-size: 1.1rem; font-weight: 600; }
     .scan-input-group input.input-bin { min-width: 100px; text-align: center; font-weight: 600; color: #a78bfa; }
     .input-hint { font-size: 0.65rem; color: var(--muted); margin-top: 2px; }
     
-    /* Style untuk input error (tidak ditemukan) */
-    .scan-input-group input.input-error {
-      border-color: var(--red) !important;
-      animation: shake 0.5s ease-in-out;
-      background: rgba(239, 68, 68, 0.1) !important;
+    /* LOCKED STATE */
+    .scan-input-row.locked {
+      position: relative;
     }
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-8px); }
-      75% { transform: translateX(8px); }
+    .scan-input-row.locked::after {
+      content: '';
+      position: absolute;
+      top: -8px; left: -8px; right: -8px; bottom: -8px;
+      background: rgba(239, 68, 68, 0.08);
+      border: 2px solid rgba(239, 68, 68, 0.5);
+      border-radius: 12px;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .scan-input-group input.locked-input {
+      background: rgba(239, 68, 68, 0.12) !important;
+      border-color: var(--red) !important;
+      color: var(--red) !important;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+    .scan-input-group select.locked-input {
+      background: rgba(239, 68, 68, 0.12) !important;
+      border-color: var(--red) !important;
+      color: var(--red) !important;
+      pointer-events: none;
+    }
+    
+    .lock-overlay {
+      display: none;
+      background: rgba(127, 29, 29, 0.95);
+      border: 2px solid var(--red);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-top: 12px;
+      text-align: center;
+      animation: slideDown 0.3s ease-out;
+    }
+    .lock-overlay.show { display: block; }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .lock-overlay .lock-icon { font-size: 2rem; margin-bottom: 8px; }
+    .lock-overlay .lock-title { font-weight: 700; color: #fecaca; font-size: 1rem; margin-bottom: 4px; }
+    .lock-overlay .lock-msg { color: #fca5a5; font-size: 0.82rem; margin-bottom: 12px; }
+    .lock-overlay .lock-rejected { 
+      font-family: monospace; 
+      font-size: 0.9rem; 
+      font-weight: 700; 
+      color: #f87171; 
+      background: rgba(0,0,0,0.3); 
+      padding: 6px 12px; 
+      border-radius: 6px;
+      display: inline-block;
+      margin-bottom: 12px;
+    }
+    .lock-overlay .btn-unlock-overlay {
+      display: inline-block;
+      padding: 10px 24px;
+      background: #eab308;
+      color: #000;
+      font-weight: 700;
+      font-size: 0.9rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .lock-overlay .btn-unlock-overlay:hover {
+      background: #facc15;
+      transform: scale(1.05);
     }
     
     .search-status { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; font-size: 0.82rem; margin-top: 12px; font-weight: 500; }
     .search-status.searching { background: #1e3a5f33; border: 1px solid #1d4ed8; color: var(--accent2); }
     .search-status.found { background: #14532d33; border: 1px solid #166534; color: var(--green); }
     .search-status.not-found { background: #7f1d1d33; border: 1px solid #991b1b; color: var(--red); }
+    .search-status.locked-status { background: #7f1d1d; border: 2px solid #ef4444; color: #fff; font-weight: 700; }
     
     .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid transparent; border-top-color: currentColor; border-radius: 50%; animation: spin 0.6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -241,13 +310,13 @@
       <p>Scan barcode / article & auto-search dari Master Data Firestore</p>
     </header>
 
-    <div class="card">
+    <div class="card" id="scanInputCard">
       <h2><span class="step-tag">📱</span> Input Scan</h2>
-      <div class="scan-input-row">
+      <div class="scan-input-row" id="scanInputRow">
         <div class="scan-input-group" style="flex:2;min-width:200px;">
           <label>🔍 Barcode / Article</label>
           <input type="text" id="scanBarcode" class="input-barcode" placeholder="Scan/ketik barcode atau article..." autofocus onkeydown="handleBarcodeKeydown(event)" />
-          <span class="input-hint">Enter = submit | Hanya yang ada di Master</span>
+          <span class="input-hint" id="barcodeHint">Enter = submit | Hanya yang ada di Master</span>
         </div>
         <div class="scan-input-group" style="flex:1;min-width:100px;">
           <label>📦 BIN</label>
@@ -262,7 +331,17 @@
           <label>👤 User</label>
           <select id="scanUser"><option value="LOCAL">LOCAL</option><option value="ADMIN">ADMIN</option><option value="STAFF1">STAFF1</option><option value="STAFF2">STAFF2</option></select>
         </div>
-        <button class="btn btn-primary" onclick="addScanData()" style="height:44px;white-space:nowrap;">➕ Tambah</button>
+        <button class="btn btn-primary" id="btnAddScan" onclick="addScanData()" style="height:44px;white-space:nowrap;">➕ Tambah</button>
+      </div>
+      
+      <!-- LOCK OVERLAY -->
+      <div class="lock-overlay" id="lockOverlay">
+        <div class="lock-icon">🔒</div>
+        <div class="lock-title">SCAN TERKUNCI!</div>
+        <div class="lock-msg">Article/Barcode tidak ditemukan di Master Data</div>
+        <div class="lock-rejected" id="lockRejectedArticle">-</div>
+        <div class="lock-msg" style="font-size:0.75rem;margin-bottom:12px;">Perbaiki article di Master, lalu klik buka kunci</div>
+        <button class="btn-unlock-overlay" onclick="unlockScan()">🔓 BUKA KUNCI</button>
       </div>
       
       <div class="derived-box" id="derivedBox">
@@ -277,7 +356,7 @@
       
       <div style="margin-top:12px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
         <span style="font-size:0.75rem;color:var(--muted);">💡 <strong>Enter</strong> = scan & cari</span>
-        <span style="font-size:0.75rem;color:var(--muted);">| ⛔ Data tidak ditemukan = ditolak</span>
+        <span style="font-size:0.75rem;color:var(--muted);">| ⛔ Data tidak ditemukan = LOCK</span>
         <span style="font-size:0.75rem;color:var(--muted);">| Hari ini: <strong id="todayCount">0</strong></span>
         <span style="font-size:0.75rem;">DB: <strong id="firestoreStatus">-</strong></span>
       </div>
@@ -335,6 +414,8 @@
   let db = null;
   let parsedSheets = {};
   let scanDataArray = [];
+  let isLocked = false;
+  let rejectedArticle = '';
 
   // ═══════════════════════════════════════════════════════════════
   // HELPER FUNCTIONS
@@ -369,6 +450,71 @@
     const str = String(input).trim();
     return /^\d{10,14}$/.test(str);
   }
+
+  // ═══════════════════════════════════════════════════════════════
+  // LOCK / UNLOCK FUNCTIONS
+  // ═══════════════════════════════════════════════════════════════
+  
+  function lockScan(article) {
+    isLocked = true;
+    rejectedArticle = article;
+    
+    // Lock semua input
+    document.getElementById('scanBarcode').classList.add('locked-input');
+    document.getElementById('scanBIN').classList.add('locked-input');
+    document.getElementById('scanLokasi').classList.add('locked-input');
+    document.getElementById('scanUser').classList.add('locked-input');
+    document.getElementById('btnAddScan').disabled = true;
+    
+    // Tampilkan overlay
+    document.getElementById('lockRejectedArticle').textContent = article;
+    document.getElementById('lockOverlay').classList.add('show');
+    
+    // Update hint
+    document.getElementById('barcodeHint').textContent = '🔒 TERKUNCI - Perbaiki Master lalu buka kunci';
+    document.getElementById('barcodeHint').style.color = 'var(--red)';
+    
+    // Update search status
+    const searchStatus = document.getElementById('searchStatus');
+    searchStatus.className = 'search-status locked-status';
+    searchStatus.style.display = 'flex';
+    document.getElementById('searchSpinner').style.display = 'none';
+    document.getElementById('searchStatusText').textContent = `🔒 LOCKED! "${article}" tidak ada di Master. Perbaiki artikel lalu klik BUKA KUNCI.`;
+    
+    log(`🔒 LOCKED: "${article}" tidak ditemukan di Master. Scan dikunci.`, 'err', 'scanLogBox');
+    showToast('🔒 SCAN TERKUNCI! Perbaiki Master lalu buka kunci', 'error');
+  }
+  
+  window.unlockScan = function() {
+    isLocked = false;
+    rejectedArticle = '';
+    
+    // Unlock semua input
+    document.getElementById('scanBarcode').classList.remove('locked-input');
+    document.getElementById('scanBIN').classList.remove('locked-input');
+    document.getElementById('scanLokasi').classList.remove('locked-input');
+    document.getElementById('scanUser').classList.remove('locked-input');
+    document.getElementById('btnAddScan').disabled = false;
+    
+    // Sembunyikan overlay
+    document.getElementById('lockOverlay').classList.remove('show');
+    
+    // Reset hint
+    document.getElementById('barcodeHint').textContent = 'Enter = submit | Hanya yang ada di Master';
+    document.getElementById('barcodeHint').style.color = '';
+    
+    // Reset search status
+    document.getElementById('searchStatus').style.display = 'none';
+    
+    // Kosongkan barcode, BIN tetap
+    document.getElementById('scanBarcode').value = '';
+    
+    // Fokus ke input barcode
+    document.getElementById('scanBarcode').focus();
+    
+    log('🔓 UNLOCKED: Scan dibuka kembali', 'info', 'scanLogBox');
+    showToast('🔓 Scan dibuka! Silakan lanjutkan', 'success');
+  };
 
   // ═══════════════════════════════════════════════════════════════
   // FIREBASE SEARCH
@@ -478,7 +624,6 @@
       let result;
 
       if (inputIsBarcode) {
-        // BARCODE
         debugInfo.push(`<div class="db-item"><span class="db-label">Coba 1:</span><span class="db-value" style="color:var(--accent2);">getDoc(MASTER_BARCODE/${inputStr})</span></div>`);
         result = await searchById('MASTER_BARCODE', inputStr);
         if (result.found) {
@@ -494,7 +639,6 @@
         }
 
       } else {
-        // ARTICLE
         debugInfo.push(`<div class="db-item"><span class="db-label">Coba 1:</span><span class="db-value" style="color:var(--accent2);">getDoc(MASTER_BARCODE/${inputStr})</span></div>`);
         result = await searchById('MASTER_BARCODE', inputStr);
         if (result.found) {
@@ -552,9 +696,7 @@
       derivedBox.classList.add('show');
       searchStatus.className = 'search-status not-found';
       searchSpinner.style.display = 'none';
-      searchStatusText.textContent = `⛔ "${inputStr}" TIDAK ADA di Master — Data DITOLAK!`;
-      
-      log(`⛔ DITOLAK: "${inputStr}" tidak ditemukan di Master`, 'err', 'scanLogBox');
+      searchStatusText.textContent = `⛔ "${inputStr}" TIDAK ADA di Master — SCAN DIKUNCI!`;
       
       return { found: false, data: null, source: null };
       
@@ -670,7 +812,7 @@
   function showToast(msg, type = 'info') {
     const toast = document.getElementById('toast');
     toast.textContent = msg; toast.className = `toast ${type}`; toast.style.display = 'block';
-    setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    setTimeout(() => { toast.style.display = 'none'; }, 4000);
   }
 
   function formatDate(d) { const dd = new Date(d); return `${String(dd.getDate()).padStart(2,'0')}/${String(dd.getMonth()+1).padStart(2,'0')}/${dd.getFullYear()}`; }
@@ -749,11 +891,22 @@
   if (saved) { try { scanDataArray = JSON.parse(saved); } catch(e) { scanDataArray = []; } }
 
   // ═══════════════════════════════════════════════════════════════
-  // SCAN HANDLER — BIN TETAP, DATA DITOLAK JIKA TIDAK DITEMUKAN
+  // SCAN HANDLER — LOCK JIKA TIDAK DITEMUKAN
   // ═══════════════════════════════════════════════════════════════
-  window.handleBarcodeKeydown = async function(e) { if (e.key === 'Enter') { e.preventDefault(); await addScanData(); } };
+  window.handleBarcodeKeydown = async function(e) { 
+    if (e.key === 'Enter') { 
+      e.preventDefault(); 
+      await addScanData(); 
+    } 
+  };
 
   window.addScanData = async function() {
+    // Cek apakah sedang locked
+    if (isLocked) {
+      showToast('🔒 SCAN TERKUNCI! Klik BUKA KUNCI terlebih dahulu', 'error');
+      return;
+    }
+    
     const barcodeInput = document.getElementById('scanBarcode');
     const binInput = document.getElementById('scanBIN');
     const barcode = barcodeInput.value.trim();
@@ -767,18 +920,15 @@
       return; 
     }
     
-    // Disable input selama proses
     barcodeInput.disabled = true; 
     binInput.disabled = true;
-    
-    // Hapus class error sebelumnya
-    barcodeInput.classList.remove('input-error');
+    document.getElementById('btnAddScan').disabled = true;
     
     const masterResult = await searchBarcodeInMaster(barcode);
     const now = new Date();
     
     if (masterResult.found && masterResult.data) {
-      // DATA DITEMUKAN — Masukkan ke array
+      // DATA DITEMUKAN
       const md = masterResult.data; 
       const d = md._derived || {};
       const newRow = {
@@ -806,34 +956,23 @@
       updateScanStats();
       
       const foundMsg = [];
-      if (d.cat === 'E') {
-        foundMsg.push('Equipment');
-      } else if (d.sizeUS) {
-        foundMsg.push(`Size:${d.sizeUS}`);
-      }
+      if (d.cat === 'E') foundMsg.push('Equipment');
+      else if (d.sizeUS) foundMsg.push(`Size:${d.sizeUS}`);
       if (d.cat) foundMsg.push(`CAT:${d.cat}`);
       if (d.brandName) foundMsg.push(`Brand:${d.brandName}`);
       showToast(`✅ ${foundMsg.join(' ') || 'Ditemukan'}`, 'success');
       
-      // ✅ HAPUS Barcode saja, BIN TETAP
       barcodeInput.value = '';
       
     } else {
-      // ⛔ DATA TIDAK DITEMUKAN — TOLAK, jangan masukkan ke array
-      
-      // Animasi shake pada input barcode
-      barcodeInput.classList.add('input-error');
-      setTimeout(() => barcodeInput.classList.remove('input-error'), 600);
-      
-      // Barcode dikosongkan tapi BIN tetap
-      barcodeInput.value = '';
-      
-      showToast('⛔ DITOLAK! Tidak ada di Master Data', 'error');
+      // DATA TIDAK DITEMUKAN — LOCK!
+      barcodeInput.value = barcode;  // Kembalikan nilai barcode
+      lockScan(barcode);
     }
     
-    // Enable input kembali
     barcodeInput.disabled = false; 
     binInput.disabled = false;
+    document.getElementById('btnAddScan').disabled = isLocked;  // Disable jika locked
     barcodeInput.focus();
   };
 
