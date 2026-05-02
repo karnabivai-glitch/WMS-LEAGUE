@@ -69,6 +69,8 @@
     .btn-secondary{background:var(--border);color:var(--text);}
     .btn-success{background:var(--green);color:#fff;}
     .btn-warning{background:#eab308;color:#000;font-weight:700;}
+    .btn-reset{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-weight:700;font-size:0.8rem;padding:8px 16px;}
+    .btn-reset:hover{background:linear-gradient(135deg,#818cf8,#a78bfa);}
     .btn-unlock{background:linear-gradient(135deg,#ef4444,#f97316);color:#fff;font-weight:700;animation:pulse-unlock 1.5s ease-in-out infinite;}
     @keyframes pulse-unlock {
       0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.6);}
@@ -104,23 +106,10 @@
     .scan-input-group input, .scan-input-group select { padding: 11px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 1rem; font-family: monospace; width: 100%; transition: all 0.3s; }
     .scan-input-group input:focus, .scan-input-group select:focus { outline: none; border-color: var(--accent); }
     .scan-input-group input.input-barcode { min-width: 220px; font-size: 1.1rem; font-weight: 600; }
-    .scan-input-group input.input-bin { min-width: 100px; text-align: center; font-weight: 600; color: #a78bfa; }
+    .scan-input-group input.input-bin { min-width: 100px; text-align: center; font-weight: 600; color: #a78bfa; text-transform: uppercase; }
     .input-hint { font-size: 0.65rem; color: var(--muted); margin-top: 2px; }
     
     /* LOCKED STATE */
-    .scan-input-row.locked {
-      position: relative;
-    }
-    .scan-input-row.locked::after {
-      content: '';
-      position: absolute;
-      top: -8px; left: -8px; right: -8px; bottom: -8px;
-      background: rgba(239, 68, 68, 0.08);
-      border: 2px solid rgba(239, 68, 68, 0.5);
-      border-radius: 12px;
-      pointer-events: none;
-      z-index: 10;
-    }
     .scan-input-group input.locked-input {
       background: rgba(239, 68, 68, 0.12) !important;
       border-color: var(--red) !important;
@@ -190,10 +179,13 @@
     .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid transparent; border-top-color: currentColor; border-radius: 50%; animation: spin 0.6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     
-    .scan-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+    /* STATS - Hanya Total Scan & Qty BIN */
+    .scan-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
     .stat-box { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px; text-align: center; }
     .stat-box .stat-val { font-size: 1.5rem; font-weight: 700; color: var(--accent2); }
     .stat-box .stat-lbl { font-size: 0.7rem; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-box.highlight { border-color: var(--accent); }
+    .stat-box.highlight .stat-val { color: var(--accent); }
     
     .derived-box {
       background: rgba(139, 92, 246, 0.08);
@@ -213,6 +205,20 @@
     .derived-box .db-value.cat { color: #f59e0b; }
     .derived-box .db-value.equipment { color: #facc15; }
     .derived-box .db-value.article-input { color: #60a5fa; }
+    
+    /* Shortcut hint */
+    .shortcut-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(99, 102, 241, 0.2);
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.65rem;
+      font-family: monospace;
+      color: #a78bfa;
+    }
     
     .table-wrapper { overflow-x: auto; margin-top: 16px; border-radius: 8px; border: 1px solid var(--border); }
     .scan-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 1100px; }
@@ -320,8 +326,8 @@
         </div>
         <div class="scan-input-group" style="flex:1;min-width:100px;">
           <label>📦 BIN</label>
-          <input type="text" id="scanBIN" class="input-bin" placeholder="D1" />
-          <span class="input-hint">Tetap sampai dihapus manual</span>
+          <input type="text" id="scanBIN" class="input-bin" placeholder="D1" oninput="autoUppercase(this)" />
+          <span class="input-hint">Auto-uppercase | Tetap sampai dihapus</span>
         </div>
         <div class="scan-input-group" style="flex:1;min-width:130px;">
           <label>📍 Lokasi</label>
@@ -332,6 +338,14 @@
           <select id="scanUser"><option value="LOCAL">LOCAL</option><option value="ADMIN">ADMIN</option><option value="STAFF1">STAFF1</option><option value="STAFF2">STAFF2</option></select>
         </div>
         <button class="btn btn-primary" id="btnAddScan" onclick="addScanData()" style="height:44px;white-space:nowrap;">➕ Tambah</button>
+      </div>
+      
+      <!-- Tombol Reset Sesi -->
+      <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="btn btn-reset" onclick="resetSession()" title="Shortcut: \ (backslash)">
+          🔄 Reset Sesi <span class="shortcut-hint">\</span>
+        </button>
+        <span style="font-size:0.7rem;color:var(--muted);">Shortcut: tekan <strong>\</strong> untuk reset cepat</span>
       </div>
       
       <!-- LOCK OVERLAY -->
@@ -355,18 +369,22 @@
       </div>
       
       <div style="margin-top:12px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
-        <span style="font-size:0.75rem;color:var(--muted);">💡 <strong>Enter</strong> = scan & cari</span>
-        <span style="font-size:0.75rem;color:var(--muted);">| ⛔ Data tidak ditemukan = LOCK</span>
-        <span style="font-size:0.75rem;color:var(--muted);">| Hari ini: <strong id="todayCount">0</strong></span>
+        <span style="font-size:0.75rem;color:var(--muted);">💡 <strong>Enter</strong> = scan | <strong>\</strong> = reset sesi</span>
+        <span style="font-size:0.75rem;color:var(--muted);">| ⛔ Tidak ditemukan = LOCK</span>
         <span style="font-size:0.75rem;">DB: <strong id="firestoreStatus">-</strong></span>
       </div>
     </div>
 
+    <!-- STATS: Total Scan & Qty BIN -->
     <div class="scan-stats">
-      <div class="stat-box"><div class="stat-val" id="statTotal">0</div><div class="stat-lbl">Total Scan</div></div>
-      <div class="stat-box"><div class="stat-val" id="statUnique">0</div><div class="stat-lbl">Unique Barcode</div></div>
-      <div class="stat-box"><div class="stat-val" id="statToday">0</div><div class="stat-lbl">Hari Ini</div></div>
-      <div class="stat-box"><div class="stat-val" id="statFromMaster">0</div><div class="stat-lbl">Dari Master</div></div>
+      <div class="stat-box">
+        <div class="stat-val" id="statTotal">0</div>
+        <div class="stat-lbl">Total Scan Sesi Ini</div>
+      </div>
+      <div class="stat-box highlight">
+        <div class="stat-val" id="statQtyBin">0</div>
+        <div class="stat-lbl">Total Qty BIN (<span id="statBinLabel">-</span>)</div>
+      </div>
     </div>
 
     <div class="card">
@@ -452,6 +470,13 @@
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // AUTO UPPERCASE BIN
+  // ═══════════════════════════════════════════════════════════════
+  window.autoUppercase = function(input) {
+    input.value = input.value.toUpperCase();
+  };
+
+  // ═══════════════════════════════════════════════════════════════
   // LOCK / UNLOCK FUNCTIONS
   // ═══════════════════════════════════════════════════════════════
   
@@ -459,22 +484,17 @@
     isLocked = true;
     rejectedArticle = article;
     
-    // Lock semua input
     document.getElementById('scanBarcode').classList.add('locked-input');
     document.getElementById('scanBIN').classList.add('locked-input');
     document.getElementById('scanLokasi').classList.add('locked-input');
     document.getElementById('scanUser').classList.add('locked-input');
     document.getElementById('btnAddScan').disabled = true;
     
-    // Tampilkan overlay
     document.getElementById('lockRejectedArticle').textContent = article;
     document.getElementById('lockOverlay').classList.add('show');
-    
-    // Update hint
     document.getElementById('barcodeHint').textContent = '🔒 TERKUNCI - Perbaiki Master lalu buka kunci';
     document.getElementById('barcodeHint').style.color = 'var(--red)';
     
-    // Update search status
     const searchStatus = document.getElementById('searchStatus');
     searchStatus.className = 'search-status locked-status';
     searchStatus.style.display = 'flex';
@@ -489,32 +509,82 @@
     isLocked = false;
     rejectedArticle = '';
     
-    // Unlock semua input
     document.getElementById('scanBarcode').classList.remove('locked-input');
     document.getElementById('scanBIN').classList.remove('locked-input');
     document.getElementById('scanLokasi').classList.remove('locked-input');
     document.getElementById('scanUser').classList.remove('locked-input');
     document.getElementById('btnAddScan').disabled = false;
     
-    // Sembunyikan overlay
     document.getElementById('lockOverlay').classList.remove('show');
-    
-    // Reset hint
     document.getElementById('barcodeHint').textContent = 'Enter = submit | Hanya yang ada di Master';
     document.getElementById('barcodeHint').style.color = '';
-    
-    // Reset search status
     document.getElementById('searchStatus').style.display = 'none';
-    
-    // Kosongkan barcode, BIN tetap
     document.getElementById('scanBarcode').value = '';
-    
-    // Fokus ke input barcode
     document.getElementById('scanBarcode').focus();
     
     log('🔓 UNLOCKED: Scan dibuka kembali', 'info', 'scanLogBox');
     showToast('🔓 Scan dibuka! Silakan lanjutkan', 'success');
   };
+
+  // ═══════════════════════════════════════════════════════════════
+  // RESET SESI
+  // ═══════════════════════════════════════════════════════════════
+  
+  window.resetSession = function() {
+    if (scanDataArray.length === 0) {
+      showToast('📭 Tidak ada data untuk direset', 'info');
+      return;
+    }
+    
+    if (!confirm(`Reset sesi? ${scanDataArray.length} data scan akan dihapus.\n\nKlik OK untuk reset, Cancel untuk batal.`)) {
+      return;
+    }
+    
+    const deletedCount = scanDataArray.length;
+    const binLabel = document.getElementById('scanBIN').value || '-';
+    
+    scanDataArray = [];
+    saveScanData();
+    renderScanTable();
+    updateScanStats();
+    
+    showToast(`🔄 Sesi direset! ${deletedCount} data dihapus. Silakan mulai scan baru.`, 'info');
+    log(`🔄 RESET SESI: ${deletedCount} data dihapus. BIN: ${binLabel}`, 'warn', 'scanLogBox');
+    
+    document.getElementById('scanBarcode').focus();
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  // SHORTCUT KEY HANDLER (global)
+  // ═══════════════════════════════════════════════════════════════
+  
+  document.addEventListener('keydown', function(e) {
+    // Shortcut \ untuk reset sesi (hanya di halaman scan)
+    const scanPage = document.getElementById('page-scan');
+    if (scanPage.classList.contains('active')) {
+      // Jangan trigger jika sedang mengetik di input
+      const activeEl = document.activeElement;
+      const isInputFocused = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+      
+      if (e.key === '\\' && !isInputFocused) {
+        e.preventDefault();
+        resetSession();
+        return;
+      }
+      
+      // Jika input barcode fokus, backslash tidak reset (biarkan user ketik)
+      if (e.key === '\\' && activeEl === document.getElementById('scanBarcode')) {
+        // Biarkan backslash diketik di barcode
+        return;
+      }
+      
+      // Jika input BIN fokus, backslash untuk reset
+      if (e.key === '\\' && activeEl === document.getElementById('scanBIN')) {
+        e.preventDefault();
+        resetSession();
+      }
+    }
+  });
 
   // ═══════════════════════════════════════════════════════════════
   // FIREBASE SEARCH
@@ -689,7 +759,6 @@
         }
       }
 
-      // TIDAK DITEMUKAN
       debugInfo.push(`<div class="db-item"><span class="db-label">Hasil:</span><span class="db-value" style="color:var(--red);">❌ Tidak ditemukan di semua strategi</span></div>`);
       
       derivedContent.innerHTML = debugInfo.join('');
@@ -891,7 +960,7 @@
   if (saved) { try { scanDataArray = JSON.parse(saved); } catch(e) { scanDataArray = []; } }
 
   // ═══════════════════════════════════════════════════════════════
-  // SCAN HANDLER — LOCK JIKA TIDAK DITEMUKAN
+  // SCAN HANDLER
   // ═══════════════════════════════════════════════════════════════
   window.handleBarcodeKeydown = async function(e) { 
     if (e.key === 'Enter') { 
@@ -901,7 +970,6 @@
   };
 
   window.addScanData = async function() {
-    // Cek apakah sedang locked
     if (isLocked) {
       showToast('🔒 SCAN TERKUNCI! Klik BUKA KUNCI terlebih dahulu', 'error');
       return;
@@ -910,7 +978,10 @@
     const barcodeInput = document.getElementById('scanBarcode');
     const binInput = document.getElementById('scanBIN');
     const barcode = barcodeInput.value.trim();
-    const binManual = binInput.value.trim();
+    // Auto-uppercase BIN
+    let binManual = binInput.value.trim().toUpperCase();
+    binInput.value = binManual;
+    
     const lokasi = document.getElementById('scanLokasi').value;
     const user = document.getElementById('scanUser').value;
     
@@ -928,7 +999,6 @@
     const now = new Date();
     
     if (masterResult.found && masterResult.data) {
-      // DATA DITEMUKAN
       const md = masterResult.data; 
       const d = md._derived || {};
       const newRow = {
@@ -965,14 +1035,13 @@
       barcodeInput.value = '';
       
     } else {
-      // DATA TIDAK DITEMUKAN — LOCK!
-      barcodeInput.value = barcode;  // Kembalikan nilai barcode
+      barcodeInput.value = barcode;
       lockScan(barcode);
     }
     
     barcodeInput.disabled = false; 
     binInput.disabled = false;
-    document.getElementById('btnAddScan').disabled = isLocked;  // Disable jika locked
+    document.getElementById('btnAddScan').disabled = isLocked;
     barcodeInput.focus();
   };
 
@@ -989,27 +1058,27 @@
     const row = scanDataArray.find(r => r.id === id); if (!row) return;
     const nv = prompt(`Edit ${field}:`, row[field] || ''); if (nv === null) return;
     row[field] = nv;
+    if (field === 'BIN') row[field] = row[field].toUpperCase();
     saveScanData(); renderScanTable(); showToast('✅ Updated', 'success');
   };
 
   window.clearScanData = function() {
     if (!scanDataArray.length) { showToast('📭 Kosong', 'info'); return; }
-    if (!confirm(`Hapus ${scanDataArray.length} row?`)) return;
+    if (!confirm(`Hapus SEMUA ${scanDataArray.length} row?\n\nIni akan menghapus seluruh data scan.`)) return;
     scanDataArray = []; saveScanData(); renderScanTable(); updateScanStats();
-    showToast('🗑 Clear', 'info');
+    showToast('🗑 Semua data dihapus', 'info');
   };
 
   function updateScanStats() {
     const t = scanDataArray.length;
-    const u = new Set(scanDataArray.map(r => r.BARCODE)).size;
-    const m = scanDataArray.filter(r => r.BRAND !== '' || r.CAT !== '').length;
-    const today = getTodayDate();
-    const td = scanDataArray.filter(r => r.DATE === today);
+    
+    // Hitung Qty per BIN (berdasarkan BIN yang sama)
+    const currentBin = document.getElementById('scanBIN').value.trim().toUpperCase();
+    const qtyBin = scanDataArray.filter(r => r.BIN === currentBin).length;
+    
     document.getElementById('statTotal').textContent = t.toLocaleString();
-    document.getElementById('statUnique').textContent = u.toLocaleString();
-    document.getElementById('statToday').textContent = td.length.toLocaleString();
-    document.getElementById('statFromMaster').textContent = m.toLocaleString();
-    document.getElementById('todayCount').textContent = td.length.toLocaleString();
+    document.getElementById('statQtyBin').textContent = qtyBin.toLocaleString();
+    document.getElementById('statBinLabel').textContent = currentBin || '-';
     document.getElementById('rowCount').textContent = `${t} row`;
   }
 
