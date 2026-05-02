@@ -130,6 +130,7 @@
     .derived-box .db-value { font-weight: 600; font-family: monospace; }
     .derived-box .db-value.generic { color: #c084fc; }
     .derived-box .db-value.cat { color: #f59e0b; }
+    .derived-box .db-value.equipment { color: #facc15; }
     
     .table-wrapper { overflow-x: auto; margin-top: 16px; border-radius: 8px; border: 1px solid var(--border); }
     .scan-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 1100px; }
@@ -173,7 +174,7 @@
   </div>
 </div>
 
-<!-- PAGE 1: MASTER DATA (tidak berubah) -->
+<!-- PAGE 1: MASTER DATA -->
 <div class="page active" id="page-master">
   <div class="container">
     <header>
@@ -322,9 +323,13 @@
   let scanDataArray = [];
 
   // ═══════════════════════════════════════════════════════════════
-  // HELPER
+  // HELPER FUNCTIONS
   // ═══════════════════════════════════════════════════════════════
   
+  /**
+   * Extract Gender dari digit pertama article
+   * 1 = Laki-laki, 2 = Perempuan, 3 = Anak-anak
+   */
   function extractGender(article) {
     if (!article) return { code: '', label: '' };
     const str = String(article).trim();
@@ -337,14 +342,30 @@
     }
   }
 
+  /**
+   * Extract CAT dari Merch_Cat (karakter ke-2)
+   */
   function extractCat(merchCat) {
     if (!merchCat) return '';
     const str = String(merchCat).trim();
     return str.length >= 2 ? str.charAt(1) : str;
   }
 
+  /**
+   * Extract Size US dari article
+   * - Untuk CAT E (Equipment): TIDAK dipotong, Size US kosong
+   * - Untuk lainnya: ambil 3 karakter terakhir article
+   */
+  function extractSizeUS(article, cat) {
+    if (!article) return '';
+    // CAT E = Equipment, tidak ada size
+    if (cat === 'E') return '';
+    const str = String(article).trim();
+    return str.length >= 3 ? str.slice(-3) : '';
+  }
+
   // ═══════════════════════════════════════════════════════════════
-  // FIREBASE SEARCH — MULTIPLE FALLBACK STRATEGIES
+  // FIREBASE SEARCH
   // ═══════════════════════════════════════════════════════════════
 
   async function searchById(collectionName, docId) {
@@ -361,14 +382,12 @@
   async function searchByField(collectionName, fieldName, value) {
     const results = [];
     
-    // Strategy 1: Exact match as string
     try {
       const q = query(collection(db, collectionName), where(fieldName, '==', String(value)));
       const snap = await getDocs(q);
       if (!snap.empty) results.push({ data: { id: snap.docs[0].id, ...snap.docs[0].data() }, method: 'string' });
     } catch(e) { console.warn('search string error:', e.message); }
 
-    // Strategy 2: Exact match as number
     if (!results.length && /^\d+$/.test(String(value))) {
       try {
         const q = query(collection(db, collectionName), where(fieldName, '==', Number(value)));
@@ -383,15 +402,21 @@
     return { found: false, data: null, source: null };
   }
 
+  /**
+   * Cari Size UK dari koleksi SIZE
+   * Mencocokkan US_Size dan Gender
+   */
   async function findSizeUK(usSize, genderLabel) {
     if (!db || !usSize || !genderLabel) return '';
     try {
+      // Coba sebagai string
       let q = query(collection(db, 'SIZE'), where('US_Size', '==', String(usSize)), where('Gender', '==', genderLabel));
       let snap = await getDocs(q);
       if (!snap.empty) {
         const d = snap.docs[0].data();
         return d.UK_Size || d.Size_UK || d['UK_Size'] || '';
       }
+      // Coba sebagai number (untuk size numeric seperti 070)
       if (/^\d+$/.test(usSize)) {
         q = query(collection(db, 'SIZE'), where('US_Size', '==', Number(usSize)), where('Gender', '==', genderLabel));
         snap = await getDocs(q);
@@ -404,13 +429,14 @@
     return '';
   }
 
+  /**
+   * Cari Product Info dari MASTER_PRODUK menggunakan Generic
+   */
   async function findProductInfoByGeneric(generic) {
     if (!db || !generic) return { brandName: '', seasonYr: '', cat: '', merchCat: '' };
     
-    // Coba cari by ID dulu
     let result = await searchById('MASTER_PRODUK', generic);
     if (!result.found) {
-      // Coba by field 'Article'
       result = await searchByField('MASTER_PRODUK', 'Article', generic);
     }
     
@@ -505,36 +531,50 @@
     // AMBIL DATA DARI MASTER_BARCODE
     const article = data.Article || data.article || barcode;
     const generic = data.GENERIC || data.Generic || data.generic || '';
-    const sizeUS = data.Size_US || data['Size US'] || data.sizeUS || '';
     const description = data.Description || data.description || data.DESCRIPTION || '';
     const bin = data.BIN || data.bin || '';
     
     debugInfo.push(`<div class="db-item"><span class="db-label">Article:</span><span class="db-value">${article}</span></div>`);
     debugInfo.push(`<div class="db-item"><span class="db-label">→ GENERIC (dari DB):</span><span class="db-value generic">${generic || '❌ TIDAK ADA'}</span></div>`);
-    debugInfo.push(`<div class="db-item"><span class="db-label">→ Size US (dari DB):</span><span class="db-value">${sizeUS || '❌ TIDAK ADA'}</span></div>`);
     
-    // Jika generic tidak ada, coba fallback ke cara lama (potong 3 karakter)
+    // Jika generic tidak ada, fallback potong 3 karakter terakhir
     let finalGeneric = generic;
-    let finalSizeUS = sizeUS;
-    
     if (!finalGeneric && article.length > 3) {
       finalGeneric = article.substring(0, article.length - 3);
-      finalSizeUS = finalSizeUS || article.slice(-3);
       debugInfo.push(`<div class="db-item"><span class="db-label">⚠️ Fallback:</span><span class="db-value" style="color:#facc15;">Generic tidak ada, dipotong manual → ${finalGeneric}</span></div>`);
     }
     
-    // Cari info tambahan dari MASTER_PRODUK
-    const gender = extractGender(finalGeneric || article);
-    debugInfo.push(`<div class="db-item"><span class="db-label">→ Gender:</span><span class="db-value">${gender.label} (code: ${gender.code})</span></div>`);
-    
-    // Cari Size UK
-    const sizeUK = finalSizeUS ? await findSizeUK(finalSizeUS, gender.label) : '';
-    debugInfo.push(`<div class="db-item"><span class="db-label">→ Size UK:</span><span class="db-value">${sizeUK || '-'}</span></div>`);
-    
-    // Cari Product Info dari MASTER_PRODUK menggunakan GENERIC
+    // Cari Product Info dari MASTER_PRODUK untuk mendapatkan CAT
     const productInfo = await findProductInfoByGeneric(finalGeneric);
     debugInfo.push(`<div class="db-item"><span class="db-label">→ Merch_Cat:</span><span class="db-value">${productInfo.merchCat || '-'}</span></div>`);
     debugInfo.push(`<div class="db-item"><span class="db-label">→ CAT:</span><span class="db-value cat">${productInfo.cat || '-'}</span></div>`);
+    
+    // ═══════════════════════════════════════════════════════════
+    // SIZE US & SIZE UK LOGIC
+    // ═══════════════════════════════════════════════════════════
+    let sizeUS = '';
+    let sizeUK = '';
+    let gender = { code: '', label: '' };
+    
+    // CAT E = Equipment, tidak perlu size
+    if (productInfo.cat === 'E') {
+      debugInfo.push(`<div class="db-item"><span class="db-label">→ CAT E:</span><span class="db-value equipment">Equipment - Tidak ada Size</span></div>`);
+    } else {
+      // Size US = 3 karakter terakhir dari article
+      sizeUS = extractSizeUS(article, productInfo.cat);
+      debugInfo.push(`<div class="db-item"><span class="db-label">→ Size US (3 char terakhir):</span><span class="db-value">${sizeUS || '-'}</span></div>`);
+      
+      // Gender dari digit pertama article
+      gender = extractGender(article);
+      debugInfo.push(`<div class="db-item"><span class="db-label">→ Gender (digit 1):</span><span class="db-value">${gender.label} (code: ${gender.code})</span></div>`);
+      
+      // Size UK dari koleksi SIZE
+      if (sizeUS && gender.label) {
+        sizeUK = await findSizeUK(sizeUS, gender.label);
+        debugInfo.push(`<div class="db-item"><span class="db-label">→ Size UK:</span><span class="db-value">${sizeUK || '❌ Tidak ditemukan'}</span></div>`);
+      }
+    }
+    
     debugInfo.push(`<div class="db-item"><span class="db-label">→ Brand:</span><span class="db-value">${productInfo.brandName || '-'}</span></div>`);
     debugInfo.push(`<div class="db-item"><span class="db-label">→ Season:</span><span class="db-value">${productInfo.seasonYr || '-'}</span></div>`);
     
@@ -544,12 +584,18 @@
     searchSpinner.style.display = 'none';
     
     const summaryParts = [];
+    if (productInfo.cat === 'E') {
+      summaryParts.push('Equipment');
+    } else {
+      if (sizeUS) summaryParts.push(`Size:${sizeUS}`);
+      if (sizeUK) summaryParts.push(`UK:${sizeUK}`);
+    }
     if (productInfo.cat) summaryParts.push(`CAT:${productInfo.cat}`);
     if (productInfo.brandName) summaryParts.push(`Brand:${productInfo.brandName}`);
     if (productInfo.seasonYr) summaryParts.push(`Season:${productInfo.seasonYr}`);
     searchStatusText.textContent = `✅ Ditemukan | ${summaryParts.join(' ') || 'Data tersedia'}`;
     
-    log(`✅ "${barcode}" → Article:${article} | Generic:${finalGeneric} | Size:${finalSizeUS} | ${summaryParts.join(', ')}`, 'ok', 'scanLogBox');
+    log(`✅ "${barcode}" → Article:${article} | Generic:${finalGeneric} | Size:${sizeUS||'N/A'} | CAT:${productInfo.cat||'-'}`, 'ok', 'scanLogBox');
     
     return {
       found: true,
@@ -558,7 +604,7 @@
         _derived: {
           article,
           generic: finalGeneric,
-          sizeUS: finalSizeUS,
+          sizeUS,
           sizeUK,
           gender,
           description,
@@ -708,6 +754,11 @@
         timestamp: now.toISOString()
       };
       const foundMsg = [];
+      if (d.cat === 'E') {
+        foundMsg.push('Equipment');
+      } else if (d.sizeUS) {
+        foundMsg.push(`Size:${d.sizeUS}`);
+      }
       if (d.cat) foundMsg.push(`CAT:${d.cat}`);
       if (d.brandName) foundMsg.push(`Brand:${d.brandName}`);
       showToast(`✅ ${foundMsg.join(' ') || 'Ditemukan'}`, 'success');
@@ -791,7 +842,7 @@
         <td class="col-lokasi" onclick="editScanCell('${row.id}','LOKASI')" title="Edit">${row.LOKASI}</td>
         <td style="font-family:monospace;" onclick="editScanCell('${row.id}','ARTICLE')" title="Edit">${row.ARTICLE||'-'}</td>
         <td class="col-bin" onclick="editScanCell('${row.id}','BIN')" title="Edit">${row.BIN||'-'}</td>
-        <td class="col-size-us" onclick="editScanCell('${row.id}','SIZE_US')" title="Edit">${row.SIZE_US||'-'}</td>
+        <td class="col-size-us" onclick="editScanCell('${row.id}','SIZE_US')" title="Edit">${row.SIZE_US||(row.CAT==='E'?'EQ':'')}</td>
         <td style="color:var(--accent2);font-weight:600;" onclick="editScanCell('${row.id}','SIZE_UK')" title="Edit">${row.SIZE_UK||'-'}</td>
         <td onclick="editScanCell('${row.id}','DESCRIPTION')" title="Edit">${row.DESCRIPTION||'-'}</td>
         <td class="col-brand" onclick="editScanCell('${row.id}','BRAND')" title="Edit">${row.BRAND||'-'}</td>
@@ -846,7 +897,7 @@
   };
 
   // ═══════════════════════════════════════════════════════════════
-  // MASTER UPLOAD (unchanged)
+  // MASTER UPLOAD
   // ═══════════════════════════════════════════════════════════════
   function handleDrop(e) { e.preventDefault(); document.getElementById('dropzone').classList.remove('over'); handleFile(e.dataTransfer.files[0]); }
   function handleFile(file) {
