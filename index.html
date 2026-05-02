@@ -69,8 +69,9 @@
     .btn-secondary{background:var(--border);color:var(--text);}
     .btn-success{background:var(--green);color:#fff;}
     .btn-warning{background:#eab308;color:#000;font-weight:700;}
-    .btn-reset{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-weight:700;font-size:0.8rem;padding:8px 16px;}
+    .btn-reset{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-weight:700;font-size:0.8rem;padding:8px 16px;position:relative;}
     .btn-reset:hover{background:linear-gradient(135deg,#818cf8,#a78bfa);}
+    .btn-reset:focus{outline:2px solid #a78bfa;outline-offset:2px;}
     .btn-unlock{background:linear-gradient(135deg,#ef4444,#f97316);color:#fff;font-weight:700;animation:pulse-unlock 1.5s ease-in-out infinite;}
     @keyframes pulse-unlock {
       0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.6);}
@@ -108,6 +109,21 @@
     .scan-input-group input.input-barcode { min-width: 220px; font-size: 1.1rem; font-weight: 600; }
     .scan-input-group input.input-bin { min-width: 100px; text-align: center; font-weight: 600; color: #a78bfa; text-transform: uppercase; }
     .input-hint { font-size: 0.65rem; color: var(--muted); margin-top: 2px; }
+    
+    /* BIN Change Warning */
+    .bin-change-warning {
+      display: none;
+      background: rgba(234, 179, 8, 0.15);
+      border: 1px solid rgba(234, 179, 8, 0.4);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-top: 8px;
+      font-size: 0.78rem;
+      color: #facc15;
+      animation: fadeIn 0.3s ease-out;
+    }
+    .bin-change-warning.show { display: block; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     
     /* LOCKED STATE */
     .scan-input-group input.locked-input {
@@ -179,13 +195,29 @@
     .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid transparent; border-top-color: currentColor; border-radius: 50%; animation: spin 0.6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     
-    /* STATS - Hanya Total Scan & Qty BIN */
-    .scan-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
+    /* STATS - Total Scan & Qty BIN Sesi Ini */
+    .scan-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
     .stat-box { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px; text-align: center; }
     .stat-box .stat-val { font-size: 1.5rem; font-weight: 700; color: var(--accent2); }
     .stat-box .stat-lbl { font-size: 0.7rem; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
     .stat-box.highlight { border-color: var(--accent); }
     .stat-box.highlight .stat-val { color: var(--accent); }
+    .stat-box.session { border-color: #6366f1; }
+    .stat-box.session .stat-val { color: #818cf8; }
+    
+    /* Session indicator */
+    .session-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(99, 102, 241, 0.2);
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.65rem;
+      color: #a78bfa;
+      font-weight: 600;
+    }
     
     .derived-box {
       background: rgba(139, 92, 246, 0.08);
@@ -205,20 +237,6 @@
     .derived-box .db-value.cat { color: #f59e0b; }
     .derived-box .db-value.equipment { color: #facc15; }
     .derived-box .db-value.article-input { color: #60a5fa; }
-    
-    /* Shortcut hint */
-    .shortcut-hint {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      background: rgba(99, 102, 241, 0.2);
-      border: 1px solid rgba(99, 102, 241, 0.4);
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 0.65rem;
-      font-family: monospace;
-      color: #a78bfa;
-    }
     
     .table-wrapper { overflow-x: auto; margin-top: 16px; border-radius: 8px; border: 1px solid var(--border); }
     .scan-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 1100px; }
@@ -326,8 +344,8 @@
         </div>
         <div class="scan-input-group" style="flex:1;min-width:100px;">
           <label>📦 BIN</label>
-          <input type="text" id="scanBIN" class="input-bin" placeholder="D1" oninput="autoUppercase(this)" />
-          <span class="input-hint">Auto-uppercase | Tetap sampai dihapus</span>
+          <input type="text" id="scanBIN" class="input-bin" placeholder="D1" oninput="autoUppercase(this)" onchange="onBinChange()" />
+          <span class="input-hint">Ganti BIN = sesi baru (data tetap tersimpan)</span>
         </div>
         <div class="scan-input-group" style="flex:1;min-width:130px;">
           <label>📍 Lokasi</label>
@@ -342,10 +360,15 @@
       
       <!-- Tombol Reset Sesi -->
       <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <button class="btn btn-reset" onclick="resetSession()" title="Shortcut: \ (backslash)">
-          🔄 Reset Sesi <span class="shortcut-hint">\</span>
+        <button class="btn btn-reset" id="btnResetSession" onclick="resetSession()" title="Shortcut: \ (backslash)">
+          🔄 Reset Penghitungan <span class="session-badge">\</span>
         </button>
-        <span style="font-size:0.7rem;color:var(--muted);">Shortcut: tekan <strong>\</strong> untuk reset cepat</span>
+        <span style="font-size:0.7rem;color:var(--muted);">Shortcut <strong>\</strong> = reset counter sesi ini | Data aman tersimpan</span>
+      </div>
+      
+      <!-- BIN Change Warning -->
+      <div class="bin-change-warning" id="binChangeWarning">
+        ⚠️ BIN berubah menjadi <strong id="newBinLabel">-</strong>. Tabel dikosongkan untuk sesi baru. Data sebelumnya tetap tersimpan.
       </div>
       
       <!-- LOCK OVERLAY -->
@@ -369,27 +392,37 @@
       </div>
       
       <div style="margin-top:12px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
-        <span style="font-size:0.75rem;color:var(--muted);">💡 <strong>Enter</strong> = scan | <strong>\</strong> = reset sesi</span>
+        <span style="font-size:0.75rem;color:var(--muted);">💡 <strong>Enter</strong> = scan</span>
+        <span style="font-size:0.75rem;color:var(--muted);">| <strong>\</strong> = reset counter</span>
         <span style="font-size:0.75rem;color:var(--muted);">| ⛔ Tidak ditemukan = LOCK</span>
         <span style="font-size:0.75rem;">DB: <strong id="firestoreStatus">-</strong></span>
       </div>
     </div>
 
-    <!-- STATS: Total Scan & Qty BIN -->
+    <!-- STATS: Total All Data, Sesi Sekarang, Qty BIN Sesi Ini -->
     <div class="scan-stats">
       <div class="stat-box">
-        <div class="stat-val" id="statTotal">0</div>
-        <div class="stat-lbl">Total Scan Sesi Ini</div>
+        <div class="stat-val" id="statTotalAll">0</div>
+        <div class="stat-lbl">Total Semua Data</div>
+      </div>
+      <div class="stat-box session">
+        <div class="stat-val" id="statSession">0</div>
+        <div class="stat-lbl">Sesi Ini</div>
       </div>
       <div class="stat-box highlight">
         <div class="stat-val" id="statQtyBin">0</div>
-        <div class="stat-lbl">Total Qty BIN (<span id="statBinLabel">-</span>)</div>
+        <div class="stat-lbl">Qty BIN (<span id="statBinLabel">-</span>)</div>
       </div>
     </div>
 
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <h2 style="margin:0;"><span class="step-tag">📋</span> Data Scan <span class="badge badge-green" id="rowCount">0 row</span></h2>
+        <h2 style="margin:0;">
+          <span class="step-tag">📋</span> 
+          Data Scan Sesi Ini 
+          <span class="badge badge-green" id="rowCount">0 row</span>
+          <span class="session-badge" style="margin-left:4px;">BIN: <strong id="currentBinBadge">-</strong></span>
+        </h2>
         <div style="display:flex;gap:8px;">
           <button class="btn btn-secondary btn-sm" onclick="exportScanToExcel()">📥 Export Excel</button>
           <button class="btn btn-danger btn-sm" onclick="clearScanData()">🗑 Hapus Semua</button>
@@ -407,7 +440,7 @@
           <tbody id="scanTableBody">
             <tr class="empty-state"><td colspan="14">
               <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-              <p>Belum ada data scan.</p>
+              <p>Belum ada data scan sesi ini.</p>
             </td></tr>
           </tbody>
         </table>
@@ -416,7 +449,7 @@
 
     <div class="card">
       <h2><span class="step-tag">☁️</span> Upload ke Firebase</h2>
-      <p style="color:var(--muted);font-size:0.85rem;margin-bottom:12px;">Upload ke koleksi <strong>SCAN_DATA</strong></p>
+      <p style="color:var(--muted);font-size:0.85rem;margin-bottom:12px;">Upload <strong>semua data</strong> ke koleksi <strong>SCAN_DATA</strong></p>
       <button class="btn btn-success" onclick="uploadScanToFirebase()" id="btnUploadScan">⬆ Upload Scan Data</button>
       <div class="log" id="scanLogBox"></div>
     </div>
@@ -431,9 +464,14 @@
   const BATCH_SIZE = 200;
   let db = null;
   let parsedSheets = {};
-  let scanDataArray = [];
+  
+  // DATA STORAGE
+  let scanDataArray = [];        // Semua data yang sudah di-scan (tersimpan permanen)
+  let currentSessionData = [];   // Data sesi saat ini (untuk tampilan tabel)
+  let currentBin = '';           // BIN saat ini
   let isLocked = false;
   let rejectedArticle = '';
+  let previousBin = '';          // BIN sebelumnya (untuk deteksi perubahan)
 
   // ═══════════════════════════════════════════════════════════════
   // HELPER FUNCTIONS
@@ -473,7 +511,45 @@
   // AUTO UPPERCASE BIN
   // ═══════════════════════════════════════════════════════════════
   window.autoUppercase = function(input) {
-    input.value = input.value.toUpperCase();
+    const val = input.value.toUpperCase();
+    input.value = val;
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  // BIN CHANGE HANDLER
+  // ═══════════════════════════════════════════════════════════════
+  window.onBinChange = function() {
+    const binInput = document.getElementById('scanBIN');
+    const newBin = binInput.value.trim().toUpperCase();
+    
+    // Jika BIN berubah dan ada data di sesi sebelumnya
+    if (previousBin && newBin !== previousBin && currentSessionData.length > 0) {
+      // Tampilkan warning
+      document.getElementById('newBinLabel').textContent = newBin;
+      document.getElementById('binChangeWarning').classList.add('show');
+      setTimeout(() => {
+        document.getElementById('binChangeWarning').classList.remove('show');
+      }, 4000);
+      
+      // Simpan data sesi sebelumnya ke array utama
+      // (sudah otomatis tersimpan karena setiap scan langsung ke scanDataArray)
+      
+      // Reset sesi untuk BIN baru
+      currentSessionData = [];
+      currentBin = newBin;
+      previousBin = newBin;
+      
+      renderScanTable();
+      updateScanStats();
+      
+      log(`🔄 BIN berubah ke "${newBin}". Sesi baru dimulai. Data sebelumnya tersimpan.`, 'info', 'scanLogBox');
+      showToast(`📦 BIN "${newBin}" - Sesi baru dimulai`, 'info');
+    } else if (!previousBin) {
+      // Pertama kali set BIN
+      previousBin = newBin;
+      currentBin = newBin;
+      updateScanStats();
+    }
   };
 
   // ═══════════════════════════════════════════════════════════════
@@ -527,61 +603,65 @@
   };
 
   // ═══════════════════════════════════════════════════════════════
-  // RESET SESI
+  // RESET SESI (Reset counter saja, data tetap aman)
   // ═══════════════════════════════════════════════════════════════
   
   window.resetSession = function() {
-    if (scanDataArray.length === 0) {
-      showToast('📭 Tidak ada data untuk direset', 'info');
+    if (currentSessionData.length === 0) {
+      showToast('📭 Sesi ini sudah kosong', 'info');
+      document.getElementById('scanBarcode').focus();
       return;
     }
     
-    if (!confirm(`Reset sesi? ${scanDataArray.length} data scan akan dihapus.\n\nKlik OK untuk reset, Cancel untuk batal.`)) {
-      return;
-    }
+    const sessionCount = currentSessionData.length;
     
-    const deletedCount = scanDataArray.length;
-    const binLabel = document.getElementById('scanBIN').value || '-';
+    // Reset sesi (data tetap di scanDataArray)
+    currentSessionData = [];
     
-    scanDataArray = [];
-    saveScanData();
     renderScanTable();
     updateScanStats();
     
-    showToast(`🔄 Sesi direset! ${deletedCount} data dihapus. Silakan mulai scan baru.`, 'info');
-    log(`🔄 RESET SESI: ${deletedCount} data dihapus. BIN: ${binLabel}`, 'warn', 'scanLogBox');
+    showToast(`🔄 Counter direset! ${sessionCount} scan di sesi ini. Data aman tersimpan.`, 'info');
+    log(`🔄 RESET COUNTER: ${sessionCount} scan sesi ini. Data tetap tersimpan di array utama.`, 'info', 'scanLogBox');
     
     document.getElementById('scanBarcode').focus();
   };
 
   // ═══════════════════════════════════════════════════════════════
-  // SHORTCUT KEY HANDLER (global)
+  // SHORTCUT KEY HANDLER - \ untuk reset sesi
   // ═══════════════════════════════════════════════════════════════
   
   document.addEventListener('keydown', function(e) {
-    // Shortcut \ untuk reset sesi (hanya di halaman scan)
     const scanPage = document.getElementById('page-scan');
-    if (scanPage.classList.contains('active')) {
-      // Jangan trigger jika sedang mengetik di input
+    if (!scanPage.classList.contains('active')) return;
+    
+    if (e.key === '\\') {
+      // Cegah default (terutama jika di input)
+      e.preventDefault();
+      
       const activeEl = document.activeElement;
-      const isInputFocused = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
       
-      if (e.key === '\\' && !isInputFocused) {
-        e.preventDefault();
-        resetSession();
+      // Jika fokus di input barcode, tetap biarkan ketik backslash
+      if (activeEl === document.getElementById('scanBarcode')) {
+        // Kembalikan karakter backslash ke input
+        const barcodeInput = document.getElementById('scanBarcode');
+        const start = barcodeInput.selectionStart;
+        const end = barcodeInput.selectionEnd;
+        const val = barcodeInput.value;
+        barcodeInput.value = val.substring(0, start) + '\\' + val.substring(end);
+        barcodeInput.selectionStart = barcodeInput.selectionEnd = start + 1;
         return;
       }
       
-      // Jika input barcode fokus, backslash tidak reset (biarkan user ketik)
-      if (e.key === '\\' && activeEl === document.getElementById('scanBarcode')) {
-        // Biarkan backslash diketik di barcode
-        return;
-      }
-      
-      // Jika input BIN fokus, backslash untuk reset
-      if (e.key === '\\' && activeEl === document.getElementById('scanBIN')) {
-        e.preventDefault();
-        resetSession();
+      // Pindahkan fokus ke tombol reset dan klik
+      const btnReset = document.getElementById('btnResetSession');
+      if (btnReset) {
+        btnReset.focus();
+        btnReset.click();
+        // Kembalikan fokus ke barcode setelah reset
+        setTimeout(() => {
+          document.getElementById('scanBarcode').focus();
+        }, 100);
       }
     }
   });
@@ -956,6 +1036,8 @@
 
   const savedKey = localStorage.getItem('fb_api_key');
   if (savedKey) { document.getElementById('cfgApiKey').value = savedKey; initFirebase(); }
+  
+  // Load data dari localStorage
   const saved = localStorage.getItem('scan_data');
   if (saved) { try { scanDataArray = JSON.parse(saved); } catch(e) { scanDataArray = []; } }
 
@@ -978,7 +1060,6 @@
     const barcodeInput = document.getElementById('scanBarcode');
     const binInput = document.getElementById('scanBIN');
     const barcode = barcodeInput.value.trim();
-    // Auto-uppercase BIN
     let binManual = binInput.value.trim().toUpperCase();
     binInput.value = binManual;
     
@@ -989,6 +1070,25 @@
       showToast('⚠️ Input barcode/article dulu', 'error'); 
       barcodeInput.focus(); 
       return; 
+    }
+    
+    // Update currentBin jika berubah
+    if (binManual !== currentBin) {
+      if (currentBin && currentSessionData.length > 0) {
+        // BIN berubah, warning
+        document.getElementById('newBinLabel').textContent = binManual;
+        document.getElementById('binChangeWarning').classList.add('show');
+        setTimeout(() => {
+          document.getElementById('binChangeWarning').classList.remove('show');
+        }, 4000);
+        
+        // Reset sesi
+        currentSessionData = [];
+        renderScanTable();
+        log(`🔄 BIN berubah ke "${binManual}". Sesi baru dimulai.`, 'info', 'scanLogBox');
+      }
+      previousBin = currentBin;
+      currentBin = binManual;
     }
     
     barcodeInput.disabled = true; 
@@ -1017,10 +1117,15 @@
         DATE: getTodayDate(),
         USER: user,
         MERCH_CAT: d.merchCat || '',
-        timestamp: now.toISOString()
+        timestamp: now.toISOString(),
+        sessionBin: currentBin  // Tag BIN sesi
       };
       
-      scanDataArray.unshift(newRow); 
+      // Simpan ke array utama (permanen)
+      scanDataArray.unshift(newRow);
+      // Simpan ke sesi saat ini (untuk tampilan)
+      currentSessionData.unshift(newRow);
+      
       saveScanData();
       renderScanTable(); 
       updateScanStats();
@@ -1045,50 +1150,83 @@
     barcodeInput.focus();
   };
 
-  function saveScanData() { localStorage.setItem('scan_data', JSON.stringify(scanDataArray)); }
+  function saveScanData() { 
+    localStorage.setItem('scan_data', JSON.stringify(scanDataArray)); 
+  }
 
   window.deleteScanRow = function(id) {
-    if (!confirm('Hapus?')) return;
+    if (!confirm('Hapus dari sesi ini?')) return;
+    
+    // Hapus dari sesi
+    currentSessionData = currentSessionData.filter(r => r.id !== id);
+    // Hapus dari array utama
     scanDataArray = scanDataArray.filter(r => r.id !== id);
-    saveScanData(); renderScanTable(); updateScanStats();
+    
+    saveScanData();
+    renderScanTable(); 
+    updateScanStats();
     showToast('🗑 Dihapus', 'info');
   };
 
   window.editScanCell = function(id, field) {
-    const row = scanDataArray.find(r => r.id === id); if (!row) return;
-    const nv = prompt(`Edit ${field}:`, row[field] || ''); if (nv === null) return;
+    // Cari di currentSessionData dulu
+    let row = currentSessionData.find(r => r.id === id);
+    if (!row) {
+      row = scanDataArray.find(r => r.id === id);
+    }
+    if (!row) return;
+    
+    const nv = prompt(`Edit ${field}:`, row[field] || ''); 
+    if (nv === null) return;
     row[field] = nv;
     if (field === 'BIN') row[field] = row[field].toUpperCase();
-    saveScanData(); renderScanTable(); showToast('✅ Updated', 'success');
+    
+    saveScanData(); 
+    renderScanTable(); 
+    showToast('✅ Updated', 'success');
   };
 
   window.clearScanData = function() {
     if (!scanDataArray.length) { showToast('📭 Kosong', 'info'); return; }
-    if (!confirm(`Hapus SEMUA ${scanDataArray.length} row?\n\nIni akan menghapus seluruh data scan.`)) return;
-    scanDataArray = []; saveScanData(); renderScanTable(); updateScanStats();
+    if (!confirm(`Hapus SEMUA ${scanDataArray.length} data?\n\nIni akan menghapus SELURUH data scan yang tersimpan.`)) return;
+    
+    scanDataArray = [];
+    currentSessionData = [];
+    currentBin = '';
+    previousBin = '';
+    
+    saveScanData(); 
+    renderScanTable(); 
+    updateScanStats();
     showToast('🗑 Semua data dihapus', 'info');
   };
 
   function updateScanStats() {
-    const t = scanDataArray.length;
+    const totalAll = scanDataArray.length;
+    const sessionCount = currentSessionData.length;
+    const qtyBin = currentSessionData.filter(r => r.BIN === currentBin).length;
     
-    // Hitung Qty per BIN (berdasarkan BIN yang sama)
-    const currentBin = document.getElementById('scanBIN').value.trim().toUpperCase();
-    const qtyBin = scanDataArray.filter(r => r.BIN === currentBin).length;
-    
-    document.getElementById('statTotal').textContent = t.toLocaleString();
+    document.getElementById('statTotalAll').textContent = totalAll.toLocaleString();
+    document.getElementById('statSession').textContent = sessionCount.toLocaleString();
     document.getElementById('statQtyBin').textContent = qtyBin.toLocaleString();
     document.getElementById('statBinLabel').textContent = currentBin || '-';
-    document.getElementById('rowCount').textContent = `${t} row`;
+    document.getElementById('currentBinBadge').textContent = currentBin || '-';
+    document.getElementById('rowCount').textContent = `${sessionCount} row`;
   }
 
   function renderScanTable() {
     const tbody = document.getElementById('scanTableBody');
-    if (!scanDataArray.length) {
-      tbody.innerHTML = `<tr class="empty-state"><td colspan="14"><svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg><p>Belum ada data scan.</p></td></tr>`;
+    
+    // Hanya tampilkan data sesi saat ini
+    if (!currentSessionData.length) {
+      tbody.innerHTML = `<tr class="empty-state"><td colspan="14">
+        <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+        <p>Belum ada data scan sesi ini. <br><small style="color:var(--muted);">Total data tersimpan: ${scanDataArray.length.toLocaleString()}</small></p>
+      </td></tr>`;
       return;
     }
-    tbody.innerHTML = scanDataArray.map((row, i) => `
+    
+    tbody.innerHTML = currentSessionData.map((row, i) => `
       <tr>
         <td>${i+1}</td>
         <td class="col-barcode" onclick="editScanCell('${row.id}','BARCODE')" title="Edit">${row.BARCODE}</td>
@@ -1109,6 +1247,7 @@
   }
 
   window.exportScanToExcel = function() {
+    // Export SEMUA data (bukan hanya sesi ini)
     if (!scanDataArray.length) { showToast('📭 Kosong', 'error'); return; }
     const data = scanDataArray.map(r => ({
       BARCODE:r.BARCODE,LOKASI:r.LOKASI,ARTICLE:r.ARTICLE,BIN:r.BIN,
