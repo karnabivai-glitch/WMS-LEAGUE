@@ -101,6 +101,18 @@
     .scan-input-group input.input-bin { min-width: 100px; text-align: center; font-weight: 600; color: #a78bfa; }
     .input-hint { font-size: 0.65rem; color: var(--muted); margin-top: 2px; }
     
+    /* Style untuk input error (tidak ditemukan) */
+    .scan-input-group input.input-error {
+      border-color: var(--red) !important;
+      animation: shake 0.5s ease-in-out;
+      background: rgba(239, 68, 68, 0.1) !important;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+    
     .search-status { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; font-size: 0.82rem; margin-top: 12px; font-weight: 500; }
     .search-status.searching { background: #1e3a5f33; border: 1px solid #1d4ed8; color: var(--accent2); }
     .search-status.found { background: #14532d33; border: 1px solid #166534; color: var(--green); }
@@ -235,12 +247,12 @@
         <div class="scan-input-group" style="flex:2;min-width:200px;">
           <label>🔍 Barcode / Article</label>
           <input type="text" id="scanBarcode" class="input-barcode" placeholder="Scan/ketik barcode atau article..." autofocus onkeydown="handleBarcodeKeydown(event)" />
-          <span class="input-hint">Enter = submit | Bisa barcode atau article</span>
+          <span class="input-hint">Enter = submit | Hanya yang ada di Master</span>
         </div>
         <div class="scan-input-group" style="flex:1;min-width:100px;">
           <label>📦 BIN</label>
           <input type="text" id="scanBIN" class="input-bin" placeholder="D1" />
-          <span class="input-hint">Manual</span>
+          <span class="input-hint">Tetap sampai dihapus manual</span>
         </div>
         <div class="scan-input-group" style="flex:1;min-width:130px;">
           <label>📍 Lokasi</label>
@@ -265,6 +277,7 @@
       
       <div style="margin-top:12px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
         <span style="font-size:0.75rem;color:var(--muted);">💡 <strong>Enter</strong> = scan & cari</span>
+        <span style="font-size:0.75rem;color:var(--muted);">| ⛔ Data tidak ditemukan = ditolak</span>
         <span style="font-size:0.75rem;color:var(--muted);">| Hari ini: <strong id="todayCount">0</strong></span>
         <span style="font-size:0.75rem;">DB: <strong id="firestoreStatus">-</strong></span>
       </div>
@@ -327,10 +340,6 @@
   // HELPER FUNCTIONS
   // ═══════════════════════════════════════════════════════════════
   
-  /**
-   * Extract Gender dari digit pertama article
-   * 1 = Laki-laki, 2 = Perempuan, 3 = Anak-anak
-   */
   function extractGender(article) {
     if (!article) return { code: '', label: '' };
     const str = String(article).trim();
@@ -343,20 +352,12 @@
     }
   }
 
-  /**
-   * Extract CAT dari Merch_Cat (karakter ke-2)
-   */
   function extractCat(merchCat) {
     if (!merchCat) return '';
     const str = String(merchCat).trim();
     return str.length >= 2 ? str.charAt(1) : str;
   }
 
-  /**
-   * Extract Size US dari article
-   * - Untuk CAT E (Equipment): TIDAK dipotong, Size US kosong
-   * - Untuk lainnya: ambil 3 karakter terakhir article
-   */
   function extractSizeUS(article, cat) {
     if (!article) return '';
     if (cat === 'E') return '';
@@ -364,14 +365,9 @@
     return str.length >= 3 ? str.slice(-3) : '';
   }
 
-  /**
-   * Deteksi apakah input adalah barcode (numeric panjang) atau article (alpha-numeric)
-   * Barcode biasanya 13 digit numeric
-   */
   function isBarcodeFormat(input) {
     const str = String(input).trim();
-    // Barcode biasanya 12-14 digit angka
-    return /^\d{12,14}$/.test(str);
+    return /^\d{10,14}$/.test(str);
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -391,7 +387,6 @@
 
   async function searchByField(collectionName, fieldName, value) {
     const results = [];
-    
     try {
       const q = query(collection(db, collectionName), where(fieldName, '==', String(value)));
       const snap = await getDocs(q);
@@ -412,9 +407,6 @@
     return { found: false, data: null, source: null };
   }
 
-  /**
-   * Cari Size UK dari koleksi SIZE
-   */
   async function findSizeUK(usSize, genderLabel) {
     if (!db || !usSize || !genderLabel) return '';
     try {
@@ -436,9 +428,6 @@
     return '';
   }
 
-  /**
-   * Cari Product Info dari MASTER_PRODUK menggunakan Generic
-   */
   async function findProductInfoByGeneric(generic) {
     if (!db || !generic) return { brandName: '', seasonYr: '', cat: '', merchCat: '' };
     
@@ -461,7 +450,7 @@
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // MAIN SEARCH - SUPPORT BARCODE & ARTICLE INPUT
+  // MAIN SEARCH
   // ═══════════════════════════════════════════════════════════════
   async function searchBarcodeInMaster(input) {
     if (!db) return { found: false, error: 'Firebase tidak terhubung' };
@@ -489,9 +478,7 @@
       let result;
 
       if (inputIsBarcode) {
-        // ═══ INPUT ADALAH BARCODE ═══
-        
-        // Strategy 1: Cari by Document ID di MASTER_BARCODE
+        // BARCODE
         debugInfo.push(`<div class="db-item"><span class="db-label">Coba 1:</span><span class="db-value" style="color:var(--accent2);">getDoc(MASTER_BARCODE/${inputStr})</span></div>`);
         result = await searchById('MASTER_BARCODE', inputStr);
         if (result.found) {
@@ -499,7 +486,6 @@
           return await processFoundResult(result, inputStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
         }
 
-        // Strategy 2: Cari by field 'Barcode' di MASTER_BARCODE
         debugInfo.push(`<div class="db-item"><span class="db-label">Coba 2:</span><span class="db-value" style="color:var(--accent2);">where(Barcode == "${inputStr}")</span></div>`);
         result = await searchByField('MASTER_BARCODE', 'Barcode', inputStr);
         if (result.found) {
@@ -508,9 +494,7 @@
         }
 
       } else {
-        // ═══ INPUT ADALAH ARTICLE ═══
-        
-        // Strategy 1: Cari by Document ID di MASTER_BARCODE
+        // ARTICLE
         debugInfo.push(`<div class="db-item"><span class="db-label">Coba 1:</span><span class="db-value" style="color:var(--accent2);">getDoc(MASTER_BARCODE/${inputStr})</span></div>`);
         result = await searchById('MASTER_BARCODE', inputStr);
         if (result.found) {
@@ -518,7 +502,6 @@
           return await processFoundResult(result, inputStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
         }
 
-        // Strategy 2: Cari by field 'Article' di MASTER_BARCODE
         debugInfo.push(`<div class="db-item"><span class="db-label">Coba 2:</span><span class="db-value" style="color:var(--accent2);">where(Article == "${inputStr}") di MASTER_BARCODE</span></div>`);
         result = await searchByField('MASTER_BARCODE', 'Article', inputStr);
         if (result.found) {
@@ -526,18 +509,15 @@
           return await processFoundResult(result, inputStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
         }
 
-        // Strategy 3: Cari by Document ID di MASTER_PRODUK (mungkin input adalah generic)
         debugInfo.push(`<div class="db-item"><span class="db-label">Coba 3:</span><span class="db-value" style="color:var(--accent2);">getDoc(MASTER_PRODUK/${inputStr})</span></div>`);
         result = await searchById('MASTER_PRODUK', inputStr);
         if (result.found) {
           debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">✅ Found in MASTER_PRODUK (Generic)!</span></div>`);
-          // Buat data dummy untuk MASTER_BARCODE
           result.data.Article = result.data.Article || inputStr;
           result.data.Barcode = result.data.Barcode || inputStr;
           return await processFoundResult(result, inputStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
         }
 
-        // Strategy 4: Cari by field 'Article' di MASTER_PRODUK
         debugInfo.push(`<div class="db-item"><span class="db-label">Coba 4:</span><span class="db-value" style="color:var(--accent2);">where(Article == "${inputStr}") di MASTER_PRODUK</span></div>`);
         result = await searchByField('MASTER_PRODUK', 'Article', inputStr);
         if (result.found) {
@@ -546,7 +526,6 @@
           return await processFoundResult(result, inputStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
         }
 
-        // Strategy 5: Input mungkin article utuh, coba potong 3 karakter (generic) dan cari di MASTER_PRODUK
         if (inputStr.length > 3) {
           const possibleGeneric = inputStr.substring(0, inputStr.length - 3);
           debugInfo.push(`<div class="db-item"><span class="db-label">Coba 5:</span><span class="db-value" style="color:var(--accent2);">Potong 3 char → "${possibleGeneric}" → MASTER_PRODUK</span></div>`);
@@ -560,21 +539,22 @@
             debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">✅ Generic dari potongan article ditemukan!</span></div>`);
             result.data.Article = result.data.Article || inputStr;
             result.data.Barcode = result.data.Barcode || inputStr;
-            // Tambahkan GENERIC ke data
             result.data.GENERIC = result.data.GENERIC || possibleGeneric;
             return await processFoundResult(result, inputStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
           }
         }
       }
 
-      // ═══ TIDAK DITEMUKAN ═══
+      // TIDAK DITEMUKAN
       debugInfo.push(`<div class="db-item"><span class="db-label">Hasil:</span><span class="db-value" style="color:var(--red);">❌ Tidak ditemukan di semua strategi</span></div>`);
       
       derivedContent.innerHTML = debugInfo.join('');
       derivedBox.classList.add('show');
       searchStatus.className = 'search-status not-found';
       searchSpinner.style.display = 'none';
-      searchStatusText.textContent = `❌ "${inputStr}" tidak ditemukan di database`;
+      searchStatusText.textContent = `⛔ "${inputStr}" TIDAK ADA di Master — Data DITOLAK!`;
+      
+      log(`⛔ DITOLAK: "${inputStr}" tidak ditemukan di Master`, 'err', 'scanLogBox');
       
       return { found: false, data: null, source: null };
       
@@ -591,8 +571,6 @@
 
   async function processFoundResult(result, input, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent) {
     const data = result.data;
-    
-    // AMBIL DATA DARI MASTER_BARCODE / MASTER_PRODUK
     const article = data.Article || data.article || input;
     const generic = data.GENERIC || data.Generic || data.generic || '';
     const description = data.Description || data.description || data.DESCRIPTION || '';
@@ -601,19 +579,16 @@
     debugInfo.push(`<div class="db-item"><span class="db-label">Article:</span><span class="db-value article-input">${article}</span></div>`);
     debugInfo.push(`<div class="db-item"><span class="db-label">→ GENERIC (dari DB):</span><span class="db-value generic">${generic || '❌ TIDAK ADA'}</span></div>`);
     
-    // Jika generic tidak ada, fallback potong 3 karakter terakhir
     let finalGeneric = generic;
     if (!finalGeneric && article.length > 3) {
       finalGeneric = article.substring(0, article.length - 3);
       debugInfo.push(`<div class="db-item"><span class="db-label">⚠️ Fallback:</span><span class="db-value" style="color:#facc15;">Generic tidak ada, dipotong manual → ${finalGeneric}</span></div>`);
     }
     
-    // Cari Product Info dari MASTER_PRODUK
     const productInfo = await findProductInfoByGeneric(finalGeneric);
     debugInfo.push(`<div class="db-item"><span class="db-label">→ Merch_Cat:</span><span class="db-value">${productInfo.merchCat || '-'}</span></div>`);
     debugInfo.push(`<div class="db-item"><span class="db-label">→ CAT:</span><span class="db-value cat">${productInfo.cat || '-'}</span></div>`);
     
-    // SIZE US & SIZE UK
     let sizeUS = '';
     let sizeUK = '';
     let gender = { code: '', label: '' };
@@ -695,7 +670,7 @@
   function showToast(msg, type = 'info') {
     const toast = document.getElementById('toast');
     toast.textContent = msg; toast.className = `toast ${type}`; toast.style.display = 'block';
-    setTimeout(() => { toast.style.display = 'none'; }, 2500);
+    setTimeout(() => { toast.style.display = 'none'; }, 3000);
   }
 
   function formatDate(d) { const dd = new Date(d); return `${String(dd.getDate()).padStart(2,'0')}/${String(dd.getMonth()+1).padStart(2,'0')}/${dd.getFullYear()}`; }
@@ -774,7 +749,7 @@
   if (saved) { try { scanDataArray = JSON.parse(saved); } catch(e) { scanDataArray = []; } }
 
   // ═══════════════════════════════════════════════════════════════
-  // SCAN HANDLER
+  // SCAN HANDLER — BIN TETAP, DATA DITOLAK JIKA TIDAK DITEMUKAN
   // ═══════════════════════════════════════════════════════════════
   window.handleBarcodeKeydown = async function(e) { if (e.key === 'Enter') { e.preventDefault(); await addScanData(); } };
 
@@ -785,15 +760,28 @@
     const binManual = binInput.value.trim();
     const lokasi = document.getElementById('scanLokasi').value;
     const user = document.getElementById('scanUser').value;
-    if (!barcode) { showToast('⚠️ Input barcode/article dulu', 'error'); barcodeInput.focus(); return; }
     
-    barcodeInput.disabled = true; binInput.disabled = true;
+    if (!barcode) { 
+      showToast('⚠️ Input barcode/article dulu', 'error'); 
+      barcodeInput.focus(); 
+      return; 
+    }
+    
+    // Disable input selama proses
+    barcodeInput.disabled = true; 
+    binInput.disabled = true;
+    
+    // Hapus class error sebelumnya
+    barcodeInput.classList.remove('input-error');
+    
     const masterResult = await searchBarcodeInMaster(barcode);
-    const now = new Date(); let newRow;
+    const now = new Date();
     
     if (masterResult.found && masterResult.data) {
-      const md = masterResult.data; const d = md._derived || {};
-      newRow = {
+      // DATA DITEMUKAN — Masukkan ke array
+      const md = masterResult.data; 
+      const d = md._derived || {};
+      const newRow = {
         id: Date.now().toString(36)+Math.random().toString(36).substring(2,6),
         BARCODE: barcode,
         LOKASI: lokasi,
@@ -811,6 +799,12 @@
         MERCH_CAT: d.merchCat || '',
         timestamp: now.toISOString()
       };
+      
+      scanDataArray.unshift(newRow); 
+      saveScanData();
+      renderScanTable(); 
+      updateScanStats();
+      
       const foundMsg = [];
       if (d.cat === 'E') {
         foundMsg.push('Equipment');
@@ -820,33 +814,27 @@
       if (d.cat) foundMsg.push(`CAT:${d.cat}`);
       if (d.brandName) foundMsg.push(`Brand:${d.brandName}`);
       showToast(`✅ ${foundMsg.join(' ') || 'Ditemukan'}`, 'success');
+      
+      // ✅ HAPUS Barcode saja, BIN TETAP
+      barcodeInput.value = '';
+      
     } else {
-      newRow = {
-        id: Date.now().toString(36)+Math.random().toString(36).substring(2,6),
-        BARCODE: barcode,
-        LOKASI: lokasi,
-        ARTICLE: barcode,
-        BIN: binManual,
-        SIZE_US: '',
-        SIZE_UK: '',
-        GENERIC: '',
-        DESCRIPTION: '',
-        BRAND: '',
-        CAT: '',
-        SEASON: String(now.getFullYear()),
-        DATE: getTodayDate(),
-        USER: user,
-        MERCH_CAT: '',
-        timestamp: now.toISOString()
-      };
-      showToast('⚠️ Tidak ditemukan di Master', 'error');
+      // ⛔ DATA TIDAK DITEMUKAN — TOLAK, jangan masukkan ke array
+      
+      // Animasi shake pada input barcode
+      barcodeInput.classList.add('input-error');
+      setTimeout(() => barcodeInput.classList.remove('input-error'), 600);
+      
+      // Barcode dikosongkan tapi BIN tetap
+      barcodeInput.value = '';
+      
+      showToast('⛔ DITOLAK! Tidak ada di Master Data', 'error');
     }
     
-    scanDataArray.unshift(newRow); saveScanData();
-    barcodeInput.value = ''; binInput.value = '';
-    barcodeInput.disabled = false; binInput.disabled = false;
+    // Enable input kembali
+    barcodeInput.disabled = false; 
+    binInput.disabled = false;
     barcodeInput.focus();
-    renderScanTable(); updateScanStats();
   };
 
   function saveScanData() { localStorage.setItem('scan_data', JSON.stringify(scanDataArray)); }
