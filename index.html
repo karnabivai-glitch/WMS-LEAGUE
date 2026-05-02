@@ -18,7 +18,6 @@
     
     .app-layout { display: flex; height: 100vh; width: 100vw; }
     
-    /* SIDEBAR */
     .sidebar {
       width: var(--sidebar-width); min-width: var(--sidebar-width);
       height: 100vh; background: var(--card);
@@ -84,7 +83,6 @@
       padding: 1px 5px; border-radius: 3px; font-size: 0.55rem; font-family: monospace; color: #a78bfa;
     }
     
-    /* MAIN CONTENT */
     .main-content { flex: 1; height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding: 14px; }
     
     .main-header {
@@ -99,7 +97,6 @@
     
     .header-right { display: flex; align-items: center; gap: 6px; }
     
-    /* TOMBOL BIN KECIL */
     .btn-bins-toggle {
       background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4);
       color: #a78bfa; font-weight: 700; font-size: 0.6rem;
@@ -113,7 +110,6 @@
       background: rgba(0,0,0,0.3); padding: 1px 5px; border-radius: 99px; font-size: 0.55rem;
     }
     
-    /* BIN CARDS POPUP */
     .bin-cards-popup {
       display: none;
       position: absolute;
@@ -162,10 +158,8 @@
     }
     .bin-cards-backdrop.show { display: block; }
     
-    /* POSITION RELATIVE WRAPPER */
     .header-actions { position: relative; }
     
-    /* RECALL STATUS */
     .recall-status {
       display: none; align-items: center; gap: 5px; padding: 4px 8px;
       border-radius: 5px; font-size: 0.65rem;
@@ -202,7 +196,6 @@
     .empty-state p { font-size: 0.78rem; }
     .empty-state small { font-size: 0.65rem; }
     
-    /* LOCK OVERLAY */
     .lock-overlay {
       display: none; background: rgba(127,29,29,0.95); border: 2px solid var(--red);
       border-radius: 10px; padding: 10px; text-align: center; animation: slideDown 0.3s ease-out;
@@ -220,7 +213,6 @@
     
     .locked-input { background: rgba(239,68,68,0.12) !important; border-color: var(--red) !important; color: var(--red) !important; pointer-events: none; }
     
-    /* TOAST */
     .toast {
       position: fixed; bottom: 20px; right: 20px; padding: 10px 18px;
       border-radius: 8px; font-size: 0.78rem; font-weight: 500; z-index: 1000;
@@ -231,7 +223,6 @@
     .toast.info { background: #1e3a5f; color: #bfdbfe; border: 1px solid #3b82f6; }
     @keyframes slideIn { from { transform: translateX(80px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     
-    /* NAV TABS */
     .nav-tabs { display: flex; gap: 3px; background: var(--bg); border-radius: 7px; padding: 2px; border: 1px solid var(--border); }
     .nav-tab { flex: 1; padding: 5px 8px; text-align: center; cursor: pointer; border-radius: 5px; font-weight: 600; font-size: 0.65rem; transition: all 0.2s; color: var(--muted); border: none; background: transparent; }
     .nav-tab.active { background: var(--accent); color: #fff; }
@@ -252,6 +243,18 @@
     .step-tag-sm { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; font-size: 0.55rem; font-weight: 700; background: var(--accent); color: #fff; }
     
     .info-text { font-size: 0.55rem; color: var(--muted); text-align: center; margin-top: 2px; }
+    
+    /* Console log area */
+    .console-log {
+      background: #0a0c12; border: 1px solid var(--border);
+      border-radius: 6px; padding: 6px 8px; font-size: 0.55rem;
+      font-family: monospace; max-height: 100px; overflow-y: auto;
+      color: var(--muted); margin-top: 6px; display: none;
+    }
+    .console-log.show { display: block; }
+    .console-log .log-ok { color: var(--green); }
+    .console-log .log-err { color: var(--red); }
+    .console-log .log-info { color: var(--accent2); }
   </style>
 </head>
 <body>
@@ -260,7 +263,7 @@
 
 <div class="app-layout">
   
-  <!-- ═══════════════ SIDEBAR KIRI ═══════════════ -->
+  <!-- SIDEBAR KIRI -->
   <div class="sidebar" id="sidebar">
     <div class="nav-tabs">
       <button class="nav-tab active" onclick="switchPage('scan')">📱 SCAN</button>
@@ -330,20 +333,20 @@
         <span class="spinner" id="searchSpinner" style="display:none;"></span>
         <span id="searchStatusText"></span>
       </div>
+      
+      <!-- Console log mini -->
+      <div class="console-log" id="consoleLog"></div>
     </div>
     
     <div class="sidebar-section">
       <h3>⚡ Aksi</h3>
-      
       <button class="btn btn-reset" id="btnResetSession" onclick="resetSession()" style="margin-bottom:4px;">
         🔄 Reset Sesi <span class="shortcut-hint">\</span>
       </button>
-      
       <div class="btn-row">
         <button class="btn btn-recall" onclick="recallBinData()">📋 Recall</button>
         <button class="btn btn-export" onclick="exportScanToExcel()">📥 Export</button>
       </div>
-      
       <div class="btn-row" style="margin-top:4px;">
         <button class="btn btn-danger" onclick="clearScanData()">🗑 Hapus</button>
         <button class="btn btn-upload" onclick="uploadScanToFirebase()" id="btnUploadScan">⬆ Upload</button>
@@ -363,9 +366,8 @@
     </div>
   </div>
   
-  <!-- ═══════════════ MAIN CONTENT ═══════════════ -->
+  <!-- MAIN CONTENT -->
   <div class="main-content" id="mainContent">
-    
     <div class="main-header">
       <h2>
         <span class="step-tag-sm">📋</span> Data Scan
@@ -373,14 +375,12 @@
         <span class="badge badge-purple">BIN: <strong id="currentBinBadge">-</strong></span>
       </h2>
       
-      <!-- TOMBOL BIN LIST + POPUP -->
       <div class="header-right">
         <div class="header-actions">
           <button class="btn-bins-toggle" id="btnBinsToggle" onclick="toggleBinPopup()">
             📦 BIN List <span class="bin-count-badge" id="binCountBadge">0</span>
           </button>
           
-          <!-- POPUP BIN CARDS -->
           <div class="bin-cards-popup" id="binCardsPopup">
             <div class="popup-title">📦 Semua BIN (klik untuk recall)</div>
             <div class="cards-grid" id="binCardsGrid">
@@ -388,8 +388,6 @@
             </div>
           </div>
         </div>
-        
-        <!-- BACKDROP -->
         <div class="bin-cards-backdrop" id="binCardsBackdrop" onclick="closeBinPopup()"></div>
       </div>
     </div>
@@ -429,7 +427,7 @@
       <h2>📦 MASTER DATA Upload</h2>
       <button class="btn btn-reset" onclick="switchPage('scan')" style="width:auto;padding:8px 16px;">← Kembali</button>
     </div>
-    <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
       <h3>Konfigurasi Firebase</h3>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
         <input id="cfgApiKey" placeholder="API Key..." style="padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);" />
@@ -437,7 +435,7 @@
         <div id="configStatus" style="font-size:0.8rem;"></div>
       </div>
     </div>
-    <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;">
       <h3>Upload Excel</h3>
       <div id="dropzone" onclick="document.getElementById('fileInput').click()" style="border:2px dashed var(--border);border-radius:10px;padding:30px;text-align:center;cursor:pointer;margin-top:12px;">
         <p>📂 Klik atau drop file .xlsx</p>
@@ -474,6 +472,16 @@
   let currentBin = '';
   let isLocked = false;
   let rejectedArticle = '';
+
+  // Debug console
+  function debugLog(msg, type = 'info') {
+    const el = document.getElementById('consoleLog');
+    if (!el) return;
+    el.classList.add('show');
+    const cls = type === 'ok' ? 'log-ok' : type === 'err' ? 'log-err' : 'log-info';
+    el.innerHTML += `<div class="${cls}">[${new Date().toLocaleTimeString('id-ID')}] ${msg}</div>`;
+    el.scrollTop = el.scrollHeight;
+  }
 
   // ═══════════════ HELPER ═══════════════
   function extractGender(article) {
@@ -534,7 +542,7 @@
     grid.innerHTML = bins.map(([bin, count]) => {
       const isActive = bin === currentBin;
       return `
-        <div class="bin-card-small ${isActive ? 'active' : ''}" onclick="selectBinFromPopup('${bin}')" title="Recall BIN ${bin}">
+        <div class="bin-card-small ${isActive ? 'active' : ''}" onclick="selectBinFromPopup('${bin.replace(/'/g, "\\'")}')" title="Recall BIN ${bin}">
           <span class="bin-name">📦 ${bin}</span>
           <span class="bin-qty">(${count})</span>
         </div>
@@ -587,6 +595,7 @@
     closeBinPopup();
     focusBarcode();
     
+    debugLog(`Recall BIN "${bin}" - ${currentSessionData.length} data`, 'ok');
     showToast(`📦 BIN "${bin}" — ${currentSessionData.length} data`, 'info');
   };
 
@@ -622,7 +631,7 @@
     focusBarcode();
   }
 
-  // ═══════════════ LOCK / UNLOCK ═══════════════
+  // ═══════════════ LOCK / UNLOCK ═══════════
   function lockScan(article) {
     isLocked = true;
     rejectedArticle = article;
@@ -640,6 +649,7 @@
     if (ss) { ss.className = 'search-status locked-status'; ss.style.display = 'flex'; }
     safeSetText('searchStatusText', `🔒 "${article}" tidak ada di Master`);
     
+    debugLog(`LOCKED: "${article}" tidak ditemukan`, 'err');
     showToast('🔒 SCAN TERKUNCI!', 'error');
   }
 
@@ -661,6 +671,7 @@
     const bc = document.getElementById('scanBarcode');
     if (bc) { bc.value = ''; bc.focus(); }
     
+    debugLog('UNLOCKED', 'ok');
     showToast('🔓 Scan dibuka!', 'success');
   };
 
@@ -673,6 +684,7 @@
     updateScanStats();
     renderBinCardsInPopup();
     const qty = scanDataArray.filter(r => r.BIN === currentBin).length;
+    debugLog(`Reset sesi - ${count} data dihapus dari tampilan`, 'info');
     showToast(`🔄 Sesi direset! Qty BIN ${currentBin}: ${qty}`, 'info');
     focusBarcode();
   };
@@ -682,7 +694,7 @@
     if (bc) bc.focus();
   }
 
-  // ═══════════════ SHORTCUT \ ═══════════════
+  // ═══════════════ SHORTCUT ═══════════════
   document.addEventListener('keydown', function(e) {
     if (e.key === '\\') {
       const activeEl = document.activeElement;
@@ -696,7 +708,6 @@
       window.resetSession();
       focusBarcode();
     }
-    // Escape untuk tutup popup
     if (e.key === 'Escape') {
       closeBinPopup();
     }
@@ -704,27 +715,59 @@
 
   // ═══════════════ FIREBASE SEARCH ═══════════════
   async function searchById(colName, docId) {
+    if (!db) {
+      debugLog(`searchById gagal: db null (${colName}/${docId})`, 'err');
+      return { found: false, data: null, source: null };
+    }
     try {
+      debugLog(`getDoc: ${colName}/${docId}`, 'info');
       const snap = await getDoc(doc(db, colName, docId));
-      return snap.exists() ? { found: true, data: { id: snap.id, ...snap.data() }, source: colName } : { found: false, data: null, source: null };
-    } catch(e) { return { found: false, data: null, source: null }; }
+      if (snap.exists()) {
+        debugLog(`✅ Ditemukan: ${colName}/${docId}`, 'ok');
+        return { found: true, data: { id: snap.id, ...snap.data() }, source: colName };
+      }
+      debugLog(`❌ Tidak ditemukan: ${colName}/${docId}`, 'info');
+      return { found: false, data: null, source: null };
+    } catch(e) {
+      debugLog(`Error searchById: ${e.message}`, 'err');
+      return { found: false, data: null, source: null };
+    }
   }
 
   async function searchByField(colName, field, value) {
+    if (!db) {
+      debugLog(`searchByField gagal: db null`, 'err');
+      return { found: false, data: null, source: null };
+    }
     const results = [];
     try {
+      debugLog(`where: ${colName}.${field} == "${value}"`, 'info');
       const q = query(collection(db, colName), where(field, '==', String(value)));
       const snap = await getDocs(q);
-      if (!snap.empty) results.push({ data: { id: snap.docs[0].id, ...snap.docs[0].data() }, method: 'string' });
-    } catch(e) {}
+      if (!snap.empty) {
+        debugLog(`✅ Ditemukan via ${field}`, 'ok');
+        results.push({ data: { id: snap.docs[0].id, ...snap.docs[0].data() }, method: 'string' });
+      }
+    } catch(e) {
+      debugLog(`Error string query: ${e.message}`, 'err');
+    }
     if (!results.length && /^\d+$/.test(String(value))) {
       try {
         const q = query(collection(db, colName), where(field, '==', Number(value)));
         const snap = await getDocs(q);
-        if (!snap.empty) results.push({ data: { id: snap.docs[0].id, ...snap.docs[0].data() }, method: 'number' });
-      } catch(e) {}
+        if (!snap.empty) {
+          debugLog(`✅ Ditemukan via ${field} (number)`, 'ok');
+          results.push({ data: { id: snap.docs[0].id, ...snap.docs[0].data() }, method: 'number' });
+        }
+      } catch(e) {
+        debugLog(`Error number query: ${e.message}`, 'err');
+      }
     }
-    return results.length ? { found: true, data: results[0].data, source: colName, method: results[0].method } : { found: false, data: null, source: null };
+    if (results.length) {
+      return { found: true, data: results[0].data, source: colName, method: results[0].method };
+    }
+    debugLog(`❌ Tidak ditemukan via ${field}`, 'info');
+    return { found: false, data: null, source: null };
   }
 
   async function findSizeUK(usSize, genderLabel) {
@@ -744,18 +787,26 @@
 
   async function findProductInfoByGeneric(generic) {
     if (!db || !generic) return { brandName: '', seasonYr: '', cat: '', merchCat: '' };
+    debugLog(`Cari product info: "${generic}"`, 'info');
     let result = await searchById('MASTER_PRODUK', generic);
     if (!result.found) result = await searchByField('MASTER_PRODUK', 'Article', generic);
     if (result.found && result.data) {
       const d = result.data;
       const merchCat = d.Merch_Cat || d.MerchCat || '';
+      debugLog(`Product ditemukan: Brand=${d.Brand_Name||'-'} CAT=${extractCat(merchCat)}`, 'ok');
       return { brandName: d.Brand_Name || d.BrandName || d.Brand || '', seasonYr: d.Season_Yr_ || d.SeasonYr || d.Season || '', merchCat, cat: extractCat(merchCat) };
     }
+    debugLog(`Product TIDAK ditemukan untuk generic: "${generic}"`, 'err');
     return { brandName: '', seasonYr: '', cat: '', merchCat: '' };
   }
 
   async function searchBarcodeInMaster(input) {
-    if (!db) return { found: false, error: 'Firebase tidak terhubung' };
+    debugLog(`=== MULAI PENCARIAN: "${input}" ===`, 'info');
+    
+    if (!db) {
+      debugLog('FATAL: db null - Firebase tidak terhubung!', 'err');
+      return { found: false, error: 'Firebase tidak terhubung' };
+    }
     
     const ss = document.getElementById('searchStatus');
     if (ss) { ss.style.display = 'flex'; ss.className = 'search-status searching'; }
@@ -764,31 +815,58 @@
     safeSetText('searchStatusText', `Mencari "${input}"...`);
 
     const inputStr = String(input).trim();
+    debugLog(`Input: "${inputStr}" | isBarcode: ${isBarcodeFormat(inputStr)}`, 'info');
+    
     try {
       let result;
       if (isBarcodeFormat(inputStr)) {
+        debugLog('Strategi: Barcode → cari di MASTER_BARCODE', 'info');
         result = await searchById('MASTER_BARCODE', inputStr);
-        if (!result.found) result = await searchByField('MASTER_BARCODE', 'Barcode', inputStr);
+        if (!result.found) {
+          debugLog('Doc ID tidak ditemukan, coba field Barcode...', 'info');
+          result = await searchByField('MASTER_BARCODE', 'Barcode', inputStr);
+        }
       } else {
+        debugLog('Strategi: Article → cari di MASTER_BARCODE', 'info');
         result = await searchById('MASTER_BARCODE', inputStr);
-        if (!result.found) result = await searchByField('MASTER_BARCODE', 'Article', inputStr);
-        if (!result.found) result = await searchById('MASTER_PRODUK', inputStr);
-        if (!result.found) result = await searchByField('MASTER_PRODUK', 'Article', inputStr);
+        if (!result.found) {
+          debugLog('Doc ID tidak ditemukan, coba field Article...', 'info');
+          result = await searchByField('MASTER_BARCODE', 'Article', inputStr);
+        }
+        if (!result.found) {
+          debugLog('Coba MASTER_PRODUK by ID...', 'info');
+          result = await searchById('MASTER_PRODUK', inputStr);
+        }
+        if (!result.found) {
+          debugLog('Coba MASTER_PRODUK by Article...', 'info');
+          result = await searchByField('MASTER_PRODUK', 'Article', inputStr);
+        }
         if (!result.found && inputStr.length > 3) {
           const generic = inputStr.substring(0, inputStr.length - 3);
+          debugLog(`Coba generic: "${generic}"`, 'info');
           result = await searchById('MASTER_PRODUK', generic);
           if (!result.found) result = await searchByField('MASTER_PRODUK', 'Article', generic);
-          if (result.found) { result.data.Article = result.data.Article || inputStr; result.data.Barcode = result.data.Barcode || inputStr; result.data.GENERIC = result.data.GENERIC || generic; }
+          if (result.found) {
+            debugLog('Generic ditemukan, merge data', 'ok');
+            result.data.Article = result.data.Article || inputStr;
+            result.data.Barcode = result.data.Barcode || inputStr;
+            result.data.GENERIC = result.data.GENERIC || generic;
+          }
         }
       }
       
-      if (result?.found) return await processFoundResult(result, inputStr);
+      if (result?.found) {
+        debugLog(`✅ DITEMUKAN di ${result.source}`, 'ok');
+        return await processFoundResult(result, inputStr);
+      }
       
+      debugLog('❌ TIDAK DITEMUKAN di semua strategi', 'err');
       if (ss) ss.className = 'search-status not-found';
       if (spinner) spinner.style.display = 'none';
       safeSetText('searchStatusText', `⛔ "${inputStr}" tidak ditemukan`);
       return { found: false, data: null, source: null };
     } catch(err) {
+      debugLog(`ERROR: ${err.message}`, 'err');
       if (ss) ss.className = 'search-status not-found';
       if (spinner) spinner.style.display = 'none';
       safeSetText('searchStatusText', '❌ Error');
@@ -803,6 +881,8 @@
     const description = data.Description || data.description || '';
     const bin = data.BIN || data.bin || '';
     
+    debugLog(`Article: ${article} | Generic: ${generic}`, 'ok');
+    
     const productInfo = await findProductInfoByGeneric(generic);
     let sizeUS = '', sizeUK = '', gender = { code: '', label: '' };
     
@@ -810,10 +890,14 @@
       sizeUS = extractSizeUS(article, productInfo.cat);
       gender = extractGender(article);
       if (sizeUS && gender.label) sizeUK = await findSizeUK(sizeUS, gender.label);
+      debugLog(`Size US: ${sizeUS} | Gender: ${gender.label} | UK: ${sizeUK||'N/A'}`, 'info');
+    } else {
+      debugLog('Equipment - no size', 'info');
     }
     
     const ss = document.getElementById('searchStatus');
     if (ss) ss.className = 'search-status found';
+    const spinner = document.getElementById('searchSpinner');
     if (spinner) spinner.style.display = 'none';
     safeSetText('searchStatusText', `✅ ${article} | Size:${sizeUS||'N/A'} | CAT:${productInfo.cat||'-'}`);
     
@@ -888,6 +972,8 @@
     if (scanLokasi) scanLokasi.disabled = true;
     if (scanUser) scanUser.disabled = true;
     
+    debugLog(`Scan: "${barcode}" BIN:${binManual} Lokasi:${lokasi} User:${user}`, 'info');
+    
     const masterResult = await searchBarcodeInMaster(barcode);
     
     if (masterResult.found && masterResult.data) {
@@ -911,7 +997,11 @@
       updateScanStats();
       renderBinCardsInPopup();
       barcodeInput.value = '';
+      
+      debugLog(`✅ Data masuk: ${d.article}`, 'ok');
+      showToast(`✅ ${d.article} | Size:${d.sizeUS||'N/A'}`, 'success');
     } else {
+      debugLog(`❌ Tidak ditemukan: "${barcode}"`, 'err');
       barcodeInput.value = barcode;
       lockScan(barcode);
     }
@@ -988,7 +1078,6 @@
       return;
     }
     
-    // Batasi 20 row
     const displayData = currentSessionData.slice(0, MAX_ROWS);
     
     tbody.innerHTML = displayData.map((row, i) => `
@@ -1053,21 +1142,40 @@
 
   // ═══════════════ FIREBASE INIT ═══════════════
   async function initFirebase() {
-    const apiKey = document.getElementById('cfgApiKey')?.value?.trim();
+    const apiKeyInput = document.getElementById('cfgApiKey');
+    if (!apiKeyInput) return;
+    const apiKey = apiKeyInput.value.trim();
     if (!apiKey) { safeSetText('configStatus', '❌ API Key wajib diisi!'); return; }
+    
+    debugLog('Menghubungkan ke Firebase...', 'info');
+    
     try {
-      const app = initializeApp({ apiKey, authDomain: `${PROJECT_ID}.firebaseapp.com`, projectId: PROJECT_ID });
+      const app = initializeApp({ 
+        apiKey, 
+        authDomain: `${PROJECT_ID}.firebaseapp.com`, 
+        projectId: PROJECT_ID 
+      });
       db = getFirestore(app);
+      
+      // Test koneksi
       const tb = writeBatch(db);
-      tb.set(doc(db, 'test_write', 'conn_test'), { test: 'connection_test', timestamp: new Date().toISOString() });
+      tb.set(doc(db, 'test_write', 'conn_test'), { 
+        test: 'connection_test', 
+        timestamp: new Date().toISOString() 
+      });
       await tb.commit();
+      
       localStorage.setItem('fb_api_key', apiKey);
       safeSetText('configStatus', '✅ Terhubung!');
       updateFirestoreStatus();
+      debugLog('✅ Firebase terhubung!', 'ok');
       showToast('✅ Firebase terhubung!', 'success');
     } catch(err) {
       safeSetText('configStatus', '❌ Gagal: ' + err.message);
-      db = null; updateFirestoreStatus();
+      db = null;
+      updateFirestoreStatus();
+      debugLog(`❌ Gagal konek: ${err.message}`, 'err');
+      showToast('❌ Gagal: ' + err.message, 'error');
     }
   }
 
@@ -1091,68 +1199,132 @@
   if (saved) { try { scanDataArray = JSON.parse(saved); } catch(e) { scanDataArray = []; } }
 
   // ═══════════════ MASTER UPLOAD ═══════════════
-  function sanitize(v) { if (v===null||v===undefined||v==='') return null; if (typeof v==='number'&&isNaN(v)) return null; if (v instanceof Date) return v.toISOString().split('T')[0]; return v; }
+  function sanitize(v) { 
+    if (v === null || v === undefined || v === '') return null; 
+    if (typeof v === 'number' && isNaN(v)) return null; 
+    if (v instanceof Date) return v.toISOString().split('T')[0]; 
+    return v; 
+  }
+  
   function makeDocId(sheetName, row) {
-    if (sheetName==='SIZE') { const u=String(row['US_Size']||'').trim(),g=String(row['Gender']||'').trim(); if(u&&g) return `${u}_${g}`.replace(/[/?#\[\]@!$&'()*+,;=]/g,'_'); return `SIZE_${Date.now().toString(36)}`; }
-    for(const k of ['Barcode','Article']){ const r=row[k]; if(r!=null&&String(r).trim()) return String(r).trim().replace(/[/?#\[\]@!$&'()*+,;=]/g,'_'); }
+    if (sheetName === 'SIZE') { 
+      const u = String(row['US_Size']||'').trim();
+      const g = String(row['Gender']||'').trim(); 
+      if(u && g) return `${u}_${g}`.replace(/[/?#\[\]@!$&'()*+,;=]/g, '_'); 
+      return `SIZE_${Date.now().toString(36)}`; 
+    }
+    for(const k of ['Barcode', 'Article']){ 
+      const r = row[k]; 
+      if(r != null && String(r).trim()) return String(r).trim().replace(/[/?#\[\]@!$&'()*+,;=]/g, '_'); 
+    }
     return `${sheetName}_${Date.now().toString(36)}`;
   }
 
-  window.handleDrop=function(e){ e.preventDefault(); handleFile(e.dataTransfer.files[0]); };
-  function handleFile(file){
+  window.handleDrop = function(e) { e.preventDefault(); handleFile(e.dataTransfer.files[0]); };
+  
+  function handleFile(file) {
     if(!file) return;
-    const reader=new FileReader();
-    reader.onload=(ev)=>{
-      try{
-        const wb=XLSX.read(ev.target.result,{type:'array',cellDates:true});
-        parsedSheets={};
-        safeSetHTML('sheetsGrid',''); safeSetHTML('sheetOptions','');
-        wb.SheetNames.forEach(name=>{
-          const raw=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:null});
-          if(raw.length<2)return;
-          const headers=raw[0].map(h=>String(h??'').trim().replace(/[\s.]+/g,'_'));
-          const rows=raw.slice(1).map(r=>{const o={};headers.forEach((h,i)=>{o[h]=sanitize(r[i]);});return o;}).filter(r=>Object.values(r).some(v=>v!==null));
-          parsedSheets[name]=rows;
-          const sg=document.getElementById('sheetsGrid'),so=document.getElementById('sheetOptions');
-          if(sg)sg.innerHTML+=`<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;"><strong>📋 ${name}</strong><br><small>${rows.length} baris</small></div>`;
-          if(so)so.innerHTML+=`<label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;margin-top:4px;"><input type="checkbox" checked value="${name}" class="sheetCheck" />${name} (${rows.length})</label>`;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const wb = XLSX.read(ev.target.result, { type: 'array', cellDates: true });
+        parsedSheets = {};
+        safeSetHTML('sheetsGrid', ''); 
+        safeSetHTML('sheetOptions', '');
+        
+        wb.SheetNames.forEach(name => {
+          const raw = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: null });
+          if(raw.length < 2) return;
+          const headers = raw[0].map(h => String(h??'').trim().replace(/[\s.]+/g, '_'));
+          const rows = raw.slice(1).map(r => { 
+            const o = {}; 
+            headers.forEach((h,i) => { o[h] = sanitize(r[i]); }); 
+            return o; 
+          }).filter(r => Object.values(r).some(v => v !== null));
+          
+          parsedSheets[name] = rows;
+          const sg = document.getElementById('sheetsGrid');
+          const so = document.getElementById('sheetOptions');
+          if(sg) sg.innerHTML += `<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;"><strong>📋 ${name}</strong><br><small>${rows.length} baris</small></div>`;
+          if(so) so.innerHTML += `<label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;margin-top:4px;"><input type="checkbox" checked value="${name}" class="sheetCheck" />${name} (${rows.length})</label>`;
         });
-        const uc=document.getElementById('uploadCard'); if(uc)uc.style.display='block';
-      }catch(err){console.error(err);}
+        const uc = document.getElementById('uploadCard'); 
+        if(uc) uc.style.display = 'block';
+      } catch(err) { console.error(err); }
     };
     reader.readAsArrayBuffer(file);
   }
-  window.handleFile=handleFile;
+  window.handleFile = handleFile;
 
-  async function uploadBatched(colName,rows,onProgress){let done=0;for(let i=0;i<rows.length;i+=BATCH_SIZE){const batch=writeBatch(db);rows.slice(i,i+BATCH_SIZE).forEach(row=>batch.set(doc(db,colName,makeDocId(colName,row)),row));await batch.commit();done+=Math.min(BATCH_SIZE,rows.length-i);onProgress(done,rows.length);}}
-  async function deleteCollection(colName,onProgress){const snap=await getDocs(collection(db,colName));if(snap.empty){onProgress(0,0);return;}const docs=snap.docs;for(let i=0;i<docs.length;i+=BATCH_SIZE){const batch=writeBatch(db);docs.slice(i,i+BATCH_SIZE).forEach(d=>batch.delete(d.ref));await batch.commit();onProgress(i+Math.min(BATCH_SIZE,docs.length-i),docs.length);}}
-
-  async function startUpload(){
-    if(!db){showToast('❌ DB offline','error');return;}
-    const selected=[...document.querySelectorAll('.sheetCheck:checked')].map(c=>c.value);
-    if(!selected.length){showToast('⚠️ Pilih sheet','error');return;}
-    const clearFirst=document.getElementById('optClear')?.checked||false;
-    const pw=document.getElementById('progressWrap');if(pw)pw.innerHTML='';
-    let total=0;
-    for(const name of selected){
-      const rows=parsedSheets[name];if(!rows?.length)continue;
-      try{if(clearFirst)await deleteCollection(name,(d,t)=>{});await uploadBatched(name,rows,(d,t)=>{});total+=rows.length;if(pw)pw.innerHTML+=`<div style="color:var(--green);font-size:0.75rem;">✅ ${name} — ${rows.length} row</div>`;}
-      catch(err){if(pw)pw.innerHTML+=`<div style="color:var(--red);font-size:0.75rem;">❌ ${name}: ${err.message}</div>`;}
+  async function uploadBatched(colName, rows, onProgress) {
+    let done = 0;
+    for(let i = 0; i < rows.length; i += BATCH_SIZE) {
+      const batch = writeBatch(db);
+      rows.slice(i, i+BATCH_SIZE).forEach(row => batch.set(doc(db, colName, makeDocId(colName, row)), row));
+      await batch.commit(); 
+      done += Math.min(BATCH_SIZE, rows.length - i);
+      onProgress(done, rows.length);
     }
-    showToast(`✅ ${total} data terupload!`,'success');
   }
 
-  async function clearSelected(){
-    if(!db){showToast('❌ DB offline','error');return;}
-    const selected=[...document.querySelectorAll('.sheetCheck:checked')].map(c=>c.value);
-    if(!selected.length||!confirm(`Hapus: ${selected.join(', ')}?`))return;
-    for(const name of selected){try{await deleteCollection(name,(d,t)=>{});showToast(`✅ ${name} dihapus`,'success');}catch(err){showToast(`❌ ${err.message}`,'error');}}
+  async function deleteCollection(colName, onProgress) {
+    const snap = await getDocs(collection(db, colName));
+    if(snap.empty) { onProgress(0,0); return; }
+    const docs = snap.docs;
+    for(let i = 0; i < docs.length; i += BATCH_SIZE) {
+      const batch = writeBatch(db);
+      docs.slice(i, i+BATCH_SIZE).forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      onProgress(i + Math.min(BATCH_SIZE, docs.length - i), docs.length);
+    }
   }
 
-  window.initFirebase=initFirebase; window.startUpload=startUpload; window.clearSelected=clearSelected;
+  async function startUpload() {
+    if(!db) { showToast('❌ DB offline', 'error'); return; }
+    const selected = [...document.querySelectorAll('.sheetCheck:checked')].map(c => c.value);
+    if(!selected.length) { showToast('⚠️ Pilih sheet', 'error'); return; }
+    const clearFirst = document.getElementById('optClear')?.checked || false;
+    const pw = document.getElementById('progressWrap'); 
+    if(pw) pw.innerHTML = '';
+    let total = 0;
+    for(const name of selected) {
+      const rows = parsedSheets[name]; 
+      if(!rows?.length) continue;
+      try {
+        if(clearFirst) await deleteCollection(name, (d,t) => {});
+        await uploadBatched(name, rows, (d,t) => {});
+        total += rows.length; 
+        if(pw) pw.innerHTML += `<div style="color:var(--green);font-size:0.75rem;">✅ ${name} — ${rows.length} row</div>`;
+      } catch(err) { 
+        if(pw) pw.innerHTML += `<div style="color:var(--red);font-size:0.75rem;">❌ ${name}: ${err.message}</div>`; 
+      }
+    }
+    showToast(`✅ ${total} data terupload!`, 'success');
+  }
 
-  renderScanTable(); updateScanStats(); renderBinCardsInPopup(); updateFirestoreStatus();
-  setInterval(()=>{ updateScanStats(); updateFirestoreStatus(); },30000);
+  async function clearSelected() {
+    if(!db) { showToast('❌ DB offline', 'error'); return; }
+    const selected = [...document.querySelectorAll('.sheetCheck:checked')].map(c => c.value);
+    if(!selected.length || !confirm(`Hapus: ${selected.join(', ')}?`)) return;
+    for(const name of selected) {
+      try { await deleteCollection(name, (d,t) => {}); showToast(`✅ ${name} dihapus`, 'success'); }
+      catch(err) { showToast(`❌ ${err.message}`, 'error'); }
+    }
+  }
+
+  window.initFirebase = initFirebase;
+  window.startUpload = startUpload;
+  window.clearSelected = clearSelected;
+
+  renderScanTable(); 
+  updateScanStats(); 
+  renderBinCardsInPopup(); 
+  updateFirestoreStatus();
+  
+  setInterval(() => { 
+    updateScanStats(); 
+    updateFirestoreStatus(); 
+  }, 30000);
 </script>
 </body>
 </html>
