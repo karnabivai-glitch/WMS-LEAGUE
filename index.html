@@ -42,13 +42,7 @@
       display: flex; align-items: center; gap: 4px;
     }
     
-    /* STATS DI ATAS INPUT */
-    .stats-mini {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      margin-bottom: 8px;
-    }
+    .stats-mini { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
     .stat-mini {
       background: var(--card); border: 1px solid var(--border);
       border-radius: 8px; padding: 7px 6px; text-align: center;
@@ -57,7 +51,6 @@
     .stat-mini .lbl { font-size: 0.52rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; margin-top: 1px; }
     .stat-mini.highlight .val { color: var(--accent); }
     
-    /* INPUT GROUPS */
     .input-group { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
     .input-group label { font-size: 0.6rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
     .input-group input, .input-group select {
@@ -69,13 +62,7 @@
     .input-group input.input-barcode { font-size: 0.9rem; font-weight: 600; }
     .input-group input.input-bin { text-align: center; font-weight: 600; color: #a78bfa; text-transform: uppercase; }
     
-    /* ROW: BIN, LOKASI, USER SEJAJAR */
-    .input-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 6px;
-      margin-bottom: 6px;
-    }
+    .input-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 6px; }
     .input-hint { font-size: 0.52rem; color: var(--muted); margin-top: 1px; }
     
     .btn { padding: 8px 14px; border-radius: 7px; font-weight: 600; font-size: 0.73rem; border: none; cursor: pointer; transition: all 0.2s; width: 100%; text-align: center; }
@@ -99,13 +86,86 @@
     
     /* MAIN CONTENT */
     .main-content { flex: 1; height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding: 14px; }
-    .main-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-shrink: 0; }
+    
+    .main-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 6px; flex-shrink: 0; flex-wrap: wrap; gap: 6px;
+    }
     .main-header h2 { font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 6px; }
     
     .badge { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.03em; padding: 2px 7px; border-radius: 99px; text-transform: uppercase; }
     .badge-green { background: #166534; color: #bbf7d0; }
     .badge-purple { background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4); color: #a78bfa; }
     
+    .header-right { display: flex; align-items: center; gap: 6px; }
+    
+    /* TOMBOL BIN KECIL */
+    .btn-bins-toggle {
+      background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4);
+      color: #a78bfa; font-weight: 700; font-size: 0.6rem;
+      padding: 3px 8px; border-radius: 6px; cursor: pointer;
+      transition: all 0.2s; white-space: nowrap;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .btn-bins-toggle:hover { background: rgba(99,102,241,0.35); border-color: #818cf8; }
+    .btn-bins-toggle.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-bins-toggle .bin-count-badge {
+      background: rgba(0,0,0,0.3); padding: 1px 5px; border-radius: 99px; font-size: 0.55rem;
+    }
+    
+    /* BIN CARDS POPUP */
+    .bin-cards-popup {
+      display: none;
+      position: absolute;
+      top: 100%;
+      right: 0;
+      margin-top: 6px;
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      z-index: 100;
+      min-width: 280px;
+      max-width: 400px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      animation: fadeDown 0.2s ease-out;
+    }
+    .bin-cards-popup.show { display: block; }
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .bin-cards-popup .popup-title {
+      font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--muted); margin-bottom: 8px;
+    }
+    .bin-cards-popup .cards-grid {
+      display: flex; flex-wrap: wrap; gap: 5px;
+    }
+    .bin-card-small {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 6px; padding: 5px 8px;
+      cursor: pointer; transition: all 0.15s;
+      display: flex; align-items: center; gap: 5px;
+      font-size: 0.65rem; white-space: nowrap;
+    }
+    .bin-card-small:hover { border-color: var(--accent); background: rgba(249,115,22,0.08); }
+    .bin-card-small.active { border-color: var(--accent); background: rgba(249,115,22,0.12); }
+    .bin-card-small .bin-name { font-weight: 700; color: #a78bfa; font-family: monospace; }
+    .bin-card-small .bin-qty { font-size: 0.55rem; color: var(--muted); }
+    
+    .bin-cards-backdrop {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 99;
+    }
+    .bin-cards-backdrop.show { display: block; }
+    
+    /* POSITION RELATIVE WRAPPER */
+    .header-actions { position: relative; }
+    
+    /* RECALL STATUS */
     .recall-status {
       display: none; align-items: center; gap: 5px; padding: 4px 8px;
       border-radius: 5px; font-size: 0.65rem;
@@ -114,16 +174,9 @@
     }
     .recall-status.show { display: flex; }
     
-    .table-container {
-      flex: 1; overflow: auto; border-radius: 10px;
-      border: 1px solid var(--border); background: var(--card);
-    }
+    .table-container { flex: 1; overflow: auto; border-radius: 10px; border: 1px solid var(--border); background: var(--card); }
     
-    /* TABEL AUTO-FIT */
-    .scan-table {
-      width: 100%; border-collapse: collapse; font-size: 0.73rem;
-      table-layout: auto;
-    }
+    .scan-table { width: 100%; border-collapse: collapse; font-size: 0.73rem; table-layout: auto; }
     .scan-table thead { position: sticky; top: 0; z-index: 5; background: #14161f; }
     .scan-table th {
       padding: 8px 6px; text-align: left; font-weight: 600; font-size: 0.6rem;
@@ -183,7 +236,6 @@
     .nav-tab { flex: 1; padding: 5px 8px; text-align: center; cursor: pointer; border-radius: 5px; font-weight: 600; font-size: 0.65rem; transition: all 0.2s; color: var(--muted); border: none; background: transparent; }
     .nav-tab.active { background: var(--accent); color: #fff; }
     
-    /* SEARCH STATUS */
     .search-status { display: none; align-items: center; gap: 4px; padding: 4px 7px; border-radius: 5px; font-size: 0.62rem; font-weight: 500; margin-top: 4px; }
     .search-status.searching { background: #1e3a5f33; border: 1px solid #1d4ed8; color: var(--accent2); }
     .search-status.found { background: #14532d33; border: 1px solid #166534; color: var(--green); }
@@ -224,7 +276,6 @@
       <span id="firestoreStatus" class="firebase-status offline">⚠️ Offline</span>
     </div>
     
-    <!-- STATS DI ATAS INPUT -->
     <div class="sidebar-section">
       <div class="stats-mini">
         <div class="stat-mini">
@@ -242,7 +293,6 @@
       </div>
     </div>
     
-    <!-- INPUT SCAN -->
     <div class="sidebar-section">
       <h3>📱 Input Scan</h3>
       
@@ -252,7 +302,6 @@
         <span class="input-hint">Enter = submit</span>
       </div>
       
-      <!-- BIN, LOKASI, USER SEJAJAR -->
       <div class="input-row">
         <div class="input-group">
           <label>📦 BIN</label>
@@ -283,7 +332,6 @@
       </div>
     </div>
     
-    <!-- TOMBOL AKSI -->
     <div class="sidebar-section">
       <h3>⚡ Aksi</h3>
       
@@ -302,7 +350,6 @@
       </div>
     </div>
     
-    <!-- LOCK OVERLAY -->
     <div class="lock-overlay" id="lockOverlay">
       <div class="lock-icon">🔒</div>
       <div class="lock-title">SCAN TERKUNCI!</div>
@@ -318,12 +365,33 @@
   
   <!-- ═══════════════ MAIN CONTENT ═══════════════ -->
   <div class="main-content" id="mainContent">
+    
     <div class="main-header">
       <h2>
         <span class="step-tag-sm">📋</span> Data Scan
         <span class="badge badge-green" id="rowCount">0 row</span>
         <span class="badge badge-purple">BIN: <strong id="currentBinBadge">-</strong></span>
       </h2>
+      
+      <!-- TOMBOL BIN LIST + POPUP -->
+      <div class="header-right">
+        <div class="header-actions">
+          <button class="btn-bins-toggle" id="btnBinsToggle" onclick="toggleBinPopup()">
+            📦 BIN List <span class="bin-count-badge" id="binCountBadge">0</span>
+          </button>
+          
+          <!-- POPUP BIN CARDS -->
+          <div class="bin-cards-popup" id="binCardsPopup">
+            <div class="popup-title">📦 Semua BIN (klik untuk recall)</div>
+            <div class="cards-grid" id="binCardsGrid">
+              <span style="color:var(--muted);font-size:0.65rem;">Belum ada BIN</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- BACKDROP -->
+        <div class="bin-cards-backdrop" id="binCardsBackdrop" onclick="closeBinPopup()"></div>
+      </div>
     </div>
     
     <div class="recall-status" id="recallStatus">
@@ -396,6 +464,8 @@
 
   const PROJECT_ID = "wms-league";
   const BATCH_SIZE = 200;
+  const MAX_ROWS = 20;
+  
   let db = null;
   let parsedSheets = {};
   
@@ -438,6 +508,88 @@
   function safeSetText(id, text) { const el = document.getElementById(id); if (el) el.textContent = text; }
   function safeSetHTML(id, html) { const el = document.getElementById(id); if (el) el.innerHTML = html; }
 
+  // ═══════════════ BIN POPUP ═══════════════
+  function getUniqueBins() {
+    const bins = {};
+    scanDataArray.forEach(r => {
+      const bin = r.BIN || '';
+      if (bin) bins[bin] = (bins[bin] || 0) + 1;
+    });
+    return Object.entries(bins).sort((a,b) => a[0].localeCompare(b[0]));
+  }
+
+  function renderBinCardsInPopup() {
+    const grid = document.getElementById('binCardsGrid');
+    const badge = document.getElementById('binCountBadge');
+    if (!grid || !badge) return;
+    
+    const bins = getUniqueBins();
+    badge.textContent = bins.length;
+    
+    if (bins.length === 0) {
+      grid.innerHTML = '<span style="color:var(--muted);font-size:0.65rem;">Belum ada BIN</span>';
+      return;
+    }
+    
+    grid.innerHTML = bins.map(([bin, count]) => {
+      const isActive = bin === currentBin;
+      return `
+        <div class="bin-card-small ${isActive ? 'active' : ''}" onclick="selectBinFromPopup('${bin}')" title="Recall BIN ${bin}">
+          <span class="bin-name">📦 ${bin}</span>
+          <span class="bin-qty">(${count})</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  window.toggleBinPopup = function() {
+    const popup = document.getElementById('binCardsPopup');
+    const backdrop = document.getElementById('binCardsBackdrop');
+    const btn = document.getElementById('btnBinsToggle');
+    
+    if (!popup || !backdrop || !btn) return;
+    
+    const isOpen = popup.classList.contains('show');
+    
+    if (isOpen) {
+      closeBinPopup();
+    } else {
+      renderBinCardsInPopup();
+      popup.classList.add('show');
+      backdrop.classList.add('show');
+      btn.classList.add('active');
+    }
+  };
+
+  window.closeBinPopup = function() {
+    const popup = document.getElementById('binCardsPopup');
+    const backdrop = document.getElementById('binCardsBackdrop');
+    const btn = document.getElementById('btnBinsToggle');
+    
+    if (popup) popup.classList.remove('show');
+    if (backdrop) backdrop.classList.remove('show');
+    if (btn) btn.classList.remove('active');
+  };
+
+  window.selectBinFromPopup = function(bin) {
+    currentBin = bin;
+    currentSessionData = scanDataArray.filter(r => r.BIN === bin);
+    document.getElementById('scanBIN').value = bin;
+    
+    const rs = document.getElementById('recallStatus');
+    if (rs) rs.classList.add('show');
+    safeSetText('recallBinLabel', bin);
+    safeSetText('recallCount', currentSessionData.length);
+    
+    renderScanTable();
+    updateScanStats();
+    renderBinCardsInPopup();
+    closeBinPopup();
+    focusBarcode();
+    
+    showToast(`📦 BIN "${bin}" — ${currentSessionData.length} data`, 'info');
+  };
+
   // ═══════════════ RECALL BIN ═══════════════
   window.onBinChange = function() {
     const newBin = document.getElementById('scanBIN').value.trim().toUpperCase();
@@ -459,6 +611,7 @@
     currentSessionData = scanDataArray.filter(r => r.BIN === bin);
     renderScanTable();
     updateScanStats();
+    renderBinCardsInPopup();
     
     const rs = document.getElementById('recallStatus');
     if (rs) rs.classList.add('show');
@@ -466,8 +619,7 @@
     safeSetText('recallCount', currentSessionData.length);
     
     document.getElementById('scanBIN').value = bin;
-    const bc = document.getElementById('scanBarcode');
-    if (bc) bc.focus();
+    focusBarcode();
   }
 
   // ═══════════════ LOCK / UNLOCK ═══════════════
@@ -479,9 +631,6 @@
       const el = document.getElementById(id);
       if (el) el.classList.add('locked-input');
     });
-    
-    const addBtn = document.getElementById('btnAddScan');
-    if (addBtn) addBtn.disabled = true;
     
     const lockOverlay = document.getElementById('lockOverlay');
     if (lockOverlay) lockOverlay.classList.add('show');
@@ -503,9 +652,6 @@
       if (el) el.classList.remove('locked-input');
     });
     
-    const addBtn = document.getElementById('btnAddScan');
-    if (addBtn) addBtn.disabled = false;
-    
     const lockOverlay = document.getElementById('lockOverlay');
     if (lockOverlay) lockOverlay.classList.remove('show');
     
@@ -525,6 +671,7 @@
     currentSessionData = [];
     renderScanTable();
     updateScanStats();
+    renderBinCardsInPopup();
     const qty = scanDataArray.filter(r => r.BIN === currentBin).length;
     showToast(`🔄 Sesi direset! Qty BIN ${currentBin}: ${qty}`, 'info');
     focusBarcode();
@@ -548,6 +695,10 @@
       e.preventDefault();
       window.resetSession();
       focusBarcode();
+    }
+    // Escape untuk tutup popup
+    if (e.key === 'Escape') {
+      closeBinPopup();
     }
   });
 
@@ -663,7 +814,6 @@
     
     const ss = document.getElementById('searchStatus');
     if (ss) ss.className = 'search-status found';
-    const spinner = document.getElementById('searchSpinner');
     if (spinner) spinner.style.display = 'none';
     safeSetText('searchStatusText', `✅ ${article} | Size:${sizeUS||'N/A'} | CAT:${productInfo.cat||'-'}`);
     
@@ -693,6 +843,7 @@
       tabs.forEach((t,i) => t.classList.toggle('active', i === 0));
       focusBarcode();
       updateScanStats();
+      renderBinCardsInPopup();
       updateFirestoreStatus();
     }
   };
@@ -756,7 +907,9 @@
       scanDataArray.unshift(newRow);
       currentSessionData.unshift(newRow);
       saveScanData();
-      renderScanTable(); updateScanStats();
+      renderScanTable();
+      updateScanStats();
+      renderBinCardsInPopup();
       barcodeInput.value = '';
     } else {
       barcodeInput.value = barcode;
@@ -769,15 +922,16 @@
     focusBarcode();
   };
 
-  function saveScanData() { 
-    try { localStorage.setItem('scan_data', JSON.stringify(scanDataArray)); } catch(e) {} 
-  }
+  function saveScanData() { try { localStorage.setItem('scan_data', JSON.stringify(scanDataArray)); } catch(e) {} }
 
   window.deleteScanRow = function(id) {
     if (!confirm('Hapus?')) return;
     currentSessionData = currentSessionData.filter(r => r.id !== id);
     scanDataArray = scanDataArray.filter(r => r.id !== id);
-    saveScanData(); renderScanTable(); updateScanStats();
+    saveScanData();
+    renderScanTable();
+    updateScanStats();
+    renderBinCardsInPopup();
     showToast('🗑 Dihapus', 'info');
   };
 
@@ -788,14 +942,22 @@
     if (nv === null) return;
     row[field] = nv;
     if (field === 'BIN') row[field] = row[field].toUpperCase();
-    saveScanData(); renderScanTable(); showToast('✅ Updated', 'success');
+    saveScanData();
+    renderScanTable();
+    renderBinCardsInPopup();
+    showToast('✅ Updated', 'success');
   };
 
   window.clearScanData = function() {
     if (!scanDataArray.length) { showToast('📭 Kosong', 'info'); return; }
     if (!confirm(`Hapus SEMUA ${scanDataArray.length} data?`)) return;
-    scanDataArray = []; currentSessionData = []; currentBin = '';
-    saveScanData(); renderScanTable(); updateScanStats();
+    scanDataArray = [];
+    currentSessionData = [];
+    currentBin = '';
+    saveScanData();
+    renderScanTable();
+    updateScanStats();
+    renderBinCardsInPopup();
     const rs = document.getElementById('recallStatus');
     if (rs) rs.classList.remove('show');
     const binInput = document.getElementById('scanBIN');
@@ -826,7 +988,10 @@
       return;
     }
     
-    tbody.innerHTML = currentSessionData.map((row, i) => `
+    // Batasi 20 row
+    const displayData = currentSessionData.slice(0, MAX_ROWS);
+    
+    tbody.innerHTML = displayData.map((row, i) => `
       <tr>
         <td>${i+1}</td>
         <td class="col-barcode" onclick="editScanCell('${row.id}','BARCODE')" title="Edit">${row.BARCODE||'-'}</td>
@@ -926,116 +1091,68 @@
   if (saved) { try { scanDataArray = JSON.parse(saved); } catch(e) { scanDataArray = []; } }
 
   // ═══════════════ MASTER UPLOAD ═══════════════
-  function sanitize(v) {
-    if (v === null || v === undefined || v === '') return null;
-    if (typeof v === 'number' && isNaN(v)) return null;
-    if (v instanceof Date) return v.toISOString().split('T')[0];
-    return v;
-  }
-
+  function sanitize(v) { if (v===null||v===undefined||v==='') return null; if (typeof v==='number'&&isNaN(v)) return null; if (v instanceof Date) return v.toISOString().split('T')[0]; return v; }
   function makeDocId(sheetName, row) {
-    if (sheetName === 'SIZE') {
-      const u = String(row['US_Size']||'').trim(), g = String(row['Gender']||'').trim();
-      if (u && g) return `${u}_${g}`.replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
-      return `SIZE_${Date.now().toString(36)}`;
-    }
-    for (const k of ['Barcode', 'Article']) {
-      const r = row[k]; if (r != null && String(r).trim()) return String(r).trim().replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
-    }
+    if (sheetName==='SIZE') { const u=String(row['US_Size']||'').trim(),g=String(row['Gender']||'').trim(); if(u&&g) return `${u}_${g}`.replace(/[/?#\[\]@!$&'()*+,;=]/g,'_'); return `SIZE_${Date.now().toString(36)}`; }
+    for(const k of ['Barcode','Article']){ const r=row[k]; if(r!=null&&String(r).trim()) return String(r).trim().replace(/[/?#\[\]@!$&'()*+,;=]/g,'_'); }
     return `${sheetName}_${Date.now().toString(36)}`;
   }
 
-  window.handleDrop = function(e) { e.preventDefault(); handleFile(e.dataTransfer.files[0]); };
-  
-  function handleFile(file) {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const wb = XLSX.read(ev.target.result, { type: 'array', cellDates: true });
-        parsedSheets = {};
-        safeSetHTML('sheetsGrid', '');
-        safeSetHTML('sheetOptions', '');
-        
-        wb.SheetNames.forEach(name => {
-          const raw = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: null });
-          if (raw.length < 2) return;
-          const headers = raw[0].map(h => String(h??'').trim().replace(/[\s.]+/g,'_'));
-          const rows = raw.slice(1).map(r => { const o={}; headers.forEach((h,i)=>{o[h]=sanitize(r[i]);}); return o; }).filter(r => Object.values(r).some(v=>v!==null));
-          parsedSheets[name] = rows;
-          const sheetsGrid = document.getElementById('sheetsGrid');
-          const sheetOptions = document.getElementById('sheetOptions');
-          if (sheetsGrid) sheetsGrid.innerHTML += `<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;"><strong>📋 ${name}</strong><br><small>${rows.length} baris</small></div>`;
-          if (sheetOptions) sheetOptions.innerHTML += `<label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;margin-top:4px;"><input type="checkbox" checked value="${name}" class="sheetCheck" />${name} (${rows.length})</label>`;
+  window.handleDrop=function(e){ e.preventDefault(); handleFile(e.dataTransfer.files[0]); };
+  function handleFile(file){
+    if(!file) return;
+    const reader=new FileReader();
+    reader.onload=(ev)=>{
+      try{
+        const wb=XLSX.read(ev.target.result,{type:'array',cellDates:true});
+        parsedSheets={};
+        safeSetHTML('sheetsGrid',''); safeSetHTML('sheetOptions','');
+        wb.SheetNames.forEach(name=>{
+          const raw=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:null});
+          if(raw.length<2)return;
+          const headers=raw[0].map(h=>String(h??'').trim().replace(/[\s.]+/g,'_'));
+          const rows=raw.slice(1).map(r=>{const o={};headers.forEach((h,i)=>{o[h]=sanitize(r[i]);});return o;}).filter(r=>Object.values(r).some(v=>v!==null));
+          parsedSheets[name]=rows;
+          const sg=document.getElementById('sheetsGrid'),so=document.getElementById('sheetOptions');
+          if(sg)sg.innerHTML+=`<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;"><strong>📋 ${name}</strong><br><small>${rows.length} baris</small></div>`;
+          if(so)so.innerHTML+=`<label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;margin-top:4px;"><input type="checkbox" checked value="${name}" class="sheetCheck" />${name} (${rows.length})</label>`;
         });
-        const uploadCard = document.getElementById('uploadCard');
-        if (uploadCard) uploadCard.style.display = 'block';
-      } catch(err) { console.error(err); }
+        const uc=document.getElementById('uploadCard'); if(uc)uc.style.display='block';
+      }catch(err){console.error(err);}
     };
     reader.readAsArrayBuffer(file);
   }
-  window.handleFile = handleFile;
+  window.handleFile=handleFile;
 
-  async function uploadBatched(colName, rows, onProgress) {
-    let done = 0;
-    for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-      const batch = writeBatch(db);
-      rows.slice(i, i+BATCH_SIZE).forEach(row => batch.set(doc(db, colName, makeDocId(colName, row)), row));
-      await batch.commit(); done += Math.min(BATCH_SIZE, rows.length - i);
-      onProgress(done, rows.length);
+  async function uploadBatched(colName,rows,onProgress){let done=0;for(let i=0;i<rows.length;i+=BATCH_SIZE){const batch=writeBatch(db);rows.slice(i,i+BATCH_SIZE).forEach(row=>batch.set(doc(db,colName,makeDocId(colName,row)),row));await batch.commit();done+=Math.min(BATCH_SIZE,rows.length-i);onProgress(done,rows.length);}}
+  async function deleteCollection(colName,onProgress){const snap=await getDocs(collection(db,colName));if(snap.empty){onProgress(0,0);return;}const docs=snap.docs;for(let i=0;i<docs.length;i+=BATCH_SIZE){const batch=writeBatch(db);docs.slice(i,i+BATCH_SIZE).forEach(d=>batch.delete(d.ref));await batch.commit();onProgress(i+Math.min(BATCH_SIZE,docs.length-i),docs.length);}}
+
+  async function startUpload(){
+    if(!db){showToast('❌ DB offline','error');return;}
+    const selected=[...document.querySelectorAll('.sheetCheck:checked')].map(c=>c.value);
+    if(!selected.length){showToast('⚠️ Pilih sheet','error');return;}
+    const clearFirst=document.getElementById('optClear')?.checked||false;
+    const pw=document.getElementById('progressWrap');if(pw)pw.innerHTML='';
+    let total=0;
+    for(const name of selected){
+      const rows=parsedSheets[name];if(!rows?.length)continue;
+      try{if(clearFirst)await deleteCollection(name,(d,t)=>{});await uploadBatched(name,rows,(d,t)=>{});total+=rows.length;if(pw)pw.innerHTML+=`<div style="color:var(--green);font-size:0.75rem;">✅ ${name} — ${rows.length} row</div>`;}
+      catch(err){if(pw)pw.innerHTML+=`<div style="color:var(--red);font-size:0.75rem;">❌ ${name}: ${err.message}</div>`;}
     }
+    showToast(`✅ ${total} data terupload!`,'success');
   }
 
-  async function deleteCollection(colName, onProgress) {
-    const snap = await getDocs(collection(db, colName));
-    if (snap.empty) { onProgress(0,0); return; }
-    const docs = snap.docs;
-    for (let i = 0; i < docs.length; i += BATCH_SIZE) {
-      const batch = writeBatch(db);
-      docs.slice(i, i+BATCH_SIZE).forEach(d => batch.delete(d.ref));
-      await batch.commit();
-      onProgress(i + Math.min(BATCH_SIZE, docs.length - i), docs.length);
-    }
+  async function clearSelected(){
+    if(!db){showToast('❌ DB offline','error');return;}
+    const selected=[...document.querySelectorAll('.sheetCheck:checked')].map(c=>c.value);
+    if(!selected.length||!confirm(`Hapus: ${selected.join(', ')}?`))return;
+    for(const name of selected){try{await deleteCollection(name,(d,t)=>{});showToast(`✅ ${name} dihapus`,'success');}catch(err){showToast(`❌ ${err.message}`,'error');}}
   }
 
-  async function startUpload() {
-    if (!db) { showToast('❌ DB offline', 'error'); return; }
-    const selected = [...document.querySelectorAll('.sheetCheck:checked')].map(c=>c.value);
-    if (!selected.length) { showToast('⚠️ Pilih sheet', 'error'); return; }
-    const clearFirst = document.getElementById('optClear')?.checked || false;
-    const pw = document.getElementById('progressWrap');
-    if (pw) pw.innerHTML = '';
-    let total = 0;
-    for (const name of selected) {
-      const rows = parsedSheets[name]; if (!rows?.length) continue;
-      try {
-        if (clearFirst) await deleteCollection(name, (d,t) => {});
-        await uploadBatched(name, rows, (d,t) => {});
-        total += rows.length;
-        if (pw) pw.innerHTML += `<div style="color:var(--green);font-size:0.75rem;">✅ ${name} — ${rows.length} row</div>`;
-      } catch(err) {
-        if (pw) pw.innerHTML += `<div style="color:var(--red);font-size:0.75rem;">❌ ${name}: ${err.message}</div>`;
-      }
-    }
-    showToast(`✅ ${total} data terupload!`, 'success');
-  }
+  window.initFirebase=initFirebase; window.startUpload=startUpload; window.clearSelected=clearSelected;
 
-  async function clearSelected() {
-    if (!db) { showToast('❌ DB offline', 'error'); return; }
-    const selected = [...document.querySelectorAll('.sheetCheck:checked')].map(c=>c.value);
-    if (!selected.length || !confirm(`Hapus: ${selected.join(', ')}?`)) return;
-    for (const name of selected) {
-      try { await deleteCollection(name, (d,t) => {}); showToast(`✅ ${name} dihapus`, 'success'); }
-      catch(err) { showToast(`❌ ${err.message}`, 'error'); }
-    }
-  }
-
-  window.initFirebase = initFirebase;
-  window.startUpload = startUpload;
-  window.clearSelected = clearSelected;
-
-  renderScanTable(); updateScanStats(); updateFirestoreStatus();
-  setInterval(() => { updateScanStats(); updateFirestoreStatus(); }, 30000);
+  renderScanTable(); updateScanStats(); renderBinCardsInPopup(); updateFirestoreStatus();
+  setInterval(()=>{ updateScanStats(); updateFirestoreStatus(); },30000);
 </script>
 </body>
 </html>
