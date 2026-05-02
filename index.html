@@ -25,88 +25,112 @@
       border-right: 2px solid var(--border);
       display: flex; flex-direction: column;
       overflow-y: auto; overflow-x: hidden;
-      padding: 16px; gap: 12px; z-index: 10;
+      padding: 14px; gap: 10px; z-index: 10;
     }
-    .sidebar-header { text-align: center; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
-    .sidebar-header h1 { font-size: 1rem; font-weight: 700; }
+    .sidebar-header { text-align: center; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+    .sidebar-header h1 { font-size: 0.95rem; font-weight: 700; }
     .sidebar-header h1 span { color: var(--accent); }
-    .sidebar-header .subtitle { font-size: 0.6rem; color: var(--muted); margin-top: 2px; }
+    .sidebar-header .subtitle { font-size: 0.58rem; color: var(--muted); margin-top: 1px; }
     
     .sidebar-section {
       background: var(--bg); border: 1px solid var(--border);
       border-radius: 10px; padding: 12px;
     }
     .sidebar-section h3 {
-      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.06em; color: var(--muted); margin-bottom: 8px;
+      font-size: 0.66rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--muted); margin-bottom: 8px;
+      display: flex; align-items: center; gap: 4px;
     }
     
-    .input-group { display: flex; flex-direction: column; gap: 2px; margin-bottom: 7px; }
-    .input-group label { font-size: 0.62rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+    /* STATS DI ATAS INPUT */
+    .stats-mini {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .stat-mini {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 7px 6px; text-align: center;
+    }
+    .stat-mini .val { font-size: 1rem; font-weight: 700; color: var(--accent2); }
+    .stat-mini .lbl { font-size: 0.52rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; margin-top: 1px; }
+    .stat-mini.highlight .val { color: var(--accent); }
+    
+    /* INPUT GROUPS */
+    .input-group { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
+    .input-group label { font-size: 0.6rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
     .input-group input, .input-group select {
       padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border);
-      background: var(--card); color: var(--text); font-size: 0.82rem;
+      background: var(--card); color: var(--text); font-size: 0.8rem;
       font-family: monospace; width: 100%; transition: all 0.2s;
     }
     .input-group input:focus, .input-group select:focus { outline: none; border-color: var(--accent); }
-    .input-group input.input-barcode { font-size: 0.95rem; font-weight: 600; }
+    .input-group input.input-barcode { font-size: 0.9rem; font-weight: 600; }
     .input-group input.input-bin { text-align: center; font-weight: 600; color: #a78bfa; text-transform: uppercase; }
-    .input-hint { font-size: 0.55rem; color: var(--muted); margin-top: 1px; }
     
-    .btn { padding: 8px 14px; border-radius: 7px; font-weight: 600; font-size: 0.78rem; border: none; cursor: pointer; transition: all 0.2s; width: 100%; text-align: center; }
+    /* ROW: BIN, LOKASI, USER SEJAJAR */
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .input-hint { font-size: 0.52rem; color: var(--muted); margin-top: 1px; }
+    
+    .btn { padding: 8px 14px; border-radius: 7px; font-weight: 600; font-size: 0.73rem; border: none; cursor: pointer; transition: all 0.2s; width: 100%; text-align: center; }
     .btn:active { transform: scale(0.97); }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-    .btn-primary { background: var(--accent); color: #fff; font-size: 0.85rem; padding: 10px; }
-    .btn-primary:hover { background: #fb923c; }
-    .btn-reset { background: linear-gradient(135deg,#6366f1,#8b5cf6); color: #fff; font-size: 0.73rem; }
+    .btn-reset { background: linear-gradient(135deg,#6366f1,#8b5cf6); color: #fff; font-size: 0.7rem; }
     .btn-reset:focus { outline: 3px solid #a78bfa; outline-offset: 2px; }
-    .btn-recall { background: #10b981; color: #fff; font-size: 0.73rem; }
-    .btn-export { background: var(--accent2); color: #fff; font-size: 0.73rem; }
-    .btn-danger { background: var(--red); color: #fff; font-size: 0.73rem; }
-    .btn-upload { background: var(--green); color: #fff; font-size: 0.78rem; }
+    .btn-recall { background: #10b981; color: #fff; font-size: 0.7rem; }
+    .btn-export { background: var(--accent2); color: #fff; font-size: 0.7rem; }
+    .btn-danger { background: var(--red); color: #fff; font-size: 0.7rem; }
+    .btn-upload { background: var(--green); color: #fff; font-size: 0.73rem; }
     
     .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 3px; }
-    .btn-row .btn { padding: 6px 8px; font-size: 0.68rem; }
-    
-    .stats-mini { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-    .stat-mini { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center; }
-    .stat-mini .val { font-size: 1.1rem; font-weight: 700; color: var(--accent2); }
-    .stat-mini .lbl { font-size: 0.55rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 1px; }
-    .stat-mini.highlight .val { color: var(--accent); }
+    .btn-row .btn { padding: 6px 8px; font-size: 0.65rem; }
     
     .shortcut-hint {
       display: inline-flex; align-items: center; gap: 2px;
       background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4);
-      padding: 1px 5px; border-radius: 3px; font-size: 0.58rem; font-family: monospace; color: #a78bfa;
+      padding: 1px 5px; border-radius: 3px; font-size: 0.55rem; font-family: monospace; color: #a78bfa;
     }
     
     /* MAIN CONTENT */
-    .main-content { flex: 1; height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding: 16px; }
-    .main-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-shrink: 0; }
-    .main-header h2 { font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .main-content { flex: 1; height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding: 14px; }
+    .main-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-shrink: 0; }
+    .main-header h2 { font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 6px; }
     
-    .badge { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.04em; padding: 2px 8px; border-radius: 99px; text-transform: uppercase; }
+    .badge { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.03em; padding: 2px 7px; border-radius: 99px; text-transform: uppercase; }
     .badge-green { background: #166534; color: #bbf7d0; }
     .badge-purple { background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4); color: #a78bfa; }
     
     .recall-status {
-      display: none; align-items: center; gap: 6px; padding: 5px 10px;
-      border-radius: 6px; font-size: 0.68rem;
+      display: none; align-items: center; gap: 5px; padding: 4px 8px;
+      border-radius: 5px; font-size: 0.65rem;
       background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3);
-      color: #34d399; flex-shrink: 0; margin-bottom: 6px;
+      color: #34d399; flex-shrink: 0; margin-bottom: 5px;
     }
     .recall-status.show { display: flex; }
     
-    .table-container { flex: 1; overflow: auto; border-radius: 10px; border: 1px solid var(--border); background: var(--card); }
+    .table-container {
+      flex: 1; overflow: auto; border-radius: 10px;
+      border: 1px solid var(--border); background: var(--card);
+    }
     
-    .scan-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; min-width: 1200px; }
+    /* TABEL AUTO-FIT */
+    .scan-table {
+      width: 100%; border-collapse: collapse; font-size: 0.73rem;
+      table-layout: auto;
+    }
     .scan-table thead { position: sticky; top: 0; z-index: 5; background: #14161f; }
     .scan-table th {
-      padding: 9px 7px; text-align: left; font-weight: 600; font-size: 0.62rem;
+      padding: 8px 6px; text-align: left; font-weight: 600; font-size: 0.6rem;
       text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted);
       border-bottom: 2px solid var(--border); white-space: nowrap; background: #14161f;
     }
-    .scan-table td { padding: 7px; border-bottom: 1px solid rgba(42,45,58,0.5); white-space: nowrap; }
+    .scan-table td { padding: 6px; border-bottom: 1px solid rgba(42,45,58,0.5); white-space: nowrap; }
     .scan-table tbody tr { transition: background 0.15s; }
     .scan-table tbody tr:hover { background: rgba(59,130,246,0.05); }
     .scan-table .col-barcode { font-family: monospace; font-weight: 500; color: var(--accent); }
@@ -115,38 +139,38 @@
     .scan-table .col-size-us { font-weight: 600; color: var(--accent); }
     .scan-table .col-brand { font-weight: 600; color: #f59e0b; }
     .scan-table .col-cat { font-weight: 700; color: #f59e0b; }
-    .scan-table .col-date { color: var(--muted); font-size: 0.7rem; }
+    .scan-table .col-date { color: var(--muted); font-size: 0.68rem; }
     
-    .btn-sm { padding: 2px 7px; font-size: 0.62rem; border-radius: 4px; border: none; cursor: pointer; font-weight: 600; }
+    .btn-sm { padding: 2px 6px; font-size: 0.6rem; border-radius: 4px; border: none; cursor: pointer; font-weight: 600; }
     .btn-sm-delete { background: var(--red); color: #fff; }
     .btn-sm:hover { opacity: 0.8; }
     
-    .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
-    .empty-state p { font-size: 0.82rem; }
-    .empty-state small { font-size: 0.68rem; }
+    .empty-state { text-align: center; padding: 50px 20px; color: var(--muted); }
+    .empty-state p { font-size: 0.78rem; }
+    .empty-state small { font-size: 0.65rem; }
     
     /* LOCK OVERLAY */
     .lock-overlay {
       display: none; background: rgba(127,29,29,0.95); border: 2px solid var(--red);
-      border-radius: 10px; padding: 12px; text-align: center; animation: slideDown 0.3s ease-out;
+      border-radius: 10px; padding: 10px; text-align: center; animation: slideDown 0.3s ease-out;
     }
     .lock-overlay.show { display: block; }
     @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
-    .lock-overlay .lock-icon { font-size: 1.3rem; margin-bottom: 3px; }
-    .lock-overlay .lock-title { font-weight: 700; color: #fecaca; font-size: 0.8rem; }
-    .lock-overlay .lock-msg { color: #fca5a5; font-size: 0.65rem; margin: 3px 0; }
+    .lock-overlay .lock-icon { font-size: 1.2rem; margin-bottom: 2px; }
+    .lock-overlay .lock-title { font-weight: 700; color: #fecaca; font-size: 0.75rem; }
+    .lock-overlay .lock-msg { color: #fca5a5; font-size: 0.62rem; margin: 2px 0; }
     .lock-overlay .lock-rejected {
-      font-family: monospace; font-size: 0.75rem; font-weight: 700; color: #f87171;
-      background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 5px; display: inline-block; margin: 3px 0;
+      font-family: monospace; font-size: 0.7rem; font-weight: 700; color: #f87171;
+      background: rgba(0,0,0,0.3); padding: 2px 7px; border-radius: 4px; display: inline-block; margin: 2px 0;
     }
-    .btn-unlock-overlay { display: inline-block; padding: 7px 18px; background: #eab308; color: #000; font-weight: 700; font-size: 0.75rem; border: none; border-radius: 6px; cursor: pointer; margin-top: 4px; }
+    .btn-unlock-overlay { display: inline-block; padding: 6px 16px; background: #eab308; color: #000; font-weight: 700; font-size: 0.7rem; border: none; border-radius: 6px; cursor: pointer; margin-top: 3px; }
     
     .locked-input { background: rgba(239,68,68,0.12) !important; border-color: var(--red) !important; color: var(--red) !important; pointer-events: none; }
     
     /* TOAST */
     .toast {
       position: fixed; bottom: 20px; right: 20px; padding: 10px 18px;
-      border-radius: 8px; font-size: 0.8rem; font-weight: 500; z-index: 1000;
+      border-radius: 8px; font-size: 0.78rem; font-weight: 500; z-index: 1000;
       animation: slideIn 0.3s ease-out; display: none;
     }
     .toast.success { background: #166534; color: #bbf7d0; border: 1px solid #22c55e; }
@@ -155,12 +179,12 @@
     @keyframes slideIn { from { transform: translateX(80px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     
     /* NAV TABS */
-    .nav-tabs { display: flex; gap: 3px; background: var(--bg); border-radius: 7px; padding: 3px; border: 1px solid var(--border); }
-    .nav-tab { flex: 1; padding: 6px 10px; text-align: center; cursor: pointer; border-radius: 5px; font-weight: 600; font-size: 0.68rem; transition: all 0.2s; color: var(--muted); border: none; background: transparent; }
+    .nav-tabs { display: flex; gap: 3px; background: var(--bg); border-radius: 7px; padding: 2px; border: 1px solid var(--border); }
+    .nav-tab { flex: 1; padding: 5px 8px; text-align: center; cursor: pointer; border-radius: 5px; font-weight: 600; font-size: 0.65rem; transition: all 0.2s; color: var(--muted); border: none; background: transparent; }
     .nav-tab.active { background: var(--accent); color: #fff; }
     
     /* SEARCH STATUS */
-    .search-status { display: none; align-items: center; gap: 5px; padding: 5px 8px; border-radius: 5px; font-size: 0.65rem; font-weight: 500; margin-top: 6px; }
+    .search-status { display: none; align-items: center; gap: 4px; padding: 4px 7px; border-radius: 5px; font-size: 0.62rem; font-weight: 500; margin-top: 4px; }
     .search-status.searching { background: #1e3a5f33; border: 1px solid #1d4ed8; color: var(--accent2); }
     .search-status.found { background: #14532d33; border: 1px solid #166534; color: var(--green); }
     .search-status.not-found { background: #7f1d1d33; border: 1px solid #991b1b; color: var(--red); }
@@ -169,11 +193,13 @@
     .spinner { display: inline-block; width: 10px; height: 10px; border: 2px solid transparent; border-top-color: currentColor; border-radius: 50%; animation: spin 0.6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     
-    .firebase-status { font-size: 0.58rem; padding: 2px 6px; border-radius: 4px; }
+    .firebase-status { font-size: 0.55rem; padding: 2px 5px; border-radius: 4px; }
     .firebase-status.online { background: #14532d33; color: var(--green); }
     .firebase-status.offline { background: #7f1d1d33; color: var(--red); }
     
-    .step-tag-sm { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; font-size: 0.6rem; font-weight: 700; background: var(--accent); color: #fff; }
+    .step-tag-sm { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; font-size: 0.55rem; font-weight: 700; background: var(--accent); color: #fff; }
+    
+    .info-text { font-size: 0.55rem; color: var(--muted); text-align: center; margin-top: 2px; }
   </style>
 </head>
 <body>
@@ -191,14 +217,32 @@
     
     <div class="sidebar-header">
       <h1>SCAN <span>DATA</span></h1>
-      <div class="subtitle">Scan barcode / article</div>
+      <div class="subtitle">Scan barcode / article | Enter = submit</div>
     </div>
     
     <div style="text-align:center;">
       <span id="firestoreStatus" class="firebase-status offline">⚠️ Offline</span>
     </div>
     
-    <!-- Input Section -->
+    <!-- STATS DI ATAS INPUT -->
+    <div class="sidebar-section">
+      <div class="stats-mini">
+        <div class="stat-mini">
+          <div class="val" id="statTotalAll">0</div>
+          <div class="lbl">Total Data</div>
+        </div>
+        <div class="stat-mini">
+          <div class="val" id="statSession">0</div>
+          <div class="lbl">Sesi Ini</div>
+        </div>
+        <div class="stat-mini highlight" style="grid-column:1/-1;">
+          <div class="val" id="statQtyBin">0</div>
+          <div class="lbl">Qty BIN: <span id="statBinLabel">-</span></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- INPUT SCAN -->
     <div class="sidebar-section">
       <h3>📱 Input Scan</h3>
       
@@ -208,43 +252,40 @@
         <span class="input-hint">Enter = submit</span>
       </div>
       
-      <div class="input-group">
-        <label>📦 BIN</label>
-        <input type="text" id="scanBIN" class="input-bin" placeholder="D1" oninput="autoUppercase(this)" onchange="onBinChange()" />
-        <span class="input-hint">Ketik BIN = recall data</span>
+      <!-- BIN, LOKASI, USER SEJAJAR -->
+      <div class="input-row">
+        <div class="input-group">
+          <label>📦 BIN</label>
+          <input type="text" id="scanBIN" class="input-bin" placeholder="D1" oninput="autoUppercase(this)" onchange="onBinChange()" />
+        </div>
+        <div class="input-group">
+          <label>📍 Lokasi</label>
+          <select id="scanLokasi">
+            <option value="Gudang">Gudang</option>
+            <option value="Display">Display</option>
+            <option value="Toko">Toko</option>
+            <option value="Retur">Retur</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>👤 User</label>
+          <select id="scanUser">
+            <option value="ADMIN">ADMIN</option>
+            <option value="STAFF1">STAFF1</option>
+            <option value="STAFF2">STAFF2</option>
+          </select>
+        </div>
       </div>
       
-      <div class="input-group">
-        <label>📍 Lokasi</label>
-        <select id="scanLokasi">
-          <option value="Gudang">Gudang</option>
-          <option value="Toko">Toko</option>
-          <option value="Display">Display</option>
-          <option value="Retur">Retur</option>
-        </select>
-      </div>
-      
-      <div class="input-group">
-        <label>👤 User</label>
-        <select id="scanUser">
-          <option value="LOCAL">LOCAL</option>
-          <option value="ADMIN">ADMIN</option>
-          <option value="STAFF1">STAFF1</option>
-          <option value="STAFF2">STAFF2</option>
-        </select>
-      </div>
-      
-      <button class="btn btn-primary" id="btnAddScan" onclick="addScanData()">➕ Tambah</button>
-      
-      <div class="search-status" id="searchStatus" style="display:none;margin-top:6px;">
+      <div class="search-status" id="searchStatus" style="display:none;">
         <span class="spinner" id="searchSpinner" style="display:none;"></span>
         <span id="searchStatusText"></span>
       </div>
     </div>
     
-    <!-- Tombol Aksi -->
+    <!-- TOMBOL AKSI -->
     <div class="sidebar-section">
-      <h3>⚡ Aksi Cepat</h3>
+      <h3>⚡ Aksi</h3>
       
       <button class="btn btn-reset" id="btnResetSession" onclick="resetSession()" style="margin-bottom:4px;">
         🔄 Reset Sesi <span class="shortcut-hint">\</span>
@@ -270,20 +311,8 @@
       <button class="btn-unlock-overlay" onclick="unlockScan()">🔓 BUKA KUNCI</button>
     </div>
     
-    <!-- Stats Mini -->
-    <div class="stats-mini">
-      <div class="stat-mini">
-        <div class="val" id="statTotalAll">0</div>
-        <div class="lbl">Total Data</div>
-      </div>
-      <div class="stat-mini">
-        <div class="val" id="statSession">0</div>
-        <div class="lbl">Sesi Ini</div>
-      </div>
-      <div class="stat-mini highlight" style="grid-column:1/-1;">
-        <div class="val" id="statQtyBin">0</div>
-        <div class="lbl">Qty BIN: <span id="statBinLabel">-</span></div>
-      </div>
+    <div class="info-text">
+      <strong>\\</strong> = reset sesi | Ketik BIN = recall data
     </div>
   </div>
   
@@ -330,13 +359,13 @@
   <div style="max-width:800px;margin:0 auto;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
       <h2>📦 MASTER DATA Upload</h2>
-      <button class="btn btn-primary" onclick="switchPage('scan')" style="width:auto;padding:8px 16px;">← Kembali</button>
+      <button class="btn btn-reset" onclick="switchPage('scan')" style="width:auto;padding:8px 16px;">← Kembali</button>
     </div>
     <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
       <h3>Konfigurasi Firebase</h3>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
         <input id="cfgApiKey" placeholder="API Key..." style="padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);" />
-        <button class="btn btn-primary" onclick="initFirebase()" style="width:auto;">🔌 Sambungkan</button>
+        <button class="btn btn-upload" onclick="initFirebase()" style="width:auto;">🔌 Sambungkan</button>
         <div id="configStatus" style="font-size:0.8rem;"></div>
       </div>
     </div>
@@ -351,7 +380,7 @@
       <div id="uploadCard" style="display:none;margin-top:16px;">
         <label style="font-size:0.85rem;"><input type="checkbox" id="optClear" /> Hapus data lama</label>
         <div style="display:flex;gap:8px;margin-top:10px;">
-          <button class="btn btn-primary" onclick="startUpload()" style="width:auto;">⬆ Upload</button>
+          <button class="btn btn-upload" onclick="startUpload()" style="width:auto;">⬆ Upload</button>
           <button class="btn btn-danger" onclick="clearSelected()" style="width:auto;">🗑 Hapus</button>
         </div>
       </div>
@@ -406,12 +435,8 @@
 
   window.autoUppercase = function(input) { input.value = input.value.toUpperCase(); };
 
-  // ═══════════════ SAFE GET ELEMENT ═══════════════
-  function safeSetText(id, text) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = text;
-    return el;
-  }
+  function safeSetText(id, text) { const el = document.getElementById(id); if (el) el.textContent = text; }
+  function safeSetHTML(id, html) { const el = document.getElementById(id); if (el) el.innerHTML = html; }
 
   // ═══════════════ RECALL BIN ═══════════════
   window.onBinChange = function() {
@@ -436,12 +461,9 @@
     updateScanStats();
     
     const rs = document.getElementById('recallStatus');
-    const rl = document.getElementById('recallBinLabel');
-    const rc = document.getElementById('recallCount');
-    
     if (rs) rs.classList.add('show');
-    if (rl) rl.textContent = bin;
-    if (rc) rc.textContent = currentSessionData.length;
+    safeSetText('recallBinLabel', bin);
+    safeSetText('recallCount', currentSessionData.length);
     
     document.getElementById('scanBIN').value = bin;
     const bc = document.getElementById('scanBarcode');
@@ -462,15 +484,11 @@
     if (addBtn) addBtn.disabled = true;
     
     const lockOverlay = document.getElementById('lockOverlay');
-    const lockRejected = document.getElementById('lockRejectedArticle');
     if (lockOverlay) lockOverlay.classList.add('show');
-    if (lockRejected) lockRejected.textContent = article;
+    safeSetText('lockRejectedArticle', article);
     
     const ss = document.getElementById('searchStatus');
-    if (ss) {
-      ss.className = 'search-status locked-status';
-      ss.style.display = 'flex';
-    }
+    if (ss) { ss.className = 'search-status locked-status'; ss.style.display = 'flex'; }
     safeSetText('searchStatusText', `🔒 "${article}" tidak ada di Master`);
     
     showToast('🔒 SCAN TERKUNCI!', 'error');
@@ -503,20 +521,19 @@
   // ═══════════════ RESET SESI ═══════════════
   window.resetSession = function() {
     const count = currentSessionData.length;
-    if (count === 0) { 
-      showToast('📭 Sesi kosong', 'info'); 
-      const bc = document.getElementById('scanBarcode');
-      if (bc) bc.focus(); 
-      return; 
-    }
+    if (count === 0) { showToast('📭 Sesi kosong', 'info'); focusBarcode(); return; }
     currentSessionData = [];
     renderScanTable();
     updateScanStats();
     const qty = scanDataArray.filter(r => r.BIN === currentBin).length;
     showToast(`🔄 Sesi direset! Qty BIN ${currentBin}: ${qty}`, 'info');
+    focusBarcode();
+  };
+
+  function focusBarcode() {
     const bc = document.getElementById('scanBarcode');
     if (bc) bc.focus();
-  };
+  }
 
   // ═══════════════ SHORTCUT \ ═══════════════
   document.addEventListener('keydown', function(e) {
@@ -530,8 +547,7 @@
     if ((e.key === 'Enter' || e.key === ' ') && document.activeElement === document.getElementById('btnResetSession')) {
       e.preventDefault();
       window.resetSession();
-      const bc = document.getElementById('scanBarcode');
-      if (bc) bc.focus();
+      focusBarcode();
     }
   });
 
@@ -591,10 +607,7 @@
     if (!db) return { found: false, error: 'Firebase tidak terhubung' };
     
     const ss = document.getElementById('searchStatus');
-    if (ss) {
-      ss.style.display = 'flex';
-      ss.className = 'search-status searching';
-    }
+    if (ss) { ss.style.display = 'flex'; ss.className = 'search-status searching'; }
     const spinner = document.getElementById('searchSpinner');
     if (spinner) spinner.style.display = 'inline-block';
     safeSetText('searchStatusText', `Mencari "${input}"...`);
@@ -618,9 +631,7 @@
         }
       }
       
-      if (result?.found) {
-        return await processFoundResult(result, inputStr);
-      }
+      if (result?.found) return await processFoundResult(result, inputStr);
       
       if (ss) ss.className = 'search-status not-found';
       if (spinner) spinner.style.display = 'none';
@@ -680,14 +691,12 @@
       if (mainContent) mainContent.style.display = 'flex';
       if (masterPage) masterPage.style.display = 'none';
       tabs.forEach((t,i) => t.classList.toggle('active', i === 0));
-      const bc = document.getElementById('scanBarcode');
-      if (bc) bc.focus();
+      focusBarcode();
       updateScanStats();
       updateFirestoreStatus();
     }
   };
 
-  // ═══════════════ TOAST ═══════════════
   function showToast(msg, type = 'info') {
     const toast = document.getElementById('toast');
     if (!toast) return;
@@ -715,16 +724,18 @@
     binInput.value = binManual;
     
     const lokasi = document.getElementById('scanLokasi')?.value || 'Gudang';
-    const user = document.getElementById('scanUser')?.value || 'LOCAL';
+    const user = document.getElementById('scanUser')?.value || 'ADMIN';
     
-    if (!barcode) { showToast('⚠️ Input barcode dulu', 'error'); barcodeInput.focus(); return; }
+    if (!barcode) { showToast('⚠️ Input barcode dulu', 'error'); focusBarcode(); return; }
     if (!binManual) { showToast('⚠️ Isi BIN dulu', 'error'); binInput.focus(); return; }
     
     if (binManual !== currentBin) { currentBin = binManual; recallBinDataInternal(binManual); }
     
     barcodeInput.disabled = true; binInput.disabled = true;
-    const addBtn = document.getElementById('btnAddScan');
-    if (addBtn) addBtn.disabled = true;
+    const scanLokasi = document.getElementById('scanLokasi');
+    const scanUser = document.getElementById('scanUser');
+    if (scanLokasi) scanLokasi.disabled = true;
+    if (scanUser) scanUser.disabled = true;
     
     const masterResult = await searchBarcodeInMaster(barcode);
     
@@ -746,7 +757,6 @@
       currentSessionData.unshift(newRow);
       saveScanData();
       renderScanTable(); updateScanStats();
-      showToast(`✅ Size:${d.sizeUS||'N/A'} CAT:${d.cat||'-'}`, 'success');
       barcodeInput.value = '';
     } else {
       barcodeInput.value = barcode;
@@ -754,8 +764,9 @@
     }
     
     barcodeInput.disabled = false; binInput.disabled = false;
-    if (addBtn) addBtn.disabled = isLocked;
-    barcodeInput.focus();
+    if (scanLokasi) scanLokasi.disabled = false;
+    if (scanUser) scanUser.disabled = false;
+    focusBarcode();
   };
 
   function saveScanData() { 
@@ -795,7 +806,6 @@
   function updateScanStats() {
     safeSetText('statTotalAll', scanDataArray.length.toLocaleString());
     safeSetText('statSession', currentSessionData.length.toLocaleString());
-    
     const qty = scanDataArray.filter(r => r.BIN === currentBin).length;
     safeSetText('statQtyBin', qty.toLocaleString());
     safeSetText('statBinLabel', currentBin || '-');
@@ -809,10 +819,10 @@
     if (!tbody) return;
     
     if (!currentSessionData.length) {
-      tbody.innerHTML = `<tr><td colspan="14"><div class="empty-state">
+      safeSetHTML('scanTableBody', `<tr><td colspan="14"><div class="empty-state">
         <p>📭 Ketik BIN untuk recall data</p>
         <small>Total data tersimpan: <strong>${scanDataArray.length.toLocaleString()}</strong></small>
-      </div></td></tr>`;
+      </div></td></tr>`);
       return;
     }
     
@@ -828,7 +838,7 @@
         <td onclick="editScanCell('${row.id}','DESCRIPTION')" title="Edit">${row.DESCRIPTION||'-'}</td>
         <td class="col-brand" onclick="editScanCell('${row.id}','BRAND')" title="Edit">${row.BRAND||'-'}</td>
         <td class="col-cat" onclick="editScanCell('${row.id}','CAT')" title="Edit">${row.CAT||'-'}</td>
-        <td class="col-season" onclick="editScanCell('${row.id}','SEASON')" title="Edit">${row.SEASON||'-'}</td>
+        <td class="col-season" style="color:#10b981;font-weight:600;" onclick="editScanCell('${row.id}','SEASON')" title="Edit">${row.SEASON||'-'}</td>
         <td class="col-date">${row.DATE||'-'}</td>
         <td>${row.USER||'-'}</td>
         <td><button class="btn-sm btn-sm-delete" onclick="deleteScanRow('${row.id}')">🗑</button></td>
@@ -873,19 +883,13 @@
       }
       showToast(`✅ ${up} terupload!`, 'success');
     } catch(err) { showToast('❌ Gagal', 'error'); }
-    finally { 
-      if (btn) { btn.disabled = false; btn.textContent = '⬆ Upload'; }
-    }
+    finally { if (btn) { btn.disabled = false; btn.textContent = '⬆ Upload'; } }
   };
 
   // ═══════════════ FIREBASE INIT ═══════════════
   async function initFirebase() {
     const apiKey = document.getElementById('cfgApiKey')?.value?.trim();
-    if (!apiKey) { 
-      const cs = document.getElementById('configStatus');
-      if (cs) cs.textContent = '❌ API Key wajib diisi!'; 
-      return; 
-    }
+    if (!apiKey) { safeSetText('configStatus', '❌ API Key wajib diisi!'); return; }
     try {
       const app = initializeApp({ apiKey, authDomain: `${PROJECT_ID}.firebaseapp.com`, projectId: PROJECT_ID });
       db = getFirestore(app);
@@ -893,13 +897,11 @@
       tb.set(doc(db, 'test_write', 'conn_test'), { test: 'connection_test', timestamp: new Date().toISOString() });
       await tb.commit();
       localStorage.setItem('fb_api_key', apiKey);
-      const cs = document.getElementById('configStatus');
-      if (cs) cs.textContent = '✅ Terhubung!';
+      safeSetText('configStatus', '✅ Terhubung!');
       updateFirestoreStatus();
       showToast('✅ Firebase terhubung!', 'success');
     } catch(err) {
-      const cs = document.getElementById('configStatus');
-      if (cs) cs.textContent = '❌ Gagal: ' + err.message;
+      safeSetText('configStatus', '❌ Gagal: ' + err.message);
       db = null; updateFirestoreStatus();
     }
   }
@@ -952,10 +954,8 @@
       try {
         const wb = XLSX.read(ev.target.result, { type: 'array', cellDates: true });
         parsedSheets = {};
-        const sheetsGrid = document.getElementById('sheetsGrid');
-        const sheetOptions = document.getElementById('sheetOptions');
-        if (sheetsGrid) sheetsGrid.innerHTML = '';
-        if (sheetOptions) sheetOptions.innerHTML = '';
+        safeSetHTML('sheetsGrid', '');
+        safeSetHTML('sheetOptions', '');
         
         wb.SheetNames.forEach(name => {
           const raw = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: null });
@@ -963,8 +963,10 @@
           const headers = raw[0].map(h => String(h??'').trim().replace(/[\s.]+/g,'_'));
           const rows = raw.slice(1).map(r => { const o={}; headers.forEach((h,i)=>{o[h]=sanitize(r[i]);}); return o; }).filter(r => Object.values(r).some(v=>v!==null));
           parsedSheets[name] = rows;
+          const sheetsGrid = document.getElementById('sheetsGrid');
+          const sheetOptions = document.getElementById('sheetOptions');
           if (sheetsGrid) sheetsGrid.innerHTML += `<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;"><strong>📋 ${name}</strong><br><small>${rows.length} baris</small></div>`;
-          if (sheetOptions) sheetOptions.innerHTML += `<label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;"><input type="checkbox" checked value="${name}" class="sheetCheck" />${name} (${rows.length})</label>`;
+          if (sheetOptions) sheetOptions.innerHTML += `<label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;margin-top:4px;"><input type="checkbox" checked value="${name}" class="sheetCheck" />${name} (${rows.length})</label>`;
         });
         const uploadCard = document.getElementById('uploadCard');
         if (uploadCard) uploadCard.style.display = 'block';
