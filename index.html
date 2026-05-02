@@ -131,6 +131,7 @@
     .derived-box .db-value.generic { color: #c084fc; }
     .derived-box .db-value.cat { color: #f59e0b; }
     .derived-box .db-value.equipment { color: #facc15; }
+    .derived-box .db-value.article-input { color: #60a5fa; }
     
     .table-wrapper { overflow-x: auto; margin-top: 16px; border-radius: 8px; border: 1px solid var(--border); }
     .scan-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 1100px; }
@@ -225,16 +226,16 @@
   <div class="container">
     <header>
       <h1>📱 SCAN <span>DATA</span></h1>
-      <p>Scan barcode & auto-search dari Master Data Firestore</p>
+      <p>Scan barcode / article & auto-search dari Master Data Firestore</p>
     </header>
 
     <div class="card">
       <h2><span class="step-tag">📱</span> Input Scan</h2>
       <div class="scan-input-row">
         <div class="scan-input-group" style="flex:2;min-width:200px;">
-          <label>🔍 Barcode</label>
-          <input type="text" id="scanBarcode" class="input-barcode" placeholder="Scan/ketik barcode..." autofocus onkeydown="handleBarcodeKeydown(event)" />
-          <span class="input-hint">Tekan Enter untuk submit</span>
+          <label>🔍 Barcode / Article</label>
+          <input type="text" id="scanBarcode" class="input-barcode" placeholder="Scan/ketik barcode atau article..." autofocus onkeydown="handleBarcodeKeydown(event)" />
+          <span class="input-hint">Enter = submit | Bisa barcode atau article</span>
         </div>
         <div class="scan-input-group" style="flex:1;min-width:100px;">
           <label>📦 BIN</label>
@@ -358,10 +359,19 @@
    */
   function extractSizeUS(article, cat) {
     if (!article) return '';
-    // CAT E = Equipment, tidak ada size
     if (cat === 'E') return '';
     const str = String(article).trim();
     return str.length >= 3 ? str.slice(-3) : '';
+  }
+
+  /**
+   * Deteksi apakah input adalah barcode (numeric panjang) atau article (alpha-numeric)
+   * Barcode biasanya 13 digit numeric
+   */
+  function isBarcodeFormat(input) {
+    const str = String(input).trim();
+    // Barcode biasanya 12-14 digit angka
+    return /^\d{12,14}$/.test(str);
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -404,19 +414,16 @@
 
   /**
    * Cari Size UK dari koleksi SIZE
-   * Mencocokkan US_Size dan Gender
    */
   async function findSizeUK(usSize, genderLabel) {
     if (!db || !usSize || !genderLabel) return '';
     try {
-      // Coba sebagai string
       let q = query(collection(db, 'SIZE'), where('US_Size', '==', String(usSize)), where('Gender', '==', genderLabel));
       let snap = await getDocs(q);
       if (!snap.empty) {
         const d = snap.docs[0].data();
         return d.UK_Size || d.Size_UK || d['UK_Size'] || '';
       }
-      // Coba sebagai number (untuk size numeric seperti 070)
       if (/^\d+$/.test(usSize)) {
         q = query(collection(db, 'SIZE'), where('US_Size', '==', Number(usSize)), where('Gender', '==', genderLabel));
         snap = await getDocs(q);
@@ -454,9 +461,9 @@
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // MAIN SEARCH - MENGGUNAKAN FIELD GENERIC DARI MASTER_BARCODE
+  // MAIN SEARCH - SUPPORT BARCODE & ARTICLE INPUT
   // ═══════════════════════════════════════════════════════════════
-  async function searchBarcodeInMaster(barcode) {
+  async function searchBarcodeInMaster(input) {
     if (!db) return { found: false, error: 'Firebase tidak terhubung' };
     
     const searchStatus = document.getElementById('searchStatus');
@@ -468,49 +475,106 @@
     searchStatus.style.display = 'flex';
     searchStatus.className = 'search-status searching';
     searchSpinner.style.display = 'inline-block';
-    searchStatusText.textContent = `Mencari "${barcode}"...`;
+    searchStatusText.textContent = `Mencari "${input}"...`;
     derivedBox.classList.remove('show');
 
     const debugInfo = [];
-    const barcodeStr = String(barcode).trim();
-    debugInfo.push(`<div class="db-item"><span class="db-label">Input:</span><span class="db-value">"${barcodeStr}"</span></div>`);
+    const inputStr = String(input).trim();
+    const inputIsBarcode = isBarcodeFormat(inputStr);
+    
+    debugInfo.push(`<div class="db-item"><span class="db-label">Input:</span><span class="db-value">"${inputStr}"</span></div>`);
+    debugInfo.push(`<div class="db-item"><span class="db-label">Tipe:</span><span class="db-value" style="color:var(--accent2);">${inputIsBarcode ? 'Barcode (numeric)' : 'Article (alpha-numeric)'}</span></div>`);
 
     try {
-      // ═══ STRATEGY 1: Cari by Document ID di MASTER_BARCODE ═══
-      debugInfo.push(`<div class="db-item"><span class="db-label">Coba 1:</span><span class="db-value" style="color:var(--accent2);">getDoc(MASTER_BARCODE/${barcodeStr})</span></div>`);
-      let result = await searchById('MASTER_BARCODE', barcodeStr);
-      
-      if (result.found) {
-        debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">✅ Doc ID match!</span></div>`);
-        return await processFoundResult(result, barcodeStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
-      }
+      let result;
 
-      // ═══ STRATEGY 2: Cari by field 'Barcode' di MASTER_BARCODE ═══
-      debugInfo.push(`<div class="db-item"><span class="db-label">Coba 2:</span><span class="db-value" style="color:var(--accent2);">where(Barcode == "${barcodeStr}")</span></div>`);
-      result = await searchByField('MASTER_BARCODE', 'Barcode', barcodeStr);
-      
-      if (result.found) {
-        debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">✅ Field Barcode match (${result.method})</span></div>`);
-        return await processFoundResult(result, barcodeStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
-      }
+      if (inputIsBarcode) {
+        // ═══ INPUT ADALAH BARCODE ═══
+        
+        // Strategy 1: Cari by Document ID di MASTER_BARCODE
+        debugInfo.push(`<div class="db-item"><span class="db-label">Coba 1:</span><span class="db-value" style="color:var(--accent2);">getDoc(MASTER_BARCODE/${inputStr})</span></div>`);
+        result = await searchById('MASTER_BARCODE', inputStr);
+        if (result.found) {
+          debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">✅ Doc ID match!</span></div>`);
+          return await processFoundResult(result, inputStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
+        }
 
-      // ═══ STRATEGY 3: Cari by field 'Article' di MASTER_BARCODE ═══
-      debugInfo.push(`<div class="db-item"><span class="db-label">Coba 3:</span><span class="db-value" style="color:var(--accent2);">where(Article == "${barcodeStr}") di MASTER_BARCODE</span></div>`);
-      result = await searchByField('MASTER_BARCODE', 'Article', barcodeStr);
-      
-      if (result.found) {
-        debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">✅ Field Article match (${result.method})</span></div>`);
-        return await processFoundResult(result, barcodeStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
+        // Strategy 2: Cari by field 'Barcode' di MASTER_BARCODE
+        debugInfo.push(`<div class="db-item"><span class="db-label">Coba 2:</span><span class="db-value" style="color:var(--accent2);">where(Barcode == "${inputStr}")</span></div>`);
+        result = await searchByField('MASTER_BARCODE', 'Barcode', inputStr);
+        if (result.found) {
+          debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">✅ Field Barcode match</span></div>`);
+          return await processFoundResult(result, inputStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
+        }
+
+      } else {
+        // ═══ INPUT ADALAH ARTICLE ═══
+        
+        // Strategy 1: Cari by Document ID di MASTER_BARCODE
+        debugInfo.push(`<div class="db-item"><span class="db-label">Coba 1:</span><span class="db-value" style="color:var(--accent2);">getDoc(MASTER_BARCODE/${inputStr})</span></div>`);
+        result = await searchById('MASTER_BARCODE', inputStr);
+        if (result.found) {
+          debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">✅ Doc ID match (Article as ID)!</span></div>`);
+          return await processFoundResult(result, inputStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
+        }
+
+        // Strategy 2: Cari by field 'Article' di MASTER_BARCODE
+        debugInfo.push(`<div class="db-item"><span class="db-label">Coba 2:</span><span class="db-value" style="color:var(--accent2);">where(Article == "${inputStr}") di MASTER_BARCODE</span></div>`);
+        result = await searchByField('MASTER_BARCODE', 'Article', inputStr);
+        if (result.found) {
+          debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">✅ Field Article match di MASTER_BARCODE!</span></div>`);
+          return await processFoundResult(result, inputStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
+        }
+
+        // Strategy 3: Cari by Document ID di MASTER_PRODUK (mungkin input adalah generic)
+        debugInfo.push(`<div class="db-item"><span class="db-label">Coba 3:</span><span class="db-value" style="color:var(--accent2);">getDoc(MASTER_PRODUK/${inputStr})</span></div>`);
+        result = await searchById('MASTER_PRODUK', inputStr);
+        if (result.found) {
+          debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">✅ Found in MASTER_PRODUK (Generic)!</span></div>`);
+          // Buat data dummy untuk MASTER_BARCODE
+          result.data.Article = result.data.Article || inputStr;
+          result.data.Barcode = result.data.Barcode || inputStr;
+          return await processFoundResult(result, inputStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
+        }
+
+        // Strategy 4: Cari by field 'Article' di MASTER_PRODUK
+        debugInfo.push(`<div class="db-item"><span class="db-label">Coba 4:</span><span class="db-value" style="color:var(--accent2);">where(Article == "${inputStr}") di MASTER_PRODUK</span></div>`);
+        result = await searchByField('MASTER_PRODUK', 'Article', inputStr);
+        if (result.found) {
+          debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">✅ Field Article match di MASTER_PRODUK!</span></div>`);
+          result.data.Barcode = result.data.Barcode || inputStr;
+          return await processFoundResult(result, inputStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
+        }
+
+        // Strategy 5: Input mungkin article utuh, coba potong 3 karakter (generic) dan cari di MASTER_PRODUK
+        if (inputStr.length > 3) {
+          const possibleGeneric = inputStr.substring(0, inputStr.length - 3);
+          debugInfo.push(`<div class="db-item"><span class="db-label">Coba 5:</span><span class="db-value" style="color:var(--accent2);">Potong 3 char → "${possibleGeneric}" → MASTER_PRODUK</span></div>`);
+          
+          result = await searchById('MASTER_PRODUK', possibleGeneric);
+          if (!result.found) {
+            result = await searchByField('MASTER_PRODUK', 'Article', possibleGeneric);
+          }
+          
+          if (result.found) {
+            debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">✅ Generic dari potongan article ditemukan!</span></div>`);
+            result.data.Article = result.data.Article || inputStr;
+            result.data.Barcode = result.data.Barcode || inputStr;
+            // Tambahkan GENERIC ke data
+            result.data.GENERIC = result.data.GENERIC || possibleGeneric;
+            return await processFoundResult(result, inputStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
+          }
+        }
       }
 
       // ═══ TIDAK DITEMUKAN ═══
-      debugInfo.push(`<div class="db-item"><span class="db-label">Hasil:</span><span class="db-value" style="color:var(--red);">❌ Tidak ditemukan di MASTER_BARCODE</span></div>`);
+      debugInfo.push(`<div class="db-item"><span class="db-label">Hasil:</span><span class="db-value" style="color:var(--red);">❌ Tidak ditemukan di semua strategi</span></div>`);
       
       derivedContent.innerHTML = debugInfo.join('');
       derivedBox.classList.add('show');
       searchStatus.className = 'search-status not-found';
       searchSpinner.style.display = 'none';
-      searchStatusText.textContent = `❌ "${barcode}" tidak ditemukan di database`;
+      searchStatusText.textContent = `❌ "${inputStr}" tidak ditemukan di database`;
       
       return { found: false, data: null, source: null };
       
@@ -525,16 +589,16 @@
     }
   }
 
-  async function processFoundResult(result, barcode, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent) {
+  async function processFoundResult(result, input, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent) {
     const data = result.data;
     
-    // AMBIL DATA DARI MASTER_BARCODE
-    const article = data.Article || data.article || barcode;
+    // AMBIL DATA DARI MASTER_BARCODE / MASTER_PRODUK
+    const article = data.Article || data.article || input;
     const generic = data.GENERIC || data.Generic || data.generic || '';
     const description = data.Description || data.description || data.DESCRIPTION || '';
     const bin = data.BIN || data.bin || '';
     
-    debugInfo.push(`<div class="db-item"><span class="db-label">Article:</span><span class="db-value">${article}</span></div>`);
+    debugInfo.push(`<div class="db-item"><span class="db-label">Article:</span><span class="db-value article-input">${article}</span></div>`);
     debugInfo.push(`<div class="db-item"><span class="db-label">→ GENERIC (dari DB):</span><span class="db-value generic">${generic || '❌ TIDAK ADA'}</span></div>`);
     
     // Jika generic tidak ada, fallback potong 3 karakter terakhir
@@ -544,31 +608,25 @@
       debugInfo.push(`<div class="db-item"><span class="db-label">⚠️ Fallback:</span><span class="db-value" style="color:#facc15;">Generic tidak ada, dipotong manual → ${finalGeneric}</span></div>`);
     }
     
-    // Cari Product Info dari MASTER_PRODUK untuk mendapatkan CAT
+    // Cari Product Info dari MASTER_PRODUK
     const productInfo = await findProductInfoByGeneric(finalGeneric);
     debugInfo.push(`<div class="db-item"><span class="db-label">→ Merch_Cat:</span><span class="db-value">${productInfo.merchCat || '-'}</span></div>`);
     debugInfo.push(`<div class="db-item"><span class="db-label">→ CAT:</span><span class="db-value cat">${productInfo.cat || '-'}</span></div>`);
     
-    // ═══════════════════════════════════════════════════════════
-    // SIZE US & SIZE UK LOGIC
-    // ═══════════════════════════════════════════════════════════
+    // SIZE US & SIZE UK
     let sizeUS = '';
     let sizeUK = '';
     let gender = { code: '', label: '' };
     
-    // CAT E = Equipment, tidak perlu size
     if (productInfo.cat === 'E') {
       debugInfo.push(`<div class="db-item"><span class="db-label">→ CAT E:</span><span class="db-value equipment">Equipment - Tidak ada Size</span></div>`);
     } else {
-      // Size US = 3 karakter terakhir dari article
       sizeUS = extractSizeUS(article, productInfo.cat);
       debugInfo.push(`<div class="db-item"><span class="db-label">→ Size US (3 char terakhir):</span><span class="db-value">${sizeUS || '-'}</span></div>`);
       
-      // Gender dari digit pertama article
       gender = extractGender(article);
       debugInfo.push(`<div class="db-item"><span class="db-label">→ Gender (digit 1):</span><span class="db-value">${gender.label} (code: ${gender.code})</span></div>`);
       
-      // Size UK dari koleksi SIZE
       if (sizeUS && gender.label) {
         sizeUK = await findSizeUK(sizeUS, gender.label);
         debugInfo.push(`<div class="db-item"><span class="db-label">→ Size UK:</span><span class="db-value">${sizeUK || '❌ Tidak ditemukan'}</span></div>`);
@@ -595,7 +653,7 @@
     if (productInfo.seasonYr) summaryParts.push(`Season:${productInfo.seasonYr}`);
     searchStatusText.textContent = `✅ Ditemukan | ${summaryParts.join(' ') || 'Data tersedia'}`;
     
-    log(`✅ "${barcode}" → Article:${article} | Generic:${finalGeneric} | Size:${sizeUS||'N/A'} | CAT:${productInfo.cat||'-'}`, 'ok', 'scanLogBox');
+    log(`✅ "${input}" → Article:${article} | Generic:${finalGeneric} | Size:${sizeUS||'N/A'} | CAT:${productInfo.cat||'-'}`, 'ok', 'scanLogBox');
     
     return {
       found: true,
@@ -727,7 +785,7 @@
     const binManual = binInput.value.trim();
     const lokasi = document.getElementById('scanLokasi').value;
     const user = document.getElementById('scanUser').value;
-    if (!barcode) { showToast('⚠️ Input barcode dulu', 'error'); barcodeInput.focus(); return; }
+    if (!barcode) { showToast('⚠️ Input barcode/article dulu', 'error'); barcodeInput.focus(); return; }
     
     barcodeInput.disabled = true; binInput.disabled = true;
     const masterResult = await searchBarcodeInMaster(barcode);
@@ -763,7 +821,6 @@
       if (d.brandName) foundMsg.push(`Brand:${d.brandName}`);
       showToast(`✅ ${foundMsg.join(' ') || 'Ditemukan'}`, 'success');
     } else {
-      // Tidak ditemukan di master
       newRow = {
         id: Date.now().toString(36)+Math.random().toString(36).substring(2,6),
         BARCODE: barcode,
@@ -842,7 +899,7 @@
         <td class="col-lokasi" onclick="editScanCell('${row.id}','LOKASI')" title="Edit">${row.LOKASI}</td>
         <td style="font-family:monospace;" onclick="editScanCell('${row.id}','ARTICLE')" title="Edit">${row.ARTICLE||'-'}</td>
         <td class="col-bin" onclick="editScanCell('${row.id}','BIN')" title="Edit">${row.BIN||'-'}</td>
-        <td class="col-size-us" onclick="editScanCell('${row.id}','SIZE_US')" title="Edit">${row.SIZE_US||(row.CAT==='E'?'-':'')}</td>
+        <td class="col-size-us" onclick="editScanCell('${row.id}','SIZE_US')" title="Edit">${row.SIZE_US||(row.CAT==='E'?'EQ':'')}</td>
         <td style="color:var(--accent2);font-weight:600;" onclick="editScanCell('${row.id}','SIZE_UK')" title="Edit">${row.SIZE_UK||'-'}</td>
         <td onclick="editScanCell('${row.id}','DESCRIPTION')" title="Edit">${row.DESCRIPTION||'-'}</td>
         <td class="col-brand" onclick="editScanCell('${row.id}','BRAND')" title="Edit">${row.BRAND||'-'}</td>
