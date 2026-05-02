@@ -324,75 +324,18 @@
   // ═══════════════════════════════════════════════════════════════
   // HELPER
   // ═══════════════════════════════════════════════════════════════
-  function extractSizeUS(article) {
-  if (!article) return '';
-  const str = String(article).trim();
-  return str.length >= 3 ? str.slice(-3) : str;
-}
-
-function extractGeneric(article) {
-  if (!article) return '';
-  const str = String(article).trim();
-  return str.length > 3 ? str.substring(0, str.length - 3) : str;
-}
-
-// FUNGSI BARU: Deteksi apakah article sudah generic
-async function isArticleGeneric(article) {
-  if (!db || !article) return false;
   
-  try {
-    // Coba cari langsung di MASTER_PRODUK
-    const result = await searchById('MASTER_PRODUK', article);
-    if (result.found) {
-      console.log(`✅ "${article}" sudah generic (ditemukan di MASTER_PRODUK)`);
-      return true;
-    }
-    
-    // Coba juga dengan query by field
-    const fieldResult = await searchByField('MASTER_PRODUK', 'Article', article);
-    if (fieldResult.found) {
-      console.log(`✅ "${article}" sudah generic (field search)`);
-      return true;
-    }
-    
-    return false;
-  } catch(e) {
-    console.warn('isArticleGeneric error:', e.message);
-    return false;
-  }
-}
-
-// FUNGSI BARU: Smart extraction yang mengecek dulu
-async function smartExtract(article) {
-  if (!article) return { generic: '', sizeUS: '' };
-  
-  // Cek apakah article sudah generic
-  const isGeneric = await isArticleGeneric(article);
-  
-  if (isGeneric) {
-    // Article sudah generic, tidak perlu dipotong
-    return {
-      generic: article,
-      sizeUS: '' // Tidak ada size, atau bisa dicari dari source lain
-    };
-  }
-  
-  // Article perlu dipotong 3 karakter
-  const sizeUS = extractSizeUS(article);
-  const generic = extractGeneric(article);
-  
-  // Verifikasi: cek apakah generic yang dihasilkan ada di MASTER_PRODUK
-  if (generic) {
-    const genericExists = await isArticleGeneric(generic);
-    if (!genericExists) {
-      console.warn(`⚠️ Generic "${generic}" tidak ditemukan di MASTER_PRODUK, mungkin article "${article}" sudah generic?`);
-      // Fallback: anggap article ini generic
-      return { generic: article, sizeUS: '' };
+  function extractGender(article) {
+    if (!article) return { code: '', label: '' };
+    const str = String(article).trim();
+    const firstDigit = str.charAt(0);
+    switch(firstDigit) {
+      case '1': return { code: '1', label: 'Laki-laki' };
+      case '2': return { code: '2', label: 'Perempuan' };
+      case '3': return { code: '3', label: 'Anak-anak' };
+      default: return { code: firstDigit, label: 'Unknown' };
     }
   }
-  
-  return { generic, sizeUS };
-}
 
   function extractCat(merchCat) {
     if (!merchCat) return '';
@@ -404,10 +347,6 @@ async function smartExtract(article) {
   // FIREBASE SEARCH — MULTIPLE FALLBACK STRATEGIES
   // ═══════════════════════════════════════════════════════════════
 
-  /**
-   * Cari dokumen berdasarkan ID langsung (tanpa query)
-   * Ini bypass masalah index/type mismatch
-   */
   async function searchById(collectionName, docId) {
     try {
       const docRef = doc(db, collectionName, docId);
@@ -419,9 +358,6 @@ async function smartExtract(article) {
     } catch(e) { return { found: false, data: null, source: null }; }
   }
 
-  /**
-   * Cari dengan query where — coba sebagai string DAN number
-   */
   async function searchByField(collectionName, fieldName, value) {
     const results = [];
     
@@ -432,38 +368,13 @@ async function smartExtract(article) {
       if (!snap.empty) results.push({ data: { id: snap.docs[0].id, ...snap.docs[0].data() }, method: 'string' });
     } catch(e) { console.warn('search string error:', e.message); }
 
-    // Strategy 2: Exact match as number (jika value adalah angka)
+    // Strategy 2: Exact match as number
     if (!results.length && /^\d+$/.test(String(value))) {
       try {
         const q = query(collection(db, collectionName), where(fieldName, '==', Number(value)));
         const snap = await getDocs(q);
         if (!snap.empty) results.push({ data: { id: snap.docs[0].id, ...snap.docs[0].data() }, method: 'number' });
       } catch(e) { console.warn('search number error:', e.message); }
-    }
-
-    // Strategy 3: Coba field name variations (lowercase, uppercase)
-    if (!results.length) {
-      const fieldVariations = [
-        fieldName,
-        fieldName.toLowerCase(),
-        fieldName.toUpperCase(),
-        fieldName.charAt(0).toUpperCase() + fieldName.slice(1).toLowerCase(),
-        fieldName.replace(/_/g, ' '),
-        fieldName.replace(/ /g, '_')
-      ];
-      
-      for (const field of [...new Set(fieldVariations)]) {
-        if (field === fieldName) continue; // sudah dicoba
-        try {
-          const q = query(collection(db, collectionName), where(field, '==', String(value)));
-          const snap = await getDocs(q);
-          if (!snap.empty) {
-            console.log(`✅ Found with field name: "${field}"`);
-            results.push({ data: { id: snap.docs[0].id, ...snap.docs[0].data() }, method: `field:${field}` });
-            break;
-          }
-        } catch(e) { /* lanjut */ }
-      }
     }
 
     if (results.length) {
@@ -475,14 +386,12 @@ async function smartExtract(article) {
   async function findSizeUK(usSize, genderLabel) {
     if (!db || !usSize || !genderLabel) return '';
     try {
-      // Coba sebagai string
       let q = query(collection(db, 'SIZE'), where('US_Size', '==', String(usSize)), where('Gender', '==', genderLabel));
       let snap = await getDocs(q);
       if (!snap.empty) {
         const d = snap.docs[0].data();
         return d.UK_Size || d.Size_UK || d['UK_Size'] || '';
       }
-      // Coba sebagai number
       if (/^\d+$/.test(usSize)) {
         q = query(collection(db, 'SIZE'), where('US_Size', '==', Number(usSize)), where('Gender', '==', genderLabel));
         snap = await getDocs(q);
@@ -498,7 +407,7 @@ async function smartExtract(article) {
   async function findProductInfoByGeneric(generic) {
     if (!db || !generic) return { brandName: '', seasonYr: '', cat: '', merchCat: '' };
     
-    // Coba cari by ID dulu (paling cepat)
+    // Coba cari by ID dulu
     let result = await searchById('MASTER_PRODUK', generic);
     if (!result.found) {
       // Coba by field 'Article'
@@ -519,7 +428,7 @@ async function smartExtract(article) {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // MAIN SEARCH
+  // MAIN SEARCH - MENGGUNAKAN FIELD GENERIC DARI MASTER_BARCODE
   // ═══════════════════════════════════════════════════════════════
   async function searchBarcodeInMaster(barcode) {
     if (!db) return { found: false, error: 'Firebase tidak terhubung' };
@@ -546,15 +455,16 @@ async function smartExtract(article) {
       let result = await searchById('MASTER_BARCODE', barcodeStr);
       
       if (result.found) {
+        debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">✅ Doc ID match!</span></div>`);
         return await processFoundResult(result, barcodeStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
       }
 
-      // ═══ STRATEGY 2: Cari by field 'Barcode' (string & number) ═══
+      // ═══ STRATEGY 2: Cari by field 'Barcode' di MASTER_BARCODE ═══
       debugInfo.push(`<div class="db-item"><span class="db-label">Coba 2:</span><span class="db-value" style="color:var(--accent2);">where(Barcode == "${barcodeStr}")</span></div>`);
       result = await searchByField('MASTER_BARCODE', 'Barcode', barcodeStr);
       
       if (result.found) {
-        debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">${result.method}</span></div>`);
+        debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">✅ Field Barcode match (${result.method})</span></div>`);
         return await processFoundResult(result, barcodeStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
       }
 
@@ -563,55 +473,18 @@ async function smartExtract(article) {
       result = await searchByField('MASTER_BARCODE', 'Article', barcodeStr);
       
       if (result.found) {
-        debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">${result.method}</span></div>`);
-        const article = result.data.Article || result.data.article || barcodeStr;
-        result.data.Article = article;
-        result.data.Barcode = result.data.Barcode || barcodeStr;
+        debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">✅ Field Article match (${result.method})</span></div>`);
         return await processFoundResult(result, barcodeStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
-      }
-
-      // ═══ STRATEGY 4: Cari by Document ID di MASTER_PRODUK ═══
-      debugInfo.push(`<div class="db-item"><span class="db-label">Coba 4:</span><span class="db-value" style="color:var(--accent2);">getDoc(MASTER_PRODUK/${barcodeStr})</span></div>`);
-      result = await searchById('MASTER_PRODUK', barcodeStr);
-      
-      if (result.found) {
-        debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">getDoc MASTER_PRODUK</span></div>`);
-        result.data.Barcode = result.data.Barcode || barcodeStr;
-        result.data.Article = result.data.Article || barcodeStr;
-        return await processFoundResult(result, barcodeStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
-      }
-
-      // ═══ STRATEGY 5: Cari by Generic di MASTER_PRODUK ═══
-      const generic = extractGeneric(barcodeStr);
-      debugInfo.push(`<div class="db-item"><span class="db-label">Coba 5:</span><span class="db-value generic">Generic: "${generic}" → MASTER_PRODUK</span></div>`);
-      
-      if (generic && generic !== barcodeStr) {
-        // Coba by doc ID
-        result = await searchById('MASTER_PRODUK', generic);
-        if (!result.found) {
-          // Coba by field Article
-          result = await searchByField('MASTER_PRODUK', 'Article', generic);
-        }
-        
-        if (result.found) {
-          debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">Generic match!</span></div>`);
-          result.data.Barcode = result.data.Barcode || barcodeStr;
-          result.data.Article = result.data.Article || barcodeStr;
-          return await processFoundResult(result, barcodeStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
-        }
       }
 
       // ═══ TIDAK DITEMUKAN ═══
-      debugInfo.push(`<div class="db-item"><span class="db-label">Hasil:</span><span class="db-value" style="color:var(--red);">❌ Tidak ditemukan di semua strategi</span></div>`);
+      debugInfo.push(`<div class="db-item"><span class="db-label">Hasil:</span><span class="db-value" style="color:var(--red);">❌ Tidak ditemukan di MASTER_BARCODE</span></div>`);
       
       derivedContent.innerHTML = debugInfo.join('');
       derivedBox.classList.add('show');
       searchStatus.className = 'search-status not-found';
       searchSpinner.style.display = 'none';
-      searchStatusText.textContent = `❌ "${barcode}" tidak ditemukan (5 strategi dicoba)`;
-      
-      // Log untuk debugging
-      log(`DEBUG: "${barcode}" - 5 strategi gagal. Generic: ${generic}`, 'debug', 'scanLogBox');
+      searchStatusText.textContent = `❌ "${barcode}" tidak ditemukan di database`;
       
       return { found: false, data: null, source: null };
       
@@ -627,37 +500,75 @@ async function smartExtract(article) {
   }
 
   async function processFoundResult(result, barcode, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent) {
-  const article = result.data.Article || result.data.article || barcode;
-  
-  // Gunakan smartExtract yang otomatis mendeteksi
-  const { generic, sizeUS } = await smartExtract(article);
-  
-  const gender = extractGender(generic || article); // Gender dari generic
-  const sizeUK = sizeUS ? await findSizeUK(sizeUS, gender.label) : '';
-  const productInfo = await findProductInfoByGeneric(generic);
-  
-  debugInfo.push(`<div class="db-item"><span class="db-label">Article:</span><span class="db-value">${article}</span></div>`);
-  debugInfo.push(`<div class="db-item"><span class="db-label">→ Generic:</span><span class="db-value generic">${generic}</span></div>`);
-  debugInfo.push(`<div class="db-item"><span class="db-label">→ Size US:</span><span class="db-value">${sizeUS || '(generic)'}</span></div>`);
-  debugInfo.push(`<div class="db-item"><span class="db-label">→ Merch_Cat:</span><span class="db-value">${productInfo.merchCat || '-'}</span></div>`);
-  debugInfo.push(`<div class="db-item"><span class="db-label">→ CAT:</span><span class="db-value cat">${productInfo.cat || '-'}</span></div>`);
-  debugInfo.push(`<div class="db-item"><span class="db-label">→ Brand:</span><span class="db-value">${productInfo.brandName || '-'}</span></div>`);
-  debugInfo.push(`<div class="db-item"><span class="db-label">→ Season:</span><span class="db-value">${productInfo.seasonYr || '-'}</span></div>`);
-  
-  derivedContent.innerHTML = debugInfo.join('');
-  derivedBox.classList.add('show');
-  searchStatus.className = 'search-status found';
-  searchSpinner.style.display = 'none';
-  searchStatusText.textContent = `✅ Ditemukan | CAT:${productInfo.cat||'-'} Brand:${productInfo.brandName||'-'} Season:${productInfo.seasonYr||'-'}`;
-  
-  log(`✅ "${barcode}" ditemukan via ${result.method || 'getDoc'} | Article:${article} | Generic:${generic}`, 'ok', 'scanLogBox');
-  
-  return {
-    found: true,
-    data: { ...result.data, _derived: { sizeUS, sizeUK, gender, generic, ...productInfo, article } },
-    source: result.source
-  };
-}
+    const data = result.data;
+    
+    // AMBIL DATA DARI MASTER_BARCODE
+    const article = data.Article || data.article || barcode;
+    const generic = data.GENERIC || data.Generic || data.generic || '';
+    const sizeUS = data.Size_US || data['Size US'] || data.sizeUS || '';
+    const description = data.Description || data.description || data.DESCRIPTION || '';
+    const bin = data.BIN || data.bin || '';
+    
+    debugInfo.push(`<div class="db-item"><span class="db-label">Article:</span><span class="db-value">${article}</span></div>`);
+    debugInfo.push(`<div class="db-item"><span class="db-label">→ GENERIC (dari DB):</span><span class="db-value generic">${generic || '❌ TIDAK ADA'}</span></div>`);
+    debugInfo.push(`<div class="db-item"><span class="db-label">→ Size US (dari DB):</span><span class="db-value">${sizeUS || '❌ TIDAK ADA'}</span></div>`);
+    
+    // Jika generic tidak ada, coba fallback ke cara lama (potong 3 karakter)
+    let finalGeneric = generic;
+    let finalSizeUS = sizeUS;
+    
+    if (!finalGeneric && article.length > 3) {
+      finalGeneric = article.substring(0, article.length - 3);
+      finalSizeUS = finalSizeUS || article.slice(-3);
+      debugInfo.push(`<div class="db-item"><span class="db-label">⚠️ Fallback:</span><span class="db-value" style="color:#facc15;">Generic tidak ada, dipotong manual → ${finalGeneric}</span></div>`);
+    }
+    
+    // Cari info tambahan dari MASTER_PRODUK
+    const gender = extractGender(finalGeneric || article);
+    debugInfo.push(`<div class="db-item"><span class="db-label">→ Gender:</span><span class="db-value">${gender.label} (code: ${gender.code})</span></div>`);
+    
+    // Cari Size UK
+    const sizeUK = finalSizeUS ? await findSizeUK(finalSizeUS, gender.label) : '';
+    debugInfo.push(`<div class="db-item"><span class="db-label">→ Size UK:</span><span class="db-value">${sizeUK || '-'}</span></div>`);
+    
+    // Cari Product Info dari MASTER_PRODUK menggunakan GENERIC
+    const productInfo = await findProductInfoByGeneric(finalGeneric);
+    debugInfo.push(`<div class="db-item"><span class="db-label">→ Merch_Cat:</span><span class="db-value">${productInfo.merchCat || '-'}</span></div>`);
+    debugInfo.push(`<div class="db-item"><span class="db-label">→ CAT:</span><span class="db-value cat">${productInfo.cat || '-'}</span></div>`);
+    debugInfo.push(`<div class="db-item"><span class="db-label">→ Brand:</span><span class="db-value">${productInfo.brandName || '-'}</span></div>`);
+    debugInfo.push(`<div class="db-item"><span class="db-label">→ Season:</span><span class="db-value">${productInfo.seasonYr || '-'}</span></div>`);
+    
+    derivedContent.innerHTML = debugInfo.join('');
+    derivedBox.classList.add('show');
+    searchStatus.className = 'search-status found';
+    searchSpinner.style.display = 'none';
+    
+    const summaryParts = [];
+    if (productInfo.cat) summaryParts.push(`CAT:${productInfo.cat}`);
+    if (productInfo.brandName) summaryParts.push(`Brand:${productInfo.brandName}`);
+    if (productInfo.seasonYr) summaryParts.push(`Season:${productInfo.seasonYr}`);
+    searchStatusText.textContent = `✅ Ditemukan | ${summaryParts.join(' ') || 'Data tersedia'}`;
+    
+    log(`✅ "${barcode}" → Article:${article} | Generic:${finalGeneric} | Size:${finalSizeUS} | ${summaryParts.join(', ')}`, 'ok', 'scanLogBox');
+    
+    return {
+      found: true,
+      data: {
+        ...data,
+        _derived: {
+          article,
+          generic: finalGeneric,
+          sizeUS: finalSizeUS,
+          sizeUK,
+          gender,
+          description,
+          bin,
+          ...productInfo
+        }
+      },
+      source: result.source
+    };
+  }
 
   // ═══════════════════════════════════════════════════════════════
   // PAGE NAVIGATION
@@ -764,58 +675,71 @@ async function smartExtract(article) {
   window.handleBarcodeKeydown = async function(e) { if (e.key === 'Enter') { e.preventDefault(); await addScanData(); } };
 
   window.addScanData = async function() {
-  const barcodeInput = document.getElementById('scanBarcode');
-  const binInput = document.getElementById('scanBIN');
-  const barcode = barcodeInput.value.trim();
-  const binManual = binInput.value.trim();
-  const lokasi = document.getElementById('scanLokasi').value;
-  const user = document.getElementById('scanUser').value;
-  if (!barcode) { showToast('⚠️ Input barcode dulu', 'error'); barcodeInput.focus(); return; }
-  
-  barcodeInput.disabled = true; binInput.disabled = true;
-  const masterResult = await searchBarcodeInMaster(barcode);
-  const now = new Date(); let newRow;
-  
-  if (masterResult.found && masterResult.data) {
-    const md = masterResult.data; const d = md._derived || {};
-    newRow = {
-      id: Date.now().toString(36)+Math.random().toString(36).substring(2,6),
-      BARCODE: barcode, LOKASI: lokasi,
-      ARTICLE: d.article || md.Article || md.article || barcode,
-      BIN: binManual || md.BIN || md.bin || '',
-      SIZE_US: d.sizeUS || '',
-      SIZE_UK: d.sizeUK || '',
-      GENERIC: d.generic || '',
-      DESCRIPTION: md.Description || md.description || md.DESCRIPTION || '',
-      BRAND: d.brandName || '',
-      CAT: d.cat || '',
-      SEASON: d.seasonYr || '',
-      DATE: getTodayDate(), USER: user,
-      MERCH_CAT: d.merchCat || '',
-      timestamp: now.toISOString()
-    };
-    showToast(`✅ CAT:${d.cat||'-'} Brand:${d.brandName||'-'}`, 'success');
-  } else {
-    // Fallback: coba deteksi langsung
-    const { generic, sizeUS } = await smartExtract(barcode);
-    newRow = {
-      id: Date.now().toString(36)+Math.random().toString(36).substring(2,6),
-      BARCODE: barcode, LOKASI: lokasi, ARTICLE: barcode,
-      BIN: binManual, SIZE_US: sizeUS, SIZE_UK: '',
-      GENERIC: generic,
-      DESCRIPTION: '', BRAND: '', CAT: '', SEASON: String(now.getFullYear()),
-      DATE: getTodayDate(), USER: user, MERCH_CAT: '',
-      timestamp: now.toISOString()
-    };
-    showToast('⚠️ Tidak ditemukan di Master', 'error');
-  }
-  
-  scanDataArray.unshift(newRow); saveScanData();
-  barcodeInput.value = ''; binInput.value = '';
-  barcodeInput.disabled = false; binInput.disabled = false;
-  barcodeInput.focus();
-  renderScanTable(); updateScanStats();
-};
+    const barcodeInput = document.getElementById('scanBarcode');
+    const binInput = document.getElementById('scanBIN');
+    const barcode = barcodeInput.value.trim();
+    const binManual = binInput.value.trim();
+    const lokasi = document.getElementById('scanLokasi').value;
+    const user = document.getElementById('scanUser').value;
+    if (!barcode) { showToast('⚠️ Input barcode dulu', 'error'); barcodeInput.focus(); return; }
+    
+    barcodeInput.disabled = true; binInput.disabled = true;
+    const masterResult = await searchBarcodeInMaster(barcode);
+    const now = new Date(); let newRow;
+    
+    if (masterResult.found && masterResult.data) {
+      const md = masterResult.data; const d = md._derived || {};
+      newRow = {
+        id: Date.now().toString(36)+Math.random().toString(36).substring(2,6),
+        BARCODE: barcode,
+        LOKASI: lokasi,
+        ARTICLE: d.article || barcode,
+        BIN: binManual || d.bin || '',
+        SIZE_US: d.sizeUS || '',
+        SIZE_UK: d.sizeUK || '',
+        GENERIC: d.generic || '',
+        DESCRIPTION: d.description || '',
+        BRAND: d.brandName || '',
+        CAT: d.cat || '',
+        SEASON: d.seasonYr || '',
+        DATE: getTodayDate(),
+        USER: user,
+        MERCH_CAT: d.merchCat || '',
+        timestamp: now.toISOString()
+      };
+      const foundMsg = [];
+      if (d.cat) foundMsg.push(`CAT:${d.cat}`);
+      if (d.brandName) foundMsg.push(`Brand:${d.brandName}`);
+      showToast(`✅ ${foundMsg.join(' ') || 'Ditemukan'}`, 'success');
+    } else {
+      // Tidak ditemukan di master
+      newRow = {
+        id: Date.now().toString(36)+Math.random().toString(36).substring(2,6),
+        BARCODE: barcode,
+        LOKASI: lokasi,
+        ARTICLE: barcode,
+        BIN: binManual,
+        SIZE_US: '',
+        SIZE_UK: '',
+        GENERIC: '',
+        DESCRIPTION: '',
+        BRAND: '',
+        CAT: '',
+        SEASON: String(now.getFullYear()),
+        DATE: getTodayDate(),
+        USER: user,
+        MERCH_CAT: '',
+        timestamp: now.toISOString()
+      };
+      showToast('⚠️ Tidak ditemukan di Master', 'error');
+    }
+    
+    scanDataArray.unshift(newRow); saveScanData();
+    barcodeInput.value = ''; binInput.value = '';
+    barcodeInput.disabled = false; binInput.disabled = false;
+    barcodeInput.focus();
+    renderScanTable(); updateScanStats();
+  };
 
   function saveScanData() { localStorage.setItem('scan_data', JSON.stringify(scanDataArray)); }
 
@@ -830,7 +754,6 @@ async function smartExtract(article) {
     const row = scanDataArray.find(r => r.id === id); if (!row) return;
     const nv = prompt(`Edit ${field}:`, row[field] || ''); if (nv === null) return;
     row[field] = nv;
-    if (field === 'ARTICLE') { row.SIZE_US = extractSizeUS(nv); row.GENERIC = extractGeneric(nv); }
     saveScanData(); renderScanTable(); showToast('✅ Updated', 'success');
   };
 
