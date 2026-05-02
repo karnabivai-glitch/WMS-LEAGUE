@@ -69,9 +69,11 @@
     .btn-secondary{background:var(--border);color:var(--text);}
     .btn-success{background:var(--green);color:#fff;}
     .btn-warning{background:#eab308;color:#000;font-weight:700;}
-    .btn-reset{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-weight:700;font-size:0.8rem;padding:8px 16px;position:relative;}
-    .btn-reset:hover{background:linear-gradient(135deg,#818cf8,#a78bfa);}
-    .btn-reset:focus{outline:2px solid #a78bfa;outline-offset:2px;}
+    .btn-reset{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-weight:700;font-size:0.8rem;padding:8px 16px;position:relative;transition:all 0.2s;}
+    .btn-reset:hover{background:linear-gradient(135deg,#818cf8,#a78bfa);transform:scale(1.03);}
+    .btn-reset:focus{outline:3px solid #a78bfa;outline-offset:3px;box-shadow:0 0 15px rgba(139,92,246,.6);}
+    .btn-recall{background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-weight:600;font-size:0.75rem;padding:6px 12px;}
+    .btn-recall:hover{background:linear-gradient(135deg,#34d399,#10b981);}
     .btn-unlock{background:linear-gradient(135deg,#ef4444,#f97316);color:#fff;font-weight:700;animation:pulse-unlock 1.5s ease-in-out infinite;}
     @keyframes pulse-unlock {
       0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.6);}
@@ -110,20 +112,20 @@
     .scan-input-group input.input-bin { min-width: 100px; text-align: center; font-weight: 600; color: #a78bfa; text-transform: uppercase; }
     .input-hint { font-size: 0.65rem; color: var(--muted); margin-top: 2px; }
     
-    /* BIN Change Warning */
-    .bin-change-warning {
+    /* Recall status */
+    .recall-status {
       display: none;
-      background: rgba(234, 179, 8, 0.15);
-      border: 1px solid rgba(234, 179, 8, 0.4);
-      border-radius: 8px;
-      padding: 10px 14px;
-      margin-top: 8px;
-      font-size: 0.78rem;
-      color: #facc15;
-      animation: fadeIn 0.3s ease-out;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      margin-top: 6px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
     }
-    .bin-change-warning.show { display: block; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .recall-status.show { display: flex; }
     
     /* LOCKED STATE */
     .scan-input-group input.locked-input {
@@ -195,7 +197,7 @@
     .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid transparent; border-top-color: currentColor; border-radius: 50%; animation: spin 0.6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     
-    /* STATS - Total Scan & Qty BIN Sesi Ini */
+    /* STATS */
     .scan-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
     .stat-box { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px; text-align: center; }
     .stat-box .stat-val { font-size: 1.5rem; font-weight: 700; color: var(--accent2); }
@@ -205,7 +207,6 @@
     .stat-box.session { border-color: #6366f1; }
     .stat-box.session .stat-val { color: #818cf8; }
     
-    /* Session indicator */
     .session-badge {
       display: inline-flex;
       align-items: center;
@@ -345,7 +346,7 @@
         <div class="scan-input-group" style="flex:1;min-width:100px;">
           <label>📦 BIN</label>
           <input type="text" id="scanBIN" class="input-bin" placeholder="D1" oninput="autoUppercase(this)" onchange="onBinChange()" />
-          <span class="input-hint">Ganti BIN = sesi baru (data tetap tersimpan)</span>
+          <span class="input-hint">Ketik BIN = recall data</span>
         </div>
         <div class="scan-input-group" style="flex:1;min-width:130px;">
           <label>📍 Lokasi</label>
@@ -358,17 +359,20 @@
         <button class="btn btn-primary" id="btnAddScan" onclick="addScanData()" style="height:44px;white-space:nowrap;">➕ Tambah</button>
       </div>
       
-      <!-- Tombol Reset Sesi -->
+      <!-- Tombol Reset & Recall -->
       <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <button class="btn btn-reset" id="btnResetSession" onclick="resetSession()" title="Shortcut: \ (backslash)">
-          🔄 Reset Penghitungan <span class="session-badge">\</span>
+          🔄 Reset Sesi <span class="session-badge">\</span>
         </button>
-        <span style="font-size:0.7rem;color:var(--muted);">Shortcut <strong>\</strong> = reset counter sesi ini | Data aman tersimpan</span>
+        <button class="btn btn-recall" id="btnRecall" onclick="recallBinData()" title="Recall data BIN">
+          📋 Recall BIN
+        </button>
+        <span style="font-size:0.7rem;color:var(--muted);"><strong>\</strong> = reset sesi | Ketik BIN = auto-recall</span>
       </div>
       
-      <!-- BIN Change Warning -->
-      <div class="bin-change-warning" id="binChangeWarning">
-        ⚠️ BIN berubah menjadi <strong id="newBinLabel">-</strong>. Tabel dikosongkan untuk sesi baru. Data sebelumnya tetap tersimpan.
+      <!-- Recall Status -->
+      <div class="recall-status" id="recallStatus">
+        📋 Menampilkan data BIN: <strong id="recallBinLabel">-</strong> (<span id="recallCount">0</span> item)
       </div>
       
       <!-- LOCK OVERLAY -->
@@ -392,14 +396,13 @@
       </div>
       
       <div style="margin-top:12px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
-        <span style="font-size:0.75rem;color:var(--muted);">💡 <strong>Enter</strong> = scan</span>
-        <span style="font-size:0.75rem;color:var(--muted);">| <strong>\</strong> = reset counter</span>
+        <span style="font-size:0.75rem;color:var(--muted);">💡 <strong>Enter</strong> = scan | <strong>\</strong> = reset</span>
         <span style="font-size:0.75rem;color:var(--muted);">| ⛔ Tidak ditemukan = LOCK</span>
         <span style="font-size:0.75rem;">DB: <strong id="firestoreStatus">-</strong></span>
       </div>
     </div>
 
-    <!-- STATS: Total All Data, Sesi Sekarang, Qty BIN Sesi Ini -->
+    <!-- STATS -->
     <div class="scan-stats">
       <div class="stat-box">
         <div class="stat-val" id="statTotalAll">0</div>
@@ -419,7 +422,7 @@
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
         <h2 style="margin:0;">
           <span class="step-tag">📋</span> 
-          Data Scan Sesi Ini 
+          Data Scan 
           <span class="badge badge-green" id="rowCount">0 row</span>
           <span class="session-badge" style="margin-left:4px;">BIN: <strong id="currentBinBadge">-</strong></span>
         </h2>
@@ -440,7 +443,7 @@
           <tbody id="scanTableBody">
             <tr class="empty-state"><td colspan="14">
               <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-              <p>Belum ada data scan sesi ini.</p>
+              <p>Ketik BIN untuk recall data</p>
             </td></tr>
           </tbody>
         </table>
@@ -466,12 +469,11 @@
   let parsedSheets = {};
   
   // DATA STORAGE
-  let scanDataArray = [];        // Semua data yang sudah di-scan (tersimpan permanen)
-  let currentSessionData = [];   // Data sesi saat ini (untuk tampilan tabel)
+  let scanDataArray = [];        // Semua data permanen
+  let currentSessionData = [];   // Data sesi saat ini (hanya counter, data sudah di scanDataArray)
   let currentBin = '';           // BIN saat ini
   let isLocked = false;
   let rejectedArticle = '';
-  let previousBin = '';          // BIN sebelumnya (untuk deteksi perubahan)
 
   // ═══════════════════════════════════════════════════════════════
   // HELPER FUNCTIONS
@@ -516,41 +518,63 @@
   };
 
   // ═══════════════════════════════════════════════════════════════
-  // BIN CHANGE HANDLER
+  // BIN CHANGE HANDLER - Auto recall data BIN
   // ═══════════════════════════════════════════════════════════════
   window.onBinChange = function() {
     const binInput = document.getElementById('scanBIN');
     const newBin = binInput.value.trim().toUpperCase();
     
-    // Jika BIN berubah dan ada data di sesi sebelumnya
-    if (previousBin && newBin !== previousBin && currentSessionData.length > 0) {
-      // Tampilkan warning
-      document.getElementById('newBinLabel').textContent = newBin;
-      document.getElementById('binChangeWarning').classList.add('show');
-      setTimeout(() => {
-        document.getElementById('binChangeWarning').classList.remove('show');
-      }, 4000);
-      
-      // Simpan data sesi sebelumnya ke array utama
-      // (sudah otomatis tersimpan karena setiap scan langsung ke scanDataArray)
-      
-      // Reset sesi untuk BIN baru
-      currentSessionData = [];
+    if (newBin && newBin !== currentBin) {
       currentBin = newBin;
-      previousBin = newBin;
-      
-      renderScanTable();
-      updateScanStats();
-      
-      log(`🔄 BIN berubah ke "${newBin}". Sesi baru dimulai. Data sebelumnya tersimpan.`, 'info', 'scanLogBox');
-      showToast(`📦 BIN "${newBin}" - Sesi baru dimulai`, 'info');
-    } else if (!previousBin) {
-      // Pertama kali set BIN
-      previousBin = newBin;
-      currentBin = newBin;
-      updateScanStats();
+      // Recall data BIN ini
+      recallBinDataInternal(newBin);
+      log(`📋 BIN "${newBin}" - Data di-recall`, 'info', 'scanLogBox');
     }
   };
+
+  // ═══════════════════════════════════════════════════════════════
+  // RECALL BIN DATA
+  // ═══════════════════════════════════════════════════════════════
+  
+  window.recallBinData = function() {
+    const binInput = document.getElementById('scanBIN');
+    const bin = binInput.value.trim().toUpperCase();
+    if (!bin) {
+      showToast('⚠️ Ketik BIN dulu', 'error');
+      return;
+    }
+    currentBin = bin;
+    recallBinDataInternal(bin);
+  };
+  
+  function recallBinDataInternal(bin) {
+    // Filter data dari scanDataArray yang BIN-nya sama
+    const binData = scanDataArray.filter(r => r.BIN === bin);
+    
+    // Set sebagai current session data
+    currentSessionData = [...binData];
+    
+    // Update tampilan
+    renderScanTable();
+    updateScanStats();
+    
+    // Tampilkan recall status
+    const recallStatus = document.getElementById('recallStatus');
+    document.getElementById('recallBinLabel').textContent = bin;
+    document.getElementById('recallCount').textContent = binData.length;
+    
+    if (binData.length > 0) {
+      recallStatus.classList.add('show');
+      showToast(`📋 ${binData.length} data BIN "${bin}" ditampilkan`, 'info');
+    } else {
+      recallStatus.classList.add('show');
+      showToast(`📭 BIN "${bin}" kosong - siap scan baru`, 'info');
+    }
+    
+    // Update input BIN
+    document.getElementById('scanBIN').value = bin;
+    document.getElementById('scanBarcode').focus();
+  }
 
   // ═══════════════════════════════════════════════════════════════
   // LOCK / UNLOCK FUNCTIONS
@@ -575,10 +599,10 @@
     searchStatus.className = 'search-status locked-status';
     searchStatus.style.display = 'flex';
     document.getElementById('searchSpinner').style.display = 'none';
-    document.getElementById('searchStatusText').textContent = `🔒 LOCKED! "${article}" tidak ada di Master. Perbaiki artikel lalu klik BUKA KUNCI.`;
+    document.getElementById('searchStatusText').textContent = `🔒 LOCKED! "${article}" tidak ada di Master.`;
     
-    log(`🔒 LOCKED: "${article}" tidak ditemukan di Master. Scan dikunci.`, 'err', 'scanLogBox');
-    showToast('🔒 SCAN TERKUNCI! Perbaiki Master lalu buka kunci', 'error');
+    log(`🔒 LOCKED: "${article}"`, 'err', 'scanLogBox');
+    showToast('🔒 SCAN TERKUNCI!', 'error');
   }
   
   window.unlockScan = function() {
@@ -598,22 +622,22 @@
     document.getElementById('scanBarcode').value = '';
     document.getElementById('scanBarcode').focus();
     
-    log('🔓 UNLOCKED: Scan dibuka kembali', 'info', 'scanLogBox');
-    showToast('🔓 Scan dibuka! Silakan lanjutkan', 'success');
+    log('🔓 UNLOCKED', 'info', 'scanLogBox');
+    showToast('🔓 Scan dibuka!', 'success');
   };
 
   // ═══════════════════════════════════════════════════════════════
-  // RESET SESI (Reset counter saja, data tetap aman)
+  // RESET SESI - Hanya reset counter "Sesi Ini", Qty BIN tetap
   // ═══════════════════════════════════════════════════════════════
   
   window.resetSession = function() {
-    if (currentSessionData.length === 0) {
+    const sessionCount = currentSessionData.length;
+    
+    if (sessionCount === 0) {
       showToast('📭 Sesi ini sudah kosong', 'info');
       document.getElementById('scanBarcode').focus();
       return;
     }
-    
-    const sessionCount = currentSessionData.length;
     
     // Reset sesi (data tetap di scanDataArray)
     currentSessionData = [];
@@ -621,14 +645,18 @@
     renderScanTable();
     updateScanStats();
     
-    showToast(`🔄 Counter direset! ${sessionCount} scan di sesi ini. Data aman tersimpan.`, 'info');
-    log(`🔄 RESET COUNTER: ${sessionCount} scan sesi ini. Data tetap tersimpan di array utama.`, 'info', 'scanLogBox');
+    showToast(`🔄 Sesi direset! Qty BIN "${currentBin}": ${getQtyBinFromAll()} | Data aman.`, 'info');
+    log(`🔄 RESET: ${sessionCount} scan sesi ini. Qty BIN ${currentBin}: ${getQtyBinFromAll()}`, 'info', 'scanLogBox');
     
     document.getElementById('scanBarcode').focus();
   };
+  
+  function getQtyBinFromAll() {
+    return scanDataArray.filter(r => r.BIN === currentBin).length;
+  }
 
   // ═══════════════════════════════════════════════════════════════
-  // SHORTCUT KEY HANDLER - \ untuk reset sesi
+  // SHORTCUT KEY HANDLER - \ fokus ke tombol reset
   // ═══════════════════════════════════════════════════════════════
   
   document.addEventListener('keydown', function(e) {
@@ -636,33 +664,33 @@
     if (!scanPage.classList.contains('active')) return;
     
     if (e.key === '\\') {
-      // Cegah default (terutama jika di input)
-      e.preventDefault();
-      
       const activeEl = document.activeElement;
       
-      // Jika fokus di input barcode, tetap biarkan ketik backslash
+      // Jika fokus di input barcode, izinkan ketik backslash
       if (activeEl === document.getElementById('scanBarcode')) {
-        // Kembalikan karakter backslash ke input
-        const barcodeInput = document.getElementById('scanBarcode');
-        const start = barcodeInput.selectionStart;
-        const end = barcodeInput.selectionEnd;
-        const val = barcodeInput.value;
-        barcodeInput.value = val.substring(0, start) + '\\' + val.substring(end);
-        barcodeInput.selectionStart = barcodeInput.selectionEnd = start + 1;
-        return;
+        return; // Biarkan backslash diketik normal
       }
       
-      // Pindahkan fokus ke tombol reset dan klik
+      // Jika fokus di input BIN, izinkan ketik backslash
+      if (activeEl === document.getElementById('scanBIN')) {
+        return; // Biarkan backslash diketik normal
+      }
+      
+      // Selain di input, fokus ke tombol reset
+      e.preventDefault();
       const btnReset = document.getElementById('btnResetSession');
       if (btnReset) {
         btnReset.focus();
-        btnReset.click();
-        // Kembalikan fokus ke barcode setelah reset
-        setTimeout(() => {
-          document.getElementById('scanBarcode').focus();
-        }, 100);
+        // Jangan auto-klik, biarkan user menekan Enter/Space untuk reset
+        showToast('🔄 Tekan Enter/Space untuk reset sesi', 'info');
       }
+    }
+    
+    // Jika tombol reset sedang fokus, Enter/Space untuk reset
+    if ((e.key === 'Enter' || e.key === ' ') && document.activeElement === document.getElementById('btnResetSession')) {
+      e.preventDefault();
+      resetSession();
+      document.getElementById('scanBarcode').focus();
     }
   });
 
@@ -768,94 +796,58 @@
     const inputIsBarcode = isBarcodeFormat(inputStr);
     
     debugInfo.push(`<div class="db-item"><span class="db-label">Input:</span><span class="db-value">"${inputStr}"</span></div>`);
-    debugInfo.push(`<div class="db-item"><span class="db-label">Tipe:</span><span class="db-value" style="color:var(--accent2);">${inputIsBarcode ? 'Barcode (numeric)' : 'Article (alpha-numeric)'}</span></div>`);
+    debugInfo.push(`<div class="db-item"><span class="db-label">Tipe:</span><span class="db-value" style="color:var(--accent2);">${inputIsBarcode ? 'Barcode' : 'Article'}</span></div>`);
 
     try {
       let result;
 
       if (inputIsBarcode) {
-        debugInfo.push(`<div class="db-item"><span class="db-label">Coba 1:</span><span class="db-value" style="color:var(--accent2);">getDoc(MASTER_BARCODE/${inputStr})</span></div>`);
         result = await searchById('MASTER_BARCODE', inputStr);
-        if (result.found) {
-          debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">✅ Doc ID match!</span></div>`);
-          return await processFoundResult(result, inputStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
-        }
+        if (result.found) return await processFoundResult(result, inputStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
 
-        debugInfo.push(`<div class="db-item"><span class="db-label">Coba 2:</span><span class="db-value" style="color:var(--accent2);">where(Barcode == "${inputStr}")</span></div>`);
         result = await searchByField('MASTER_BARCODE', 'Barcode', inputStr);
-        if (result.found) {
-          debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">✅ Field Barcode match</span></div>`);
-          return await processFoundResult(result, inputStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
-        }
-
+        if (result.found) return await processFoundResult(result, inputStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
       } else {
-        debugInfo.push(`<div class="db-item"><span class="db-label">Coba 1:</span><span class="db-value" style="color:var(--accent2);">getDoc(MASTER_BARCODE/${inputStr})</span></div>`);
         result = await searchById('MASTER_BARCODE', inputStr);
-        if (result.found) {
-          debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">✅ Doc ID match (Article as ID)!</span></div>`);
-          return await processFoundResult(result, inputStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
-        }
+        if (result.found) return await processFoundResult(result, inputStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
 
-        debugInfo.push(`<div class="db-item"><span class="db-label">Coba 2:</span><span class="db-value" style="color:var(--accent2);">where(Article == "${inputStr}") di MASTER_BARCODE</span></div>`);
         result = await searchByField('MASTER_BARCODE', 'Article', inputStr);
-        if (result.found) {
-          debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">✅ Field Article match di MASTER_BARCODE!</span></div>`);
-          return await processFoundResult(result, inputStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
-        }
+        if (result.found) return await processFoundResult(result, inputStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
 
-        debugInfo.push(`<div class="db-item"><span class="db-label">Coba 3:</span><span class="db-value" style="color:var(--accent2);">getDoc(MASTER_PRODUK/${inputStr})</span></div>`);
         result = await searchById('MASTER_PRODUK', inputStr);
         if (result.found) {
-          debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">✅ Found in MASTER_PRODUK (Generic)!</span></div>`);
           result.data.Article = result.data.Article || inputStr;
           result.data.Barcode = result.data.Barcode || inputStr;
           return await processFoundResult(result, inputStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
         }
 
-        debugInfo.push(`<div class="db-item"><span class="db-label">Coba 4:</span><span class="db-value" style="color:var(--accent2);">where(Article == "${inputStr}") di MASTER_PRODUK</span></div>`);
         result = await searchByField('MASTER_PRODUK', 'Article', inputStr);
         if (result.found) {
-          debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">✅ Field Article match di MASTER_PRODUK!</span></div>`);
           result.data.Barcode = result.data.Barcode || inputStr;
           return await processFoundResult(result, inputStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
         }
 
         if (inputStr.length > 3) {
-          const possibleGeneric = inputStr.substring(0, inputStr.length - 3);
-          debugInfo.push(`<div class="db-item"><span class="db-label">Coba 5:</span><span class="db-value" style="color:var(--accent2);">Potong 3 char → "${possibleGeneric}" → MASTER_PRODUK</span></div>`);
-          
-          result = await searchById('MASTER_PRODUK', possibleGeneric);
-          if (!result.found) {
-            result = await searchByField('MASTER_PRODUK', 'Article', possibleGeneric);
-          }
-          
+          const generic = inputStr.substring(0, inputStr.length - 3);
+          result = await searchById('MASTER_PRODUK', generic);
+          if (!result.found) result = await searchByField('MASTER_PRODUK', 'Article', generic);
           if (result.found) {
-            debugInfo.push(`<div class="db-item"><span class="db-label">Method:</span><span class="db-value" style="color:var(--green);">✅ Generic dari potongan article ditemukan!</span></div>`);
             result.data.Article = result.data.Article || inputStr;
             result.data.Barcode = result.data.Barcode || inputStr;
-            result.data.GENERIC = result.data.GENERIC || possibleGeneric;
+            result.data.GENERIC = result.data.GENERIC || generic;
             return await processFoundResult(result, inputStr, debugInfo, searchStatus, searchStatusText, searchSpinner, derivedBox, derivedContent);
           }
         }
       }
 
-      debugInfo.push(`<div class="db-item"><span class="db-label">Hasil:</span><span class="db-value" style="color:var(--red);">❌ Tidak ditemukan di semua strategi</span></div>`);
-      
       derivedContent.innerHTML = debugInfo.join('');
       derivedBox.classList.add('show');
       searchStatus.className = 'search-status not-found';
       searchSpinner.style.display = 'none';
-      searchStatusText.textContent = `⛔ "${inputStr}" TIDAK ADA di Master — SCAN DIKUNCI!`;
-      
+      searchStatusText.textContent = `⛔ "${inputStr}" TIDAK ADA di Master`;
       return { found: false, data: null, source: null };
       
     } catch(err) {
-      debugInfo.push(`<div class="db-item"><span class="db-label">Error:</span><span class="db-value" style="color:var(--red);">${err.message}</span></div>`);
-      derivedContent.innerHTML = debugInfo.join('');
-      derivedBox.classList.add('show');
-      searchStatus.className = 'search-status not-found';
-      searchSpinner.style.display = 'none';
-      searchStatusText.textContent = `❌ Error: ${err.message}`;
       return { found: false, error: err.message };
     }
   }
@@ -867,74 +859,43 @@
     const description = data.Description || data.description || data.DESCRIPTION || '';
     const bin = data.BIN || data.bin || '';
     
-    debugInfo.push(`<div class="db-item"><span class="db-label">Article:</span><span class="db-value article-input">${article}</span></div>`);
-    debugInfo.push(`<div class="db-item"><span class="db-label">→ GENERIC (dari DB):</span><span class="db-value generic">${generic || '❌ TIDAK ADA'}</span></div>`);
-    
     let finalGeneric = generic;
     if (!finalGeneric && article.length > 3) {
       finalGeneric = article.substring(0, article.length - 3);
-      debugInfo.push(`<div class="db-item"><span class="db-label">⚠️ Fallback:</span><span class="db-value" style="color:#facc15;">Generic tidak ada, dipotong manual → ${finalGeneric}</span></div>`);
     }
     
     const productInfo = await findProductInfoByGeneric(finalGeneric);
-    debugInfo.push(`<div class="db-item"><span class="db-label">→ Merch_Cat:</span><span class="db-value">${productInfo.merchCat || '-'}</span></div>`);
-    debugInfo.push(`<div class="db-item"><span class="db-label">→ CAT:</span><span class="db-value cat">${productInfo.cat || '-'}</span></div>`);
     
     let sizeUS = '';
     let sizeUK = '';
     let gender = { code: '', label: '' };
     
-    if (productInfo.cat === 'E') {
-      debugInfo.push(`<div class="db-item"><span class="db-label">→ CAT E:</span><span class="db-value equipment">Equipment - Tidak ada Size</span></div>`);
-    } else {
+    if (productInfo.cat !== 'E') {
       sizeUS = extractSizeUS(article, productInfo.cat);
-      debugInfo.push(`<div class="db-item"><span class="db-label">→ Size US (3 char terakhir):</span><span class="db-value">${sizeUS || '-'}</span></div>`);
-      
       gender = extractGender(article);
-      debugInfo.push(`<div class="db-item"><span class="db-label">→ Gender (digit 1):</span><span class="db-value">${gender.label} (code: ${gender.code})</span></div>`);
-      
       if (sizeUS && gender.label) {
         sizeUK = await findSizeUK(sizeUS, gender.label);
-        debugInfo.push(`<div class="db-item"><span class="db-label">→ Size UK:</span><span class="db-value">${sizeUK || '❌ Tidak ditemukan'}</span></div>`);
       }
     }
     
-    debugInfo.push(`<div class="db-item"><span class="db-label">→ Brand:</span><span class="db-value">${productInfo.brandName || '-'}</span></div>`);
-    debugInfo.push(`<div class="db-item"><span class="db-label">→ Season:</span><span class="db-value">${productInfo.seasonYr || '-'}</span></div>`);
+    debugInfo.push(`<div class="db-item"><span class="db-label">Article:</span><span class="db-value article-input">${article}</span></div>`);
+    debugInfo.push(`<div class="db-item"><span class="db-label">Generic:</span><span class="db-value generic">${finalGeneric || '-'}</span></div>`);
+    debugInfo.push(`<div class="db-item"><span class="db-label">Size US:</span><span class="db-value">${sizeUS || (productInfo.cat==='E'?'Equipment':'-')}</span></div>`);
+    debugInfo.push(`<div class="db-item"><span class="db-label">Size UK:</span><span class="db-value">${sizeUK || '-'}</span></div>`);
+    debugInfo.push(`<div class="db-item"><span class="db-label">CAT:</span><span class="db-value cat">${productInfo.cat || '-'}</span></div>`);
+    debugInfo.push(`<div class="db-item"><span class="db-label">Brand:</span><span class="db-value">${productInfo.brandName || '-'}</span></div>`);
     
     derivedContent.innerHTML = debugInfo.join('');
     derivedBox.classList.add('show');
     searchStatus.className = 'search-status found';
     searchSpinner.style.display = 'none';
-    
-    const summaryParts = [];
-    if (productInfo.cat === 'E') {
-      summaryParts.push('Equipment');
-    } else {
-      if (sizeUS) summaryParts.push(`Size:${sizeUS}`);
-      if (sizeUK) summaryParts.push(`UK:${sizeUK}`);
-    }
-    if (productInfo.cat) summaryParts.push(`CAT:${productInfo.cat}`);
-    if (productInfo.brandName) summaryParts.push(`Brand:${productInfo.brandName}`);
-    if (productInfo.seasonYr) summaryParts.push(`Season:${productInfo.seasonYr}`);
-    searchStatusText.textContent = `✅ Ditemukan | ${summaryParts.join(' ') || 'Data tersedia'}`;
-    
-    log(`✅ "${input}" → Article:${article} | Generic:${finalGeneric} | Size:${sizeUS||'N/A'} | CAT:${productInfo.cat||'-'}`, 'ok', 'scanLogBox');
+    searchStatusText.textContent = `✅ ${article} | Size:${sizeUS||'N/A'} | CAT:${productInfo.cat||'-'}`;
     
     return {
       found: true,
       data: {
         ...data,
-        _derived: {
-          article,
-          generic: finalGeneric,
-          sizeUS,
-          sizeUK,
-          gender,
-          description,
-          bin,
-          ...productInfo
-        }
+        _derived: { article, generic: finalGeneric, sizeUS, sizeUK, gender, description, bin, ...productInfo }
       },
       source: result.source
     };
@@ -961,7 +922,7 @@
   function showToast(msg, type = 'info') {
     const toast = document.getElementById('toast');
     toast.textContent = msg; toast.className = `toast ${type}`; toast.style.display = 'block';
-    setTimeout(() => { toast.style.display = 'none'; }, 4000);
+    setTimeout(() => { toast.style.display = 'none'; }, 3500);
   }
 
   function formatDate(d) { const dd = new Date(d); return `${String(dd.getDate()).padStart(2,'0')}/${String(dd.getMonth()+1).padStart(2,'0')}/${dd.getFullYear()}`; }
@@ -1037,7 +998,6 @@
   const savedKey = localStorage.getItem('fb_api_key');
   if (savedKey) { document.getElementById('cfgApiKey').value = savedKey; initFirebase(); }
   
-  // Load data dari localStorage
   const saved = localStorage.getItem('scan_data');
   if (saved) { try { scanDataArray = JSON.parse(saved); } catch(e) { scanDataArray = []; } }
 
@@ -1072,23 +1032,16 @@
       return; 
     }
     
-    // Update currentBin jika berubah
+    if (!binManual) {
+      showToast('⚠️ Isi BIN dulu', 'error');
+      binInput.focus();
+      return;
+    }
+    
+    // Jika BIN berbeda dari currentBin, recall data BIN baru
     if (binManual !== currentBin) {
-      if (currentBin && currentSessionData.length > 0) {
-        // BIN berubah, warning
-        document.getElementById('newBinLabel').textContent = binManual;
-        document.getElementById('binChangeWarning').classList.add('show');
-        setTimeout(() => {
-          document.getElementById('binChangeWarning').classList.remove('show');
-        }, 4000);
-        
-        // Reset sesi
-        currentSessionData = [];
-        renderScanTable();
-        log(`🔄 BIN berubah ke "${binManual}". Sesi baru dimulai.`, 'info', 'scanLogBox');
-      }
-      previousBin = currentBin;
       currentBin = binManual;
+      recallBinDataInternal(binManual);
     }
     
     barcodeInput.disabled = true; 
@@ -1106,7 +1059,7 @@
         BARCODE: barcode,
         LOKASI: lokasi,
         ARTICLE: d.article || barcode,
-        BIN: binManual || d.bin || '',
+        BIN: binManual,
         SIZE_US: d.sizeUS || '',
         SIZE_UK: d.sizeUK || '',
         GENERIC: d.generic || '',
@@ -1117,13 +1070,12 @@
         DATE: getTodayDate(),
         USER: user,
         MERCH_CAT: d.merchCat || '',
-        timestamp: now.toISOString(),
-        sessionBin: currentBin  // Tag BIN sesi
+        timestamp: now.toISOString()
       };
       
-      // Simpan ke array utama (permanen)
+      // Simpan ke array utama
       scanDataArray.unshift(newRow);
-      // Simpan ke sesi saat ini (untuk tampilan)
+      // Simpan ke sesi saat ini
       currentSessionData.unshift(newRow);
       
       saveScanData();
@@ -1134,7 +1086,6 @@
       if (d.cat === 'E') foundMsg.push('Equipment');
       else if (d.sizeUS) foundMsg.push(`Size:${d.sizeUS}`);
       if (d.cat) foundMsg.push(`CAT:${d.cat}`);
-      if (d.brandName) foundMsg.push(`Brand:${d.brandName}`);
       showToast(`✅ ${foundMsg.join(' ') || 'Ditemukan'}`, 'success');
       
       barcodeInput.value = '';
@@ -1150,16 +1101,12 @@
     barcodeInput.focus();
   };
 
-  function saveScanData() { 
-    localStorage.setItem('scan_data', JSON.stringify(scanDataArray)); 
-  }
+  function saveScanData() { localStorage.setItem('scan_data', JSON.stringify(scanDataArray)); }
 
   window.deleteScanRow = function(id) {
-    if (!confirm('Hapus dari sesi ini?')) return;
+    if (!confirm('Hapus data ini?')) return;
     
-    // Hapus dari sesi
     currentSessionData = currentSessionData.filter(r => r.id !== id);
-    // Hapus dari array utama
     scanDataArray = scanDataArray.filter(r => r.id !== id);
     
     saveScanData();
@@ -1169,11 +1116,8 @@
   };
 
   window.editScanCell = function(id, field) {
-    // Cari di currentSessionData dulu
     let row = currentSessionData.find(r => r.id === id);
-    if (!row) {
-      row = scanDataArray.find(r => r.id === id);
-    }
+    if (!row) row = scanDataArray.find(r => r.id === id);
     if (!row) return;
     
     const nv = prompt(`Edit ${field}:`, row[field] || ''); 
@@ -1188,23 +1132,27 @@
 
   window.clearScanData = function() {
     if (!scanDataArray.length) { showToast('📭 Kosong', 'info'); return; }
-    if (!confirm(`Hapus SEMUA ${scanDataArray.length} data?\n\nIni akan menghapus SELURUH data scan yang tersimpan.`)) return;
+    if (!confirm(`Hapus SEMUA ${scanDataArray.length} data?\n\nIni PERMANEN!`)) return;
     
     scanDataArray = [];
     currentSessionData = [];
     currentBin = '';
-    previousBin = '';
     
     saveScanData(); 
     renderScanTable(); 
     updateScanStats();
-    showToast('🗑 Semua data dihapus', 'info');
+    
+    document.getElementById('recallStatus').classList.remove('show');
+    document.getElementById('scanBIN').value = '';
+    
+    showToast('🗑 Semua data dihapus permanen', 'info');
   };
 
   function updateScanStats() {
     const totalAll = scanDataArray.length;
     const sessionCount = currentSessionData.length;
-    const qtyBin = currentSessionData.filter(r => r.BIN === currentBin).length;
+    // Qty BIN dihitung dari scanDataArray (semua data), bukan dari sesi
+    const qtyBin = scanDataArray.filter(r => r.BIN === currentBin).length;
     
     document.getElementById('statTotalAll').textContent = totalAll.toLocaleString();
     document.getElementById('statSession').textContent = sessionCount.toLocaleString();
@@ -1217,11 +1165,11 @@
   function renderScanTable() {
     const tbody = document.getElementById('scanTableBody');
     
-    // Hanya tampilkan data sesi saat ini
     if (!currentSessionData.length) {
       tbody.innerHTML = `<tr class="empty-state"><td colspan="14">
         <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-        <p>Belum ada data scan sesi ini. <br><small style="color:var(--muted);">Total data tersimpan: ${scanDataArray.length.toLocaleString()}</small></p>
+        <p>Ketik BIN untuk recall data</p>
+        <small style="color:var(--muted);">Total data tersimpan: ${scanDataArray.length.toLocaleString()}</small>
       </td></tr>`;
       return;
     }
@@ -1247,7 +1195,6 @@
   }
 
   window.exportScanToExcel = function() {
-    // Export SEMUA data (bukan hanya sesi ini)
     if (!scanDataArray.length) { showToast('📭 Kosong', 'error'); return; }
     const data = scanDataArray.map(r => ({
       BARCODE:r.BARCODE,LOKASI:r.LOKASI,ARTICLE:r.ARTICLE,BIN:r.BIN,
