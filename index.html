@@ -230,6 +230,17 @@
     .firebase-status { font-size: 0.55rem; padding: 2px 5px; border-radius: 4px; }
     .firebase-status.online { background: #14532d33; color: var(--green); }
     .firebase-status.offline { background: #7f1d1d33; color: var(--red); }
+
+    .storage-status-bar {
+      display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+      justify-content: center; margin-bottom: 2px;
+    }
+    .idb-status { font-size: 0.55rem; padding: 2px 5px; border-radius: 4px; background: #1e3a5f33; color: var(--accent2); }
+    .sync-status { font-size: 0.55rem; padding: 2px 5px; border-radius: 4px; }
+    .sync-status.synced { background: #14532d33; color: var(--green); }
+    .sync-status.pending { background: #78350f33; color: #fbbf24; }
+    .sync-status.syncing { background: #1e3a5f33; color: var(--accent2); animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
     
     .step-tag-sm { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; font-size: 0.55rem; font-weight: 700; background: var(--accent); color: #fff; }
     
@@ -254,8 +265,10 @@
       <div class="subtitle">Scan barcode / article | Enter = submit</div>
     </div>
     
-    <div style="text-align:center;">
-      <span id="firestoreStatus" class="firebase-status offline">⚠️ Offline</span>
+    <div class="storage-status-bar">
+      <span id="firestoreStatus" class="firebase-status offline">☁️ Offline</span>
+      <span id="idbStatus" class="idb-status">💾 IDB Init...</span>
+      <span id="syncStatus" class="sync-status pending">⏳ Pending</span>
     </div>
     
     <div class="sidebar-section">
@@ -435,8 +448,14 @@
   const PROJECT_ID = "wms-league";
   const BATCH_SIZE = 200;
   const MAX_ROWS = 22;
+  const IDB_NAME = 'BRG_WMS';
+  const IDB_VERSION = 1;
+  const STORE_SCAN = 'scan_data';
+  const STORE_QUEUE = 'sync_queue';
+  const STORE_META = 'meta';
   
-  let db = null;
+  let db = null;       // Firestore
+  let idb = null;      // IndexedDB
   let parsedSheets = {};
   
   let scanDataArray = [];
@@ -444,6 +463,166 @@
   let currentBin = '';
   let isLocked = false;
   let rejectedArticle = '';
+  let pendingSyncCount = 0;
+  let isSyncing = false;
+
+  // ═══════════════ INDEXED DB LAYER ═══════════════
+  function openIDB() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+      req.onupgradeneeded = (e) => {
+        const d = e.target.result;
+        if (!d.objectStoreNames.contains(STORE_SCAN)) {
+          const s = d.createObjectStore(STORE_SCAN, { keyPath: 'id' });
+          s.createIndex('BIN', 'BIN', { unique: false });
+          s.createIndex('synced', 'synced', { unique: false });
+          s.createIndex('timestamp', 'timestamp', { unique: false });
+        }
+        if (!d.objectStoreNames.contains(STORE_QUEUE)) {
+          d.createObjectStore(STORE_QUEUE, { keyPath: 'id' });
+        }
+        if (!d.objectStoreNames.contains(STORE_META)) {
+          d.createObjectStore(STORE_META, { keyPath: 'key' });
+        }
+      };
+      req.onsuccess = (e) => resolve(e.target.result);
+      req.onerror = (e) => reject(e.target.error);
+    });
+  }
+
+  function idbTx(store, mode = 'readonly') {
+    return idb.transaction(store, mode).objectStore(store);
+  }
+
+  function idbGet(store, key) {
+    return new Promise((res, rej) => {
+      const req = idbTx(store).get(key);
+      req.onsuccess = () => res(req.result);
+      req.onerror = () => rej(req.error);
+    });
+  }
+
+  function idbPut(store, value) {
+    return new Promise((res, rej) => {
+      const req = idbTx(store, 'readwrite').put(value);
+      req.onsuccess = () => res(req.result);
+      req.onerror = () => rej(req.error);
+    });
+  }
+
+  function idbDelete(store, key) {
+    return new Promise((res, rej) => {
+      const req = idbTx(store, 'readwrite').delete(key);
+      req.onsuccess = () => res();
+      req.onerror = () => rej(req.error);
+    });
+  }
+
+  function idbGetAll(store) {
+    return new Promise((res, rej) => {
+      const req = idbTx(store).getAll();
+      req.onsuccess = () => res(req.result || []);
+      req.onerror = () => rej(req.error);
+    });
+  }
+
+  async function loadScanFromIDB() {
+    if (!idb) return;
+    try {
+      const rows = await idbGetAll(STORE_SCAN);
+      rows.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      scanDataArray = rows;
+      pendingSyncCount = rows.filter(r => !r.synced).length;
+      updateSyncStatusUI();
+    } catch(e) { console.error('IDB load error:', e); }
+  }
+
+  async function saveScanToIDB(row) {
+    if (!idb) return;
+    try {
+      const data = { ...row, synced: false };
+      await idbPut(STORE_SCAN, data);
+      await idbPut(STORE_QUEUE, { id: row.id, addedAt: new Date().toISOString() });
+      pendingSyncCount++;
+      updateSyncStatusUI();
+      // Try auto-sync if Firebase online
+      if (db) autoSyncQueue();
+    } catch(e) { console.error('IDB save error:', e); }
+  }
+
+  async function deleteScanFromIDB(id) {
+    if (!idb) return;
+    try {
+      await idbDelete(STORE_SCAN, id);
+      await idbDelete(STORE_QUEUE, id);
+    } catch(e) {}
+  }
+
+  async function markSyncedInIDB(id) {
+    if (!idb) return;
+    try {
+      const row = await idbGet(STORE_SCAN, id);
+      if (row) { row.synced = true; await idbPut(STORE_SCAN, row); }
+      await idbDelete(STORE_QUEUE, id);
+    } catch(e) {}
+  }
+
+  // ═══════════════ AUTO SYNC QUEUE ═══════════════
+  async function autoSyncQueue() {
+    if (!db || !idb || isSyncing) return;
+    const queue = await idbGetAll(STORE_QUEUE);
+    if (!queue.length) { updateSyncStatusUI(); return; }
+
+    isSyncing = true;
+    updateSyncStatusUI();
+    let synced = 0;
+
+    try {
+      for (let i = 0; i < queue.length; i += BATCH_SIZE) {
+        const chunk = queue.slice(i, i + BATCH_SIZE);
+        const rows = await Promise.all(chunk.map(q => idbGet(STORE_SCAN, q.id)));
+        const validRows = rows.filter(Boolean);
+        if (!validRows.length) continue;
+
+        const batch = writeBatch(db);
+        validRows.forEach(row => {
+          const { synced: _, ...data } = row;
+          batch.set(doc(collection(db, 'SCAN_DATA')), {
+            BARCODE:data.BARCODE, LOKASI:data.LOKASI, ARTICLE:data.ARTICLE||'',
+            BIN:data.BIN||'', SIZE_US:data.SIZE_US||'', SIZE_UK:data.SIZE_UK||'',
+            GENERIC:data.GENERIC||'', DESCRIPTION:data.DESCRIPTION||'',
+            BRAND:data.BRAND||'', CAT:data.CAT||'', SEASON:data.SEASON||'',
+            DATE:data.DATE, USER:data.USER, scanned_at:data.timestamp, local_id:data.id
+          });
+        });
+        await batch.commit();
+        for (const row of validRows) { await markSyncedInIDB(row.id); synced++; }
+      }
+      pendingSyncCount = Math.max(0, pendingSyncCount - synced);
+      if (synced > 0) showToast(`☁️ ${synced} data tersinkron!`, 'success');
+    } catch(err) {
+      showToast('⚠️ Sync gagal, akan dicoba lagi', 'info');
+    } finally {
+      isSyncing = false;
+      const remaining = await idbGetAll(STORE_QUEUE);
+      pendingSyncCount = remaining.length;
+      updateSyncStatusUI();
+    }
+  }
+
+  function updateSyncStatusUI() {
+    const el = document.getElementById('syncStatus');
+    const idbEl = document.getElementById('idbStatus');
+    if (idbEl) idbEl.textContent = idb ? `💾 IDB ✓` : '💾 IDB ✗';
+    if (!el) return;
+    if (isSyncing) {
+      el.textContent = '🔄 Syncing...'; el.className = 'sync-status syncing';
+    } else if (pendingSyncCount > 0) {
+      el.textContent = `⏳ ${pendingSyncCount} pending`; el.className = 'sync-status pending';
+    } else {
+      el.textContent = '✅ Synced'; el.className = 'sync-status synced';
+    }
+  }
 
   // ═══════════════ HELPER ═══════════════
   function extractGender(article) {
@@ -862,6 +1041,8 @@
       scanDataArray.unshift(newRow);
       currentSessionData.unshift(newRow);
       saveScanData();
+      // Save to IndexedDB (primary) + queue for Firebase sync
+      await saveScanToIDB(newRow);
       renderScanTable();
       updateScanStats();
       renderBinCardsInPopup();
@@ -879,13 +1060,17 @@
     focusBarcode();
   };
 
-  function saveScanData() { try { localStorage.setItem('scan_data', JSON.stringify(scanDataArray)); } catch(e) {} }
+  // Legacy localStorage fallback (kept as secondary backup)
+  function saveScanData() {
+    try { localStorage.setItem('scan_data', JSON.stringify(scanDataArray.slice(0, 500))); } catch(e) {}
+  }
 
   window.deleteScanRow = function(id) {
     if (!confirm('Hapus?')) return;
     currentSessionData = currentSessionData.filter(r => r.id !== id);
     scanDataArray = scanDataArray.filter(r => r.id !== id);
     saveScanData();
+    deleteScanFromIDB(id);
     renderScanTable();
     updateScanStats();
     renderBinCardsInPopup();
@@ -900,6 +1085,13 @@
     row[field] = nv;
     if (field === 'BIN') row[field] = row[field].toUpperCase();
     saveScanData();
+    // Update in IDB and re-queue for sync
+    if (idb) {
+      row.synced = false;
+      idbPut(STORE_SCAN, row).then(() => idbPut(STORE_QUEUE, { id: row.id, addedAt: new Date().toISOString() }));
+      pendingSyncCount++; updateSyncStatusUI();
+      if (db) setTimeout(() => autoSyncQueue(), 1000);
+    }
     renderScanTable();
     renderBinCardsInPopup();
     showToast('✅ Updated', 'success');
@@ -908,10 +1100,18 @@
   window.clearScanData = function() {
     if (!scanDataArray.length) { showToast('📭 Kosong', 'info'); return; }
     if (!confirm(`Hapus SEMUA ${scanDataArray.length} data?`)) return;
+    // Clear IDB
+    if (idb) {
+      const tx = idb.transaction([STORE_SCAN, STORE_QUEUE], 'readwrite');
+      tx.objectStore(STORE_SCAN).clear();
+      tx.objectStore(STORE_QUEUE).clear();
+    }
     scanDataArray = [];
     currentSessionData = [];
     currentBin = '';
+    pendingSyncCount = 0;
     saveScanData();
+    updateSyncStatusUI();
     renderScanTable();
     updateScanStats();
     renderBinCardsInPopup();
@@ -982,28 +1182,16 @@
     showToast('📥 Exported!', 'success');
   };
 
+  // Manual upload: push ALL pending IDB queue to Firebase
   window.uploadScanToFirebase = async function() {
     if (!db) { showToast('❌ DB offline', 'error'); return; }
     if (!scanDataArray.length) { showToast('📭 Kosong', 'error'); return; }
     const btn = document.getElementById('btnUploadScan'); 
     if (btn) { btn.disabled = true; btn.textContent = '⏳...'; }
     try {
-      let up = 0;
-      for (let i = 0; i < scanDataArray.length; i += BATCH_SIZE) {
-        const batch = writeBatch(db);
-        scanDataArray.slice(i, i+BATCH_SIZE).forEach(row => {
-          batch.set(doc(collection(db, 'SCAN_DATA')), {
-            BARCODE:row.BARCODE,LOKASI:row.LOKASI,ARTICLE:row.ARTICLE||'',
-            BIN:row.BIN||'',SIZE_US:row.SIZE_US||'',SIZE_UK:row.SIZE_UK||'',
-            GENERIC:row.GENERIC||'',DESCRIPTION:row.DESCRIPTION||'',
-            BRAND:row.BRAND||'',CAT:row.CAT||'',SEASON:row.SEASON||'',
-            DATE:row.DATE,USER:row.USER,scanned_at:row.timestamp
-          });
-        });
-        await batch.commit(); up += Math.min(BATCH_SIZE, scanDataArray.length - i);
-      }
-      showToast(`✅ ${up} terupload!`, 'success');
-    } catch(err) { showToast('❌ Gagal', 'error'); }
+      await autoSyncQueue();
+      showToast('✅ Semua data tersinkron!', 'success');
+    } catch(err) { showToast('❌ Gagal: ' + err.message, 'error'); }
     finally { if (btn) { btn.disabled = false; btn.textContent = '⬆ Upload'; } }
   };
 
@@ -1026,6 +1214,8 @@
       safeSetText('configStatus', '✅ Terhubung!');
       updateFirestoreStatus();
       showToast('✅ Firebase terhubung!', 'success');
+      // Auto-sync pending IDB queue now that Firebase is online
+      setTimeout(() => autoSyncQueue(), 500);
     } catch(err) {
       safeSetText('configStatus', '❌ Gagal: ' + err.message);
       db = null;
@@ -1043,15 +1233,38 @@
   }
 
   // ═══════════════ INIT ═══════════════
+  // 1. Init IndexedDB first
+  try {
+    idb = await openIDB();
+    safeSetText('idbStatus', '💾 IDB ✓');
+  } catch(e) {
+    console.error('IndexedDB init failed:', e);
+    safeSetText('idbStatus', '💾 IDB ✗');
+  }
+
+  // 2. Load scan data from IDB (primary source)
+  if (idb) {
+    await loadScanFromIDB();
+  } else {
+    // Fallback: load from localStorage
+    const saved = localStorage.getItem('scan_data');
+    if (saved) { try { scanDataArray = JSON.parse(saved); } catch(e) { scanDataArray = []; } }
+  }
+
+  // 3. Auto-connect Firebase if API key saved
   const savedKey = localStorage.getItem('fb_api_key');
   if (savedKey) { 
     const apiKeyInput = document.getElementById('cfgApiKey');
     if (apiKeyInput) apiKeyInput.value = savedKey; 
     initFirebase(); 
   }
-  
-  const saved = localStorage.getItem('scan_data');
-  if (saved) { try { scanDataArray = JSON.parse(saved); } catch(e) { scanDataArray = []; } }
+
+  // 4. Listen for online/offline to trigger auto-sync
+  window.addEventListener('online', () => {
+    showToast('🌐 Online! Sinkronisasi...', 'info');
+    if (db) autoSyncQueue();
+  });
+  window.addEventListener('offline', () => { showToast('📴 Offline mode aktif', 'info'); });
 
   // ═══════════════ MASTER UPLOAD ═══════════════
   function sanitize(v) { if (v===null||v===undefined||v==='') return null; if (typeof v==='number'&&isNaN(v)) return null; if (v instanceof Date) return v.toISOString().split('T')[0]; return v; }
@@ -1114,8 +1327,8 @@
 
   window.initFirebase=initFirebase; window.startUpload=startUpload; window.clearSelected=clearSelected;
 
-  renderScanTable(); updateScanStats(); renderBinCardsInPopup(); updateFirestoreStatus();
-  setInterval(()=>{ updateScanStats(); updateFirestoreStatus(); },30000);
+  renderScanTable(); updateScanStats(); renderBinCardsInPopup(); updateFirestoreStatus(); updateSyncStatusUI();
+  setInterval(()=>{ updateScanStats(); updateFirestoreStatus(); updateSyncStatusUI(); },30000);
 </script>
 </body>
 </html>
