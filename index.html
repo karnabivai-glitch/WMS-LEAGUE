@@ -245,6 +245,35 @@
     .step-tag-sm { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; font-size: 0.55rem; font-weight: 700; background: var(--accent); color: #fff; }
     
     .info-text { font-size: 0.55rem; color: var(--muted); text-align: center; margin-top: 2px; }
+
+    /* ── MASTER CACHE STYLES ── */
+    .master-cache-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    .master-cache-card h3 { font-size: 0.9rem; font-weight: 700; margin-bottom: 4px; }
+    .master-cache-card .subtitle { font-size: 0.72rem; color: var(--muted); margin-bottom: 14px; }
+    .cache-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+    .cache-item { background: var(--bg); border: 2px solid var(--border); border-radius: 8px; padding: 10px 8px; text-align: center; transition: all 0.3s; }
+    .cache-item.cached { border-color: var(--green); background: rgba(34,197,94,0.04); }
+    .cache-item.loading { border-color: var(--accent2); background: rgba(59,130,246,0.05); }
+    .cache-item.error-state { border-color: var(--red); background: rgba(239,68,68,0.04); }
+    .cache-item .ci-icon { font-size: 1.4rem; }
+    .cache-item .ci-name { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 4px 0 2px; }
+    .cache-item .ci-count { font-size: 0.9rem; font-weight: 700; }
+    .cache-item.cached .ci-count { color: var(--green); }
+    .cache-item.loading .ci-count { color: var(--accent2); }
+    .cache-item .ci-status { font-size: 0.55rem; margin-top: 2px; }
+    .cache-item.cached .ci-status { color: var(--green); }
+    .cache-item.loading .ci-status { color: var(--accent2); animation: pulse 0.8s infinite; }
+    .cache-item.error-state .ci-status { color: var(--red); }
+    .cache-progress-bar { height: 5px; background: var(--border); border-radius: 99px; margin-bottom: 10px; overflow: hidden; }
+    .cache-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--green)); border-radius: 99px; transition: width 0.5s ease; width: 0%; }
+    .cache-last-update { font-size: 0.6rem; color: var(--muted); text-align: center; margin-top: 8px; }
+    .offline-ready-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 0.65rem; font-weight: 700; padding: 4px 10px; border-radius: 99px; }
+    .offline-ready-badge.ready { background: #14532d33; color: var(--green); border: 1px solid #22c55e44; }
+    .offline-ready-badge.not-ready { background: #7f1d1d33; color: var(--red); border: 1px solid #ef444444; }
+    /* Mini offline status in sidebar status bar */
+    .offline-mini { font-size: 0.55rem; padding: 2px 5px; border-radius: 4px; }
+    .offline-mini.ready { background: #14532d33; color: var(--green); }
+    .offline-mini.not-ready { background: #78350f33; color: #fbbf24; }
   </style>
 </head>
 <body>
@@ -269,6 +298,7 @@
       <span id="firestoreStatus" class="firebase-status offline">☁️ Offline</span>
       <span id="idbStatus" class="idb-status">💾 IDB Init...</span>
       <span id="syncStatus" class="sync-status pending">⏳ Pending</span>
+      <span id="offlineMiniStatus" class="offline-mini not-ready" title="Status Master Cache Offline">📦 ...</span>
     </div>
     
     <div class="sidebar-section">
@@ -420,8 +450,47 @@
         <div id="configStatus" style="font-size:0.8rem;"></div>
       </div>
     </div>
+
+    <!-- MASTER CACHE CARD -->
+    <div class="master-cache-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+        <div>
+          <h3>📦 Master Cache Offline</h3>
+          <p class="subtitle">Download master data ke lokal agar scan tetap bisa saat internet mati</p>
+        </div>
+        <span class="offline-ready-badge not-ready" id="offlineReadyBadge">📴 Belum siap offline</span>
+      </div>
+      <div class="cache-grid">
+        <div class="cache-item" id="cacheItem_MASTER_BARCODE">
+          <div class="ci-icon">🔖</div>
+          <div class="ci-name">Master Barcode</div>
+          <div class="ci-count" id="cacheCount_MASTER_BARCODE">—</div>
+          <div class="ci-status" id="cacheStatus_MASTER_BARCODE">Belum cache</div>
+        </div>
+        <div class="cache-item" id="cacheItem_MASTER_PRODUK">
+          <div class="ci-icon">👟</div>
+          <div class="ci-name">Master Produk</div>
+          <div class="ci-count" id="cacheCount_MASTER_PRODUK">—</div>
+          <div class="ci-status" id="cacheStatus_MASTER_PRODUK">Belum cache</div>
+        </div>
+        <div class="cache-item" id="cacheItem_SIZE">
+          <div class="ci-icon">📐</div>
+          <div class="ci-name">Size Chart</div>
+          <div class="ci-count" id="cacheCount_SIZE">—</div>
+          <div class="ci-status" id="cacheStatus_SIZE">Belum cache</div>
+        </div>
+      </div>
+      <div class="cache-progress-bar"><div class="cache-progress-fill" id="cacheProgressFill"></div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-upload" id="btnCacheAll" onclick="cacheAllMasterData()" style="width:auto;">⬇ Download & Cache Semua</button>
+        <button class="btn" onclick="refreshCacheUI()" style="width:auto;background:rgba(99,102,241,0.2);color:#a78bfa;border:1px solid rgba(99,102,241,0.4);font-size:0.65rem;">🔄 Refresh Status</button>
+        <button class="btn btn-danger" onclick="clearMasterCache()" style="width:auto;padding:8px 10px;font-size:0.65rem;">🗑 Hapus Cache</button>
+      </div>
+      <div class="cache-last-update" id="cacheLastUpdate">Belum pernah didownload</div>
+    </div>
+
     <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;">
-      <h3>Upload Excel</h3>
+      <h3>Upload Excel ke Firebase</h3>
       <div id="dropzone" onclick="document.getElementById('fileInput').click()" style="border:2px dashed var(--border);border-radius:10px;padding:30px;text-align:center;cursor:pointer;margin-top:12px;">
         <p>📂 Klik atau drop file .xlsx</p>
       </div>
@@ -449,10 +518,19 @@
   const BATCH_SIZE = 200;
   const MAX_ROWS = 22;
   const IDB_NAME = 'BRG_WMS';
-  const IDB_VERSION = 1;
-  const STORE_SCAN = 'scan_data';
+  const IDB_VERSION = 2;  // bumped for new master stores
+  const STORE_SCAN  = 'scan_data';
   const STORE_QUEUE = 'sync_queue';
-  const STORE_META = 'meta';
+  const STORE_META  = 'meta';
+  // Master cache stores (offline mode)
+  const STORE_M_BARCODE = 'master_barcode';
+  const STORE_M_PRODUK  = 'master_produk';
+  const STORE_M_SIZE    = 'master_size';
+  const MASTER_STORE_MAP = {
+    'MASTER_BARCODE': STORE_M_BARCODE,
+    'MASTER_PRODUK':  STORE_M_PRODUK,
+    'SIZE':           STORE_M_SIZE
+  };
   
   let db = null;       // Firestore
   let idb = null;      // IndexedDB
@@ -465,6 +543,7 @@
   let rejectedArticle = '';
   let pendingSyncCount = 0;
   let isSyncing = false;
+  let masterCacheReady = false;
 
   // ═══════════════ INDEXED DB LAYER ═══════════════
   function openIDB() {
@@ -483,6 +562,21 @@
         }
         if (!d.objectStoreNames.contains(STORE_META)) {
           d.createObjectStore(STORE_META, { keyPath: 'key' });
+        }
+        // Master cache stores
+        if (!d.objectStoreNames.contains(STORE_M_BARCODE)) {
+          const mb = d.createObjectStore(STORE_M_BARCODE, { keyPath: '_id' });
+          mb.createIndex('Barcode', 'Barcode', { unique: false });
+          mb.createIndex('Article', 'Article', { unique: false });
+        }
+        if (!d.objectStoreNames.contains(STORE_M_PRODUK)) {
+          const mp = d.createObjectStore(STORE_M_PRODUK, { keyPath: '_id' });
+          mp.createIndex('Article', 'Article', { unique: false });
+        }
+        if (!d.objectStoreNames.contains(STORE_M_SIZE)) {
+          const ms = d.createObjectStore(STORE_M_SIZE, { keyPath: '_id' });
+          ms.createIndex('US_Size', 'US_Size', { unique: false });
+          ms.createIndex('Gender', 'Gender', { unique: false });
         }
       };
       req.onsuccess = (e) => resolve(e.target.result);
@@ -622,6 +716,212 @@
     } else {
       el.textContent = '✅ Synced'; el.className = 'sync-status synced';
     }
+  }
+
+  // ═══════════════ MASTER CACHE LAYER ═══════════════
+  // IDB helper: index-based lookup (faster than getAll)
+  function idbGetByIndex(storeName, indexName, value) {
+    return new Promise((res, rej) => {
+      try {
+        const req = idb.transaction(storeName, 'readonly')
+          .objectStore(storeName).index(indexName).getAll(IDBKeyRange.only(value));
+        req.onsuccess = () => res(req.result || []);
+        req.onerror  = () => rej(req.error);
+      } catch(e) { res([]); }
+    });
+  }
+
+  function idbGetByIndexFirst(storeName, indexName, value) {
+    return new Promise((res, rej) => {
+      try {
+        const req = idb.transaction(storeName, 'readonly')
+          .objectStore(storeName).index(indexName).get(IDBKeyRange.only(value));
+        req.onsuccess = () => res(req.result || null);
+        req.onerror  = () => rej(req.error);
+      } catch(e) { res(null); }
+    });
+  }
+
+  function idbCountStore(storeName) {
+    return new Promise((res) => {
+      try {
+        const req = idb.transaction(storeName, 'readonly').objectStore(storeName).count();
+        req.onsuccess = () => res(req.result);
+        req.onerror  = () => res(0);
+      } catch(e) { res(0); }
+    });
+  }
+
+  async function clearIDBStore(storeName) {
+    return new Promise((res, rej) => {
+      try {
+        const req = idb.transaction(storeName, 'readwrite').objectStore(storeName).clear();
+        req.onsuccess = () => res();
+        req.onerror  = () => rej(req.error);
+      } catch(e) { res(); }
+    });
+  }
+
+  async function bulkPutToIDB(storeName, rows) {
+    const CHUNK = 500;
+    for (let i = 0; i < rows.length; i += CHUNK) {
+      await new Promise((res, rej) => {
+        const tx = idb.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        rows.slice(i, i + CHUNK).forEach(r => store.put(r));
+        tx.oncomplete = res;
+        tx.onerror = () => rej(tx.error);
+      });
+    }
+  }
+
+  // Download one Firestore collection → IDB
+  async function cacheCollection(colName) {
+    const storeName = MASTER_STORE_MAP[colName];
+    setCacheItemUI(colName, 'loading', '⏳ Mendownload...', '...');
+    try {
+      const snap = await getDocs(collection(db, colName));
+      if (snap.empty) { setCacheItemUI(colName, 'cached', '✅ Kosong', '0'); return 0; }
+      const rows = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+      await clearIDBStore(storeName);
+      await bulkPutToIDB(storeName, rows);
+      setCacheItemUI(colName, 'cached', '✅ Tersimpan', rows.length.toLocaleString());
+      return rows.length;
+    } catch(err) {
+      setCacheItemUI(colName, 'error-state', '❌ Gagal', '✗');
+      throw err;
+    }
+  }
+
+  function setCacheItemUI(colName, cssClass, status, count) {
+    const item   = document.getElementById(`cacheItem_${colName}`);
+    const sEl    = document.getElementById(`cacheStatus_${colName}`);
+    const cEl    = document.getElementById(`cacheCount_${colName}`);
+    if (item)  { item.className = `cache-item ${cssClass}`; }
+    if (sEl)   sEl.textContent = status;
+    if (cEl)   cEl.textContent = count;
+  }
+
+  async function refreshCacheUI() {
+    if (!idb) return;
+    const collections = Object.keys(MASTER_STORE_MAP);
+    let cachedCount = 0;
+    for (const colName of collections) {
+      const storeName = MASTER_STORE_MAP[colName];
+      const count = await idbCountStore(storeName);
+      if (count > 0) {
+        setCacheItemUI(colName, 'cached', '✅ Tersimpan', count.toLocaleString());
+        cachedCount++;
+      } else {
+        setCacheItemUI(colName, '', 'Belum cache', '—');
+      }
+    }
+    masterCacheReady = cachedCount === collections.length;
+    updateOfflineReadyUI();
+    // update last-update time from meta
+    try {
+      const meta = await idbGet(STORE_META, 'master_cache_time');
+      if (meta) safeSetText('cacheLastUpdate', `Terakhir update: ${new Date(meta.value).toLocaleString('id-ID')}`);
+    } catch(e) {}
+  }
+
+  function updateOfflineReadyUI() {
+    const badge = document.getElementById('offlineReadyBadge');
+    const mini  = document.getElementById('offlineMiniStatus');
+    if (badge) {
+      badge.textContent = masterCacheReady ? '✅ Siap offline' : '📴 Belum siap offline';
+      badge.className = `offline-ready-badge ${masterCacheReady ? 'ready' : 'not-ready'}`;
+    }
+    if (mini) {
+      mini.textContent = masterCacheReady ? '📦 ✓' : '📦 !';
+      mini.className = `offline-mini ${masterCacheReady ? 'ready' : 'not-ready'}`;
+      mini.title = masterCacheReady ? 'Master Cache: Siap Offline' : 'Master Cache: Belum didownload';
+    }
+  }
+
+  // Download all 3 master collections
+  window.cacheAllMasterData = async function() {
+    if (!db) { showToast('❌ Firebase harus online dulu', 'error'); return; }
+    const btn = document.getElementById('btnCacheAll');
+    const fill = document.getElementById('cacheProgressFill');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Downloading...'; }
+    if (fill) fill.style.width = '5%';
+
+    const cols = Object.keys(MASTER_STORE_MAP);
+    let done = 0, total = 0;
+    showToast('⬇ Mendownload master data...', 'info');
+    for (const col of cols) {
+      try {
+        const count = await cacheCollection(col);
+        total += count; done++;
+        if (fill) fill.style.width = `${Math.round((done / cols.length) * 100)}%`;
+      } catch(e) {
+        showToast(`❌ Gagal download ${col}`, 'error');
+      }
+    }
+    // Save timestamp
+    await idbPut(STORE_META, { key: 'master_cache_time', value: new Date().toISOString() });
+    safeSetText('cacheLastUpdate', `Terakhir update: ${new Date().toLocaleString('id-ID')}`);
+    masterCacheReady = done === cols.length;
+    updateOfflineReadyUI();
+    if (fill) fill.style.width = '100%';
+    if (btn) { btn.disabled = false; btn.textContent = '⬇ Download & Cache Semua'; }
+    showToast(`✅ ${total.toLocaleString()} data ter-cache!`, 'success');
+  };
+
+  window.clearMasterCache = async function() {
+    if (!confirm('Hapus semua master cache lokal?')) return;
+    for (const storeName of Object.values(MASTER_STORE_MAP)) {
+      await clearIDBStore(storeName);
+    }
+    masterCacheReady = false;
+    await refreshCacheUI();
+    showToast('🗑 Master cache dihapus', 'info');
+  };
+
+  // ── IDB-first search helpers (fallback to Firebase if not found) ──
+  async function idbSearchBarcode(inputStr) {
+    if (!idb) return { found: false, data: null };
+    // Try direct key lookup first (fastest)
+    let row = await idbGet(STORE_M_BARCODE, inputStr).catch(() => null);
+    if (row) return { found: true, data: row, source: 'idb_MASTER_BARCODE' };
+    // Try Barcode index
+    const byBarcode = await idbGetByIndexFirst(STORE_M_BARCODE, 'Barcode', inputStr).catch(() => null);
+    if (byBarcode) return { found: true, data: byBarcode, source: 'idb_MASTER_BARCODE' };
+    // Try numeric Barcode
+    if (/^\d+$/.test(inputStr)) {
+      const byNum = await idbGetByIndexFirst(STORE_M_BARCODE, 'Barcode', Number(inputStr)).catch(() => null);
+      if (byNum) return { found: true, data: byNum, source: 'idb_MASTER_BARCODE' };
+    }
+    // Try Article index
+    const byArticle = await idbGetByIndexFirst(STORE_M_BARCODE, 'Article', inputStr).catch(() => null);
+    if (byArticle) return { found: true, data: byArticle, source: 'idb_MASTER_BARCODE' };
+    return { found: false, data: null };
+  }
+
+  async function idbSearchProduk(inputStr) {
+    if (!idb) return { found: false, data: null };
+    let row = await idbGet(STORE_M_PRODUK, inputStr).catch(() => null);
+    if (row) return { found: true, data: row, source: 'idb_MASTER_PRODUK' };
+    const byArticle = await idbGetByIndexFirst(STORE_M_PRODUK, 'Article', inputStr).catch(() => null);
+    if (byArticle) return { found: true, data: byArticle, source: 'idb_MASTER_PRODUK' };
+    return { found: false, data: null };
+  }
+
+  async function idbFindSizeUK(usSize, genderLabel) {
+    if (!idb) return '';
+    try {
+      // get all rows with matching US_Size then filter Gender
+      const bySize = await idbGetByIndex(STORE_M_SIZE, 'US_Size', String(usSize));
+      const match = bySize.find(r => r.Gender === genderLabel);
+      if (match) return match.UK_Size || match.Size_UK || '';
+      if (/^\d+$/.test(usSize)) {
+        const byNum = await idbGetByIndex(STORE_M_SIZE, 'US_Size', Number(usSize));
+        const m2 = byNum.find(r => r.Gender === genderLabel);
+        if (m2) return m2.UK_Size || m2.Size_UK || '';
+      }
+    } catch(e) {}
+    return '';
   }
 
   // ═══════════════ HELPER ═══════════════
@@ -843,38 +1143,40 @@
     }
   });
 
-  // ═══════════════ FIREBASE SEARCH ═══════════════
-  async function searchById(colName, docId) {
-    if (!db) return { found: false, data: null, source: null };
+  // ═══════════════ HYBRID SEARCH (IDB-first, Firebase fallback) ═══════════════
+  // Pure Firebase helpers (only called when IDB misses)
+  async function fbSearchById(colName, docId) {
+    if (!db) return { found: false, data: null };
     try {
       const snap = await getDoc(doc(db, colName, docId));
-      if (snap.exists()) {
-        return { found: true, data: { id: snap.id, ...snap.data() }, source: colName };
-      }
-      return { found: false, data: null, source: null };
-    } catch(e) { return { found: false, data: null, source: null }; }
+      if (snap.exists()) return { found: true, data: { id: snap.id, ...snap.data() }, source: colName };
+    } catch(e) {}
+    return { found: false, data: null };
   }
 
-  async function searchByField(colName, field, value) {
-    if (!db) return { found: false, data: null, source: null };
-    const results = [];
+  async function fbSearchByField(colName, field, value) {
+    if (!db) return { found: false, data: null };
     try {
       const q = query(collection(db, colName), where(field, '==', String(value)));
       const snap = await getDocs(q);
-      if (!snap.empty) results.push({ data: { id: snap.docs[0].id, ...snap.docs[0].data() }, method: 'string' });
+      if (!snap.empty) return { found: true, data: { id: snap.docs[0].id, ...snap.docs[0].data() }, source: colName };
+      if (/^\d+$/.test(String(value))) {
+        const q2 = query(collection(db, colName), where(field, '==', Number(value)));
+        const s2 = await getDocs(q2);
+        if (!s2.empty) return { found: true, data: { id: s2.docs[0].id, ...s2.docs[0].data() }, source: colName };
+      }
     } catch(e) {}
-    if (!results.length && /^\d+$/.test(String(value))) {
-      try {
-        const q = query(collection(db, colName), where(field, '==', Number(value)));
-        const snap = await getDocs(q);
-        if (!snap.empty) results.push({ data: { id: snap.docs[0].id, ...snap.docs[0].data() }, method: 'number' });
-      } catch(e) {}
-    }
-    return results.length ? { found: true, data: results[0].data, source: colName, method: results[0].method } : { found: false, data: null, source: null };
+    return { found: false, data: null };
   }
 
+  // IDB-first Size UK lookup
   async function findSizeUK(usSize, genderLabel) {
-    if (!db || !usSize || !genderLabel) return '';
+    if (!usSize || !genderLabel) return '';
+    // Try IDB cache first
+    const fromIDB = await idbFindSizeUK(usSize, genderLabel);
+    if (fromIDB) return fromIDB;
+    // Fallback to Firebase
+    if (!db) return '';
     try {
       let q = query(collection(db, 'SIZE'), where('US_Size', '==', String(usSize)), where('Gender', '==', genderLabel));
       let snap = await getDocs(q);
@@ -888,10 +1190,16 @@
     return '';
   }
 
+  // IDB-first product info lookup
   async function findProductInfoByGeneric(generic) {
-    if (!db || !generic) return { brandName: '', seasonYr: '', cat: '', merchCat: '' };
-    let result = await searchById('MASTER_PRODUK', generic);
-    if (!result.found) result = await searchByField('MASTER_PRODUK', 'Article', generic);
+    if (!generic) return { brandName: '', seasonYr: '', cat: '', merchCat: '' };
+    // Try IDB first
+    let result = await idbSearchProduk(generic);
+    // Fallback to Firebase
+    if (!result.found && db) {
+      result = await fbSearchById('MASTER_PRODUK', generic);
+      if (!result.found) result = await fbSearchByField('MASTER_PRODUK', 'Article', generic);
+    }
     if (result.found && result.data) {
       const d = result.data;
       const merchCat = d.Merch_Cat || d.MerchCat || '';
@@ -900,25 +1208,39 @@
     return { brandName: '', seasonYr: '', cat: '', merchCat: '' };
   }
 
+  // Main search: IDB-first, Firebase fallback
   async function searchBarcodeInMaster(input) {
-    if (!db) return { found: false, error: 'Firebase tidak terhubung' };
-    
     const inputStr = String(input).trim();
-    
+    const noIDB = !idb;
+    const noFB  = !db;
+    if (noIDB && noFB) return { found: false, error: 'Tidak ada sumber data (IDB & Firebase offline)' };
+
     try {
-      let result;
+      let result = { found: false, data: null };
+
       if (isBarcodeFormat(inputStr)) {
-        result = await searchById('MASTER_BARCODE', inputStr);
-        if (!result.found) result = await searchByField('MASTER_BARCODE', 'Barcode', inputStr);
+        // ── Barcode format: search MASTER_BARCODE ──
+        result = await idbSearchBarcode(inputStr);
+        if (!result.found && db) {
+          result = await fbSearchById('MASTER_BARCODE', inputStr);
+          if (!result.found) result = await fbSearchByField('MASTER_BARCODE', 'Barcode', inputStr);
+        }
       } else {
-        result = await searchById('MASTER_BARCODE', inputStr);
-        if (!result.found) result = await searchByField('MASTER_BARCODE', 'Article', inputStr);
-        if (!result.found) result = await searchById('MASTER_PRODUK', inputStr);
-        if (!result.found) result = await searchByField('MASTER_PRODUK', 'Article', inputStr);
+        // ── Article format: try BARCODE table first, then PRODUK ──
+        result = await idbSearchBarcode(inputStr);
+        if (!result.found && db) result = await fbSearchById('MASTER_BARCODE', inputStr);
+        if (!result.found && db) result = await fbSearchByField('MASTER_BARCODE', 'Article', inputStr);
+
+        if (!result.found) result = await idbSearchProduk(inputStr);
+        if (!result.found && db) result = await fbSearchById('MASTER_PRODUK', inputStr);
+        if (!result.found && db) result = await fbSearchByField('MASTER_PRODUK', 'Article', inputStr);
+
+        // Try generic (strip last 3 chars = size suffix)
         if (!result.found && inputStr.length > 3) {
           const generic = inputStr.substring(0, inputStr.length - 3);
-          result = await searchById('MASTER_PRODUK', generic);
-          if (!result.found) result = await searchByField('MASTER_PRODUK', 'Article', generic);
+          result = await idbSearchProduk(generic);
+          if (!result.found && db) result = await fbSearchById('MASTER_PRODUK', generic);
+          if (!result.found && db) result = await fbSearchByField('MASTER_PRODUK', 'Article', generic);
           if (result.found) {
             result.data.Article = result.data.Article || inputStr;
             result.data.Barcode = result.data.Barcode || inputStr;
@@ -926,9 +1248,8 @@
           }
         }
       }
-      
+
       if (result?.found) return await processFoundResult(result, inputStr);
-      
       return { found: false, data: null, source: null };
     } catch(err) {
       return { found: false, error: err.message };
@@ -1245,6 +1566,8 @@
   // 2. Load scan data from IDB (primary source)
   if (idb) {
     await loadScanFromIDB();
+    // Check master cache status
+    await refreshCacheUI();
   } else {
     // Fallback: load from localStorage
     const saved = localStorage.getItem('scan_data');
@@ -1264,7 +1587,9 @@
     showToast('🌐 Online! Sinkronisasi...', 'info');
     if (db) autoSyncQueue();
   });
-  window.addEventListener('offline', () => { showToast('📴 Offline mode aktif', 'info'); });
+  window.addEventListener('offline', () => { showToast('📴 Mode offline aktif — gunakan master cache', 'info'); });
+
+  window.refreshCacheUI = refreshCacheUI;
 
   // ═══════════════ MASTER UPLOAD ═══════════════
   function sanitize(v) { if (v===null||v===undefined||v==='') return null; if (typeof v==='number'&&isNaN(v)) return null; if (v instanceof Date) return v.toISOString().split('T')[0]; return v; }
@@ -1326,6 +1651,7 @@
   }
 
   window.initFirebase=initFirebase; window.startUpload=startUpload; window.clearSelected=clearSelected;
+  // Already assigned above: window.cacheAllMasterData, window.clearMasterCache, window.refreshCacheUI
 
   renderScanTable(); updateScanStats(); renderBinCardsInPopup(); updateFirestoreStatus(); updateSyncStatusUI();
   setInterval(()=>{ updateScanStats(); updateFirestoreStatus(); updateSyncStatusUI(); },30000);
