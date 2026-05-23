@@ -1356,66 +1356,137 @@
     if (e.key === 'Enter') { e.preventDefault(); await addScanData(); } 
   };
 
+  // ── LOOKUP SINKRON (O(1), zero async) — path utama saat memory loaded ──
+  function scanLookupSync(barcode) {
+    const s = barcode.trim();
+
+    // 1. Cari di memBarcode (barcode / docId)
+    let bcRow = memBarcode.get(s) || memArticleB.get(s);
+
+    // 2. Tentukan article
+    const artFull = bcRow
+      ? (bcRow.Article || bcRow.article || s).toString().trim()
+      : s;
+
+    // 3. Cari produk — coba exact, lalu prefix (generic = artFull tanpa 3 char terakhir)
+    let prodRow = memProduk.get(artFull);
+    if (!prodRow && artFull.length > 3) {
+      prodRow = memProduk.get(artFull.substring(0, artFull.length - 3));
+    }
+
+    if (!prodRow) return null; // tidak ditemukan → lock
+
+    // 4. Ekstrak semua field langsung dari RAM
+    const rawCat  = prodRow.Merch_Cat || prodRow.MerchCat || '';
+    const cat     = rawCat.length >= 2 ? rawCat.charAt(1) : rawCat;
+    const sizeUS  = cat !== 'E' && artFull.length >= 3 ? artFull.slice(-3) : '';
+    const gc      = artFull.charAt(0);
+    const gender  = gc==='1'?'Laki-laki': gc==='2'?'Perempuan': gc==='3'?'Anak-anak':'';
+    const sizeUK  = sizeUS && gender
+      ? (memSize.get(`${sizeUS}|${gender}`) || memSize.get(`${Number(sizeUS)}|${gender}`) || '')
+      : '';
+
+    return {
+      article:     artFull,
+      generic:     artFull.length > 3 ? artFull.substring(0, artFull.length - 3) : artFull,
+      description: bcRow?.Description || bcRow?.description || prodRow.Description || prodRow.description || '',
+      brand:       prodRow.Brand_Name || prodRow.BrandName || prodRow.Brand || '',
+      cat,
+      season:      prodRow.Season_Yr_ || prodRow.SeasonYr || prodRow.Season || '',
+      merchCat:    rawCat,
+      sizeUS, sizeUK,
+    };
+  }
+
   window.addScanData = async function() {
     if (isLocked) { showToast('🔒 SCAN TERKUNCI!', 'error'); return; }
-    
+
     const barcodeInput = document.getElementById('scanBarcode');
-    const binInput = document.getElementById('scanBIN');
+    const binInput     = document.getElementById('scanBIN');
     if (!barcodeInput || !binInput) return;
-    
-    const barcode = barcodeInput.value.trim();
-    let binManual = binInput.value.trim().toUpperCase();
-    binInput.value = binManual;
-    
+
+    const barcode   = barcodeInput.value.trim();
+    const binManual = binInput.value.trim().toUpperCase();
+    binInput.value  = binManual;
+
     const lokasi = document.getElementById('scanLokasi')?.value || 'Gudang';
-    const user = document.getElementById('scanUser')?.value || 'ADMIN';
-    
-    if (!barcode) { showToast('⚠️ Input barcode dulu', 'error'); focusBarcode(); return; }
+    const user   = document.getElementById('scanUser')?.value   || 'ADMIN';
+
+    if (!barcode)   { showToast('⚠️ Input barcode dulu', 'error'); focusBarcode(); return; }
     if (!binManual) { showToast('⚠️ Isi BIN dulu', 'error'); binInput.focus(); return; }
-    
+
     if (binManual !== currentBin) { currentBin = binManual; recallBinDataInternal(binManual); }
-    
-    // Disable input saat lookup master (biasanya <1ms dari memory)
+
+    // ══ PATH CEPAT: memory loaded → 100% sinkron, nol async ══
+    if (memLoaded) {
+      const found = scanLookupSync(barcode);
+
+      if (found) {
+        const newRow = {
+          id:          Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
+          BARCODE:     barcode,   LOKASI:   lokasi,
+          ARTICLE:     found.article,        BIN:      binManual,
+          SIZE_US:     found.sizeUS,         SIZE_UK:  found.sizeUK,
+          GENERIC:     found.generic,        DESCRIPTION: found.description,
+          BRAND:       found.brand,          CAT:      found.cat,
+          SEASON:      found.season,         DATE:     getTodayDate(),
+          USER:        user,                 MERCH_CAT: found.merchCat,
+          timestamp:   new Date().toISOString(),
+        };
+
+        // ① RAM — instant
+        scanDataArray.unshift(newRow);
+        currentSessionData.unshift(newRow);
+
+        // ② UI — langsung, nol tunggu
+        barcodeInput.value = '';
+        focusBarcode();
+        prependRowToTable(newRow);
+        updateScanStats();
+        showToast(`✅ ${found.article}`, 'success');
+
+        // ③ Persist — background, tidak block apapun
+        Promise.resolve().then(() => {
+          saveScanData();
+          saveScanToIDB(newRow);
+        });
+        return;
+      }
+
+      // Tidak ditemukan di memory — lock langsung (sinkron)
+      barcodeInput.value = barcode;
+      lockScan(barcode);
+      return;
+    }
+
+    // ══ PATH FALLBACK: memory belum siap → async Firebase ══
     barcodeInput.disabled = true;
-    
     const masterResult = await searchBarcodeInMaster(barcode);
-    
+    barcodeInput.disabled = false;
+
     if (masterResult.found && masterResult.data) {
       const d = masterResult.data._derived || {};
       const newRow = {
-        id: Date.now().toString(36)+Math.random().toString(36).substring(2,6),
-        BARCODE: barcode, LOKASI: lokasi,
-        ARTICLE: d.article || barcode, BIN: binManual,
-        SIZE_US: d.sizeUS || '', SIZE_UK: d.sizeUK || '',
-        GENERIC: d.generic || '', DESCRIPTION: d.description || '',
-        BRAND: d.brandName || '', CAT: d.cat || '',
-        SEASON: d.seasonYr || '', DATE: getTodayDate(),
-        USER: user, MERCH_CAT: d.merchCat || '',
-        timestamp: new Date().toISOString()
+        id:          Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
+        BARCODE:     barcode,        LOKASI:      lokasi,
+        ARTICLE:     d.article || barcode,         BIN:         binManual,
+        SIZE_US:     d.sizeUS || '', SIZE_UK:     d.sizeUK || '',
+        GENERIC:     d.generic || '', DESCRIPTION: d.description || '',
+        BRAND:       d.brandName || '', CAT:       d.cat || '',
+        SEASON:      d.seasonYr || '', DATE:       getTodayDate(),
+        USER:        user,           MERCH_CAT:   d.merchCat || '',
+        timestamp:   new Date().toISOString(),
       };
-      
-      // ① Update RAM array langsung
       scanDataArray.unshift(newRow);
       currentSessionData.unshift(newRow);
-
-      // ② Render UI LANGSUNG — tidak nunggu IDB/localStorage
       barcodeInput.value = '';
-      barcodeInput.disabled = false;
       focusBarcode();
-      prependRowToTable(newRow);   // O(1) DOM insert, bukan re-render semua
+      prependRowToTable(newRow);
       updateScanStats();
-      renderBinCardsInPopup();
       showToast(`✅ ${d.article || barcode}`, 'success');
-
-      // ③ Simpan ke IDB + localStorage di background (non-blocking)
-      Promise.resolve().then(() => {
-        saveScanData();           // localStorage (sync, cepat)
-        saveScanToIDB(newRow);    // IDB async — jalan sendiri
-      });
-
+      Promise.resolve().then(() => { saveScanData(); saveScanToIDB(newRow); });
     } else {
       barcodeInput.value = barcode;
-      barcodeInput.disabled = false;
       lockScan(barcode);
     }
   };
