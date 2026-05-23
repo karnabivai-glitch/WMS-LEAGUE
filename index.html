@@ -305,11 +305,18 @@
       <div class="stats-mini">
         <div class="stat-mini">
           <div class="val" id="statTotalAll">0</div>
-          <div class="lbl">Total Data</div>
+          <div class="lbl">Total Lokal</div>
         </div>
         <div class="stat-mini">
           <div class="val" id="statSession">0</div>
           <div class="lbl">Sesi Ini</div>
+        </div>
+        <div class="stat-mini" style="grid-column:1/-1; border-color: rgba(99,102,241,0.3);">
+          <div class="val" id="statFirebaseTotal" style="color:#818cf8;">—</div>
+          <div class="lbl" style="display:flex;align-items:center;justify-content:center;gap:4px;">
+            ☁️ Total di Firebase
+            <button onclick="refreshFirebaseCount()" style="background:none;border:none;cursor:pointer;font-size:0.65rem;color:var(--muted);padding:0 2px;" title="Refresh">🔄</button>
+          </div>
         </div>
         <div class="stat-mini highlight" style="grid-column:1/-1;">
           <div class="val" id="statQtyBin">0</div>
@@ -761,9 +768,13 @@
         for (const row of validRows) { await markSyncedInIDB(row.id); synced++; }
       }
       pendingSyncCount = Math.max(0, pendingSyncCount - synced);
-      if (synced > 0) showToast(`☁️ ${synced} data tersinkron!`, 'success');
+      if (synced > 0) {
+        showToast(`☁️ ${synced} data tersinkron!`, 'success');
+        refreshFirebaseCount(); // update total Firebase setelah sync
+      }
       // Proses antrian hapus yang tertunda saat offline
       await processDeleteQueue();
+      refreshFirebaseCount(); // update setelah delete queue juga diproses
     } catch(err) {
       // Retry otomatis setelah 5 detik jika masih online
       showToast('⚠️ Sync gagal, retry dalam 5 detik...', 'info');
@@ -1653,6 +1664,26 @@
     safeSetText('emptyTotalData', scanDataArray.length.toLocaleString());
   }
 
+  // Fetch total SCAN_DATA dari Firebase — pakai count query (efisien, tidak tarik data)
+  let fbCountFetching = false;
+  async function refreshFirebaseCount() {
+    if (!db || fbCountFetching) return;
+    fbCountFetching = true;
+    safeSetText('statFirebaseTotal', '...');
+    try {
+      const { getCountFromServer } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+      const snap = await getCountFromServer(collection(db, 'SCAN_DATA'));
+      safeSetText('statFirebaseTotal', snap.data().count.toLocaleString());
+    } catch(e) {
+      // Fallback getDocs jika getCountFromServer tidak tersedia
+      try {
+        const snap = await getDocs(collection(db, 'SCAN_DATA'));
+        safeSetText('statFirebaseTotal', snap.size.toLocaleString());
+      } catch(e2) { safeSetText('statFirebaseTotal', '—'); }
+    } finally { fbCountFetching = false; }
+  }
+  window.refreshFirebaseCount = refreshFirebaseCount;
+
   // Render full table (dipakai saat recall BIN / pertama load)
   function renderScanTable() {
     const tbody = document.getElementById('scanTableBody');
@@ -1741,8 +1772,7 @@
       safeSetText('configStatus', '✅ Terhubung!');
       updateFirestoreStatus();
       showToast('✅ Firebase terhubung!', 'success');
-      // Auto-sync pending IDB queue now that Firebase is online
-      setTimeout(() => autoSyncQueue(), 500);
+      setTimeout(() => { autoSyncQueue(); refreshFirebaseCount(); }, 500);
     } catch(err) {
       safeSetText('configStatus', '❌ Gagal: ' + err.message);
       db = null;
@@ -1898,6 +1928,7 @@
 
   renderScanTable(); updateScanStats(); renderBinCardsInPopup(); updateFirestoreStatus(); updateSyncStatusUI();
   setInterval(()=>{ updateScanStats(); updateFirestoreStatus(); updateSyncStatusUI(); },30000);
+  setInterval(()=>{ refreshFirebaseCount(); }, 60000);
 </script>
 </body>
 </html>
