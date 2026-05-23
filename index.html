@@ -545,6 +545,18 @@
   let isSyncing = false;
   let masterCacheReady = false;
 
+  // ── In-Memory Maps: loaded from IDB once at startup → O(1) lookup ──
+  // Key formats:
+  //   memBarcode:  barcode_string  → row
+  //   memArticleB: article_string  → row  (from MASTER_BARCODE)
+  //   memProduk:   article_string  → row  (from MASTER_PRODUK, key = _id)
+  //   memSize:     "US_GENDER"     → UK_size string
+  const memBarcode  = new Map(); // barcode → row
+  const memArticleB = new Map(); // article (from BARCODE table) → row
+  const memProduk   = new Map(); // article/_id → row
+  const memSize     = new Map(); // "usSize|gender" → uk_size
+  let memLoaded = false;
+
   // ═══════════════ INDEXED DB LAYER ═══════════════
   function openIDB() {
     return new Promise((resolve, reject) => {
@@ -863,7 +875,8 @@
     await idbPut(STORE_META, { key: 'master_cache_time', value: new Date().toISOString() });
     safeSetText('cacheLastUpdate', `Terakhir update: ${new Date().toLocaleString('id-ID')}`);
     masterCacheReady = done === cols.length;
-    updateOfflineReadyUI();
+    // Reload RAM maps so next scan is instantly O(1) — no restart needed
+    await reloadMemoryAfterCache();
     if (fill) fill.style.width = '100%';
     if (btn) { btn.disabled = false; btn.textContent = '⬇ Download & Cache Semua'; }
     showToast(`✅ ${total.toLocaleString()} data ter-cache!`, 'success');
@@ -879,49 +892,64 @@
     showToast('🗑 Master cache dihapus', 'info');
   };
 
-  // ── IDB-first search helpers (fallback to Firebase if not found) ──
-  async function idbSearchBarcode(inputStr) {
-    if (!idb) return { found: false, data: null };
-    // Try direct key lookup first (fastest)
-    let row = await idbGet(STORE_M_BARCODE, inputStr).catch(() => null);
-    if (row) return { found: true, data: row, source: 'idb_MASTER_BARCODE' };
-    // Try Barcode index
-    const byBarcode = await idbGetByIndexFirst(STORE_M_BARCODE, 'Barcode', inputStr).catch(() => null);
-    if (byBarcode) return { found: true, data: byBarcode, source: 'idb_MASTER_BARCODE' };
-    // Try numeric Barcode
-    if (/^\d+$/.test(inputStr)) {
-      const byNum = await idbGetByIndexFirst(STORE_M_BARCODE, 'Barcode', Number(inputStr)).catch(() => null);
-      if (byNum) return { found: true, data: byNum, source: 'idb_MASTER_BARCODE' };
-    }
-    // Try Article index
-    const byArticle = await idbGetByIndexFirst(STORE_M_BARCODE, 'Article', inputStr).catch(() => null);
-    if (byArticle) return { found: true, data: byArticle, source: 'idb_MASTER_BARCODE' };
-    return { found: false, data: null };
-  }
-
-  async function idbSearchProduk(inputStr) {
-    if (!idb) return { found: false, data: null };
-    let row = await idbGet(STORE_M_PRODUK, inputStr).catch(() => null);
-    if (row) return { found: true, data: row, source: 'idb_MASTER_PRODUK' };
-    const byArticle = await idbGetByIndexFirst(STORE_M_PRODUK, 'Article', inputStr).catch(() => null);
-    if (byArticle) return { found: true, data: byArticle, source: 'idb_MASTER_PRODUK' };
-    return { found: false, data: null };
-  }
-
-  async function idbFindSizeUK(usSize, genderLabel) {
-    if (!idb) return '';
+  // ── Load all IDB master stores into RAM Maps (called once at startup) ──
+  async function loadMasterToMemory() {
+    if (!idb) return;
+    const t0 = performance.now();
     try {
-      // get all rows with matching US_Size then filter Gender
-      const bySize = await idbGetByIndex(STORE_M_SIZE, 'US_Size', String(usSize));
-      const match = bySize.find(r => r.Gender === genderLabel);
-      if (match) return match.UK_Size || match.Size_UK || '';
-      if (/^\d+$/.test(usSize)) {
-        const byNum = await idbGetByIndex(STORE_M_SIZE, 'US_Size', Number(usSize));
-        const m2 = byNum.find(r => r.Gender === genderLabel);
-        if (m2) return m2.UK_Size || m2.Size_UK || '';
+      const [barcodeRows, produkRows, sizeRows] = await Promise.all([
+        idbGetAll(STORE_M_BARCODE),
+        idbGetAll(STORE_M_PRODUK),
+        idbGetAll(STORE_M_SIZE)
+      ]);
+
+      memBarcode.clear(); memArticleB.clear(); memProduk.clear(); memSize.clear();
+
+      for (const r of barcodeRows) {
+        if (r.Barcode)  memBarcode.set(String(r.Barcode).trim(), r);
+        if (r._id)      memBarcode.set(String(r._id).trim(), r);      // doc ID = barcode
+        if (r.Article)  memArticleB.set(String(r.Article).trim(), r);
       }
-    } catch(e) {}
-    return '';
+      for (const r of produkRows) {
+        if (r._id)      memProduk.set(String(r._id).trim(), r);
+        if (r.Article)  memProduk.set(String(r.Article).trim(), r);
+      }
+      for (const r of sizeRows) {
+        const us = String(r.US_Size ?? '').trim();
+        const g  = String(r.Gender   ?? '').trim();
+        if (us && g) memSize.set(`${us}|${g}`, r.UK_Size || r.Size_UK || '');
+      }
+
+      memLoaded = barcodeRows.length > 0 || produkRows.length > 0;
+      console.log(`[MEM] Loaded: barcode=${memBarcode.size} produk=${memProduk.size} size=${memSize.size} in ${(performance.now()-t0).toFixed(1)}ms`);
+    } catch(e) {
+      console.error('[MEM] loadMasterToMemory error:', e);
+    }
+  }
+
+  // Call this after caching to refresh memory too
+  async function reloadMemoryAfterCache() {
+    memLoaded = false;
+    await loadMasterToMemory();
+    masterCacheReady = memLoaded;
+    updateOfflineReadyUI();
+  }
+
+  // ── O(1) memory lookups (replaces slow sequential IDB calls) ──
+  function memSearchBarcode(inputStr) {
+    if (!memLoaded) return null;
+    const s = inputStr.trim();
+    return memBarcode.get(s) || memArticleB.get(s) || null;
+  }
+
+  function memSearchProduk(inputStr) {
+    if (!memLoaded) return null;
+    return memProduk.get(inputStr.trim()) || null;
+  }
+
+  function memFindSizeUK(usSize, genderLabel) {
+    if (!memLoaded || !usSize || !genderLabel) return '';
+    return memSize.get(`${usSize}|${genderLabel}`) || memSize.get(`${Number(usSize)}|${genderLabel}`) || '';
   }
 
   // ═══════════════ HELPER ═══════════════
@@ -1143,8 +1171,8 @@
     }
   });
 
-  // ═══════════════ HYBRID SEARCH (IDB-first, Firebase fallback) ═══════════════
-  // Pure Firebase helpers (only called when IDB misses)
+  // ═══════════════ HYBRID SEARCH (Memory → IDB → Firebase) ═══════════════
+  // Pure Firebase helpers (only called when memory & IDB miss)
   async function fbSearchById(colName, docId) {
     if (!db) return { found: false, data: null };
     try {
@@ -1169,13 +1197,12 @@
     return { found: false, data: null };
   }
 
-  // IDB-first Size UK lookup
+  // Size UK: memory → Firebase
   async function findSizeUK(usSize, genderLabel) {
     if (!usSize || !genderLabel) return '';
-    // Try IDB cache first
-    const fromIDB = await idbFindSizeUK(usSize, genderLabel);
-    if (fromIDB) return fromIDB;
-    // Fallback to Firebase
+    const fromMem = memFindSizeUK(usSize, genderLabel);
+    if (fromMem) return fromMem;
+    // Fallback Firebase
     if (!db) return '';
     try {
       let q = query(collection(db, 'SIZE'), where('US_Size', '==', String(usSize)), where('Gender', '==', genderLabel));
@@ -1190,57 +1217,69 @@
     return '';
   }
 
-  // IDB-first product info lookup
+  // Product info: memory → Firebase
   async function findProductInfoByGeneric(generic) {
     if (!generic) return { brandName: '', seasonYr: '', cat: '', merchCat: '' };
-    // Try IDB first
-    let result = await idbSearchProduk(generic);
-    // Fallback to Firebase
-    if (!result.found && db) {
-      result = await fbSearchById('MASTER_PRODUK', generic);
-      if (!result.found) result = await fbSearchByField('MASTER_PRODUK', 'Article', generic);
+    let data = memSearchProduk(generic);
+    if (!data && db) {
+      const r = await fbSearchById('MASTER_PRODUK', generic);
+      if (!r.found) { const r2 = await fbSearchByField('MASTER_PRODUK', 'Article', generic); if (r2.found) data = r2.data; }
+      else data = r.data;
     }
-    if (result.found && result.data) {
-      const d = result.data;
-      const merchCat = d.Merch_Cat || d.MerchCat || '';
-      return { brandName: d.Brand_Name || d.BrandName || d.Brand || '', seasonYr: d.Season_Yr_ || d.SeasonYr || d.Season || '', merchCat, cat: extractCat(merchCat) };
+    if (data) {
+      const merchCat = data.Merch_Cat || data.MerchCat || '';
+      return { brandName: data.Brand_Name || data.BrandName || data.Brand || '', seasonYr: data.Season_Yr_ || data.SeasonYr || data.Season || '', merchCat, cat: extractCat(merchCat) };
     }
     return { brandName: '', seasonYr: '', cat: '', merchCat: '' };
   }
 
-  // Main search: IDB-first, Firebase fallback
+  // Main search: Memory (O(1)) → Firebase fallback
   async function searchBarcodeInMaster(input) {
     const inputStr = String(input).trim();
-    const noIDB = !idb;
-    const noFB  = !db;
-    if (noIDB && noFB) return { found: false, error: 'Tidak ada sumber data (IDB & Firebase offline)' };
+    if (!memLoaded && !db) return { found: false, error: 'Tidak ada sumber data. Cache master dulu atau sambungkan Firebase.' };
 
     try {
-      let result = { found: false, data: null };
+      // ── 1. Try memory (instant, <1ms) ──
+      let memRow = memSearchBarcode(inputStr);
 
-      if (isBarcodeFormat(inputStr)) {
-        // ── Barcode format: search MASTER_BARCODE ──
-        result = await idbSearchBarcode(inputStr);
-        if (!result.found && db) {
-          result = await fbSearchById('MASTER_BARCODE', inputStr);
-          if (!result.found) result = await fbSearchByField('MASTER_BARCODE', 'Barcode', inputStr);
+      if (memRow) {
+        return await processFoundResult({ found: true, data: memRow, source: 'mem' }, inputStr);
+      }
+
+      // If it's an article (not barcode), also try produk memory
+      if (!isBarcodeFormat(inputStr)) {
+        const produkRow = memSearchProduk(inputStr);
+        if (produkRow) {
+          produkRow.Article = produkRow.Article || inputStr;
+          return await processFoundResult({ found: true, data: produkRow, source: 'mem_produk' }, inputStr);
         }
+        // Try generic (article - 3 chars = size suffix)
+        if (inputStr.length > 3) {
+          const generic = inputStr.substring(0, inputStr.length - 3);
+          const genericRow = memSearchProduk(generic);
+          if (genericRow) {
+            const r = { ...genericRow, Article: genericRow.Article || inputStr, Barcode: genericRow.Barcode || inputStr, GENERIC: genericRow.GENERIC || generic };
+            return await processFoundResult({ found: true, data: r, source: 'mem_generic' }, inputStr);
+          }
+        }
+      }
+
+      // ── 2. Fallback to Firebase (only if online) ──
+      if (!db) return { found: false, data: null, source: null };
+
+      let result = { found: false, data: null };
+      if (isBarcodeFormat(inputStr)) {
+        result = await fbSearchById('MASTER_BARCODE', inputStr);
+        if (!result.found) result = await fbSearchByField('MASTER_BARCODE', 'Barcode', inputStr);
       } else {
-        // ── Article format: try BARCODE table first, then PRODUK ──
-        result = await idbSearchBarcode(inputStr);
-        if (!result.found && db) result = await fbSearchById('MASTER_BARCODE', inputStr);
-        if (!result.found && db) result = await fbSearchByField('MASTER_BARCODE', 'Article', inputStr);
-
-        if (!result.found) result = await idbSearchProduk(inputStr);
-        if (!result.found && db) result = await fbSearchById('MASTER_PRODUK', inputStr);
-        if (!result.found && db) result = await fbSearchByField('MASTER_PRODUK', 'Article', inputStr);
-
-        // Try generic (strip last 3 chars = size suffix)
+        result = await fbSearchById('MASTER_BARCODE', inputStr);
+        if (!result.found) result = await fbSearchByField('MASTER_BARCODE', 'Article', inputStr);
+        if (!result.found) result = await fbSearchById('MASTER_PRODUK', inputStr);
+        if (!result.found) result = await fbSearchByField('MASTER_PRODUK', 'Article', inputStr);
         if (!result.found && inputStr.length > 3) {
           const generic = inputStr.substring(0, inputStr.length - 3);
-          result = await idbSearchProduk(generic);
-          if (!result.found && db) result = await fbSearchById('MASTER_PRODUK', generic);
-          if (!result.found && db) result = await fbSearchByField('MASTER_PRODUK', 'Article', generic);
+          result = await fbSearchById('MASTER_PRODUK', generic);
+          if (!result.found) result = await fbSearchByField('MASTER_PRODUK', 'Article', generic);
           if (result.found) {
             result.data.Article = result.data.Article || inputStr;
             result.data.Barcode = result.data.Barcode || inputStr;
@@ -1248,7 +1287,6 @@
           }
         }
       }
-
       if (result?.found) return await processFoundResult(result, inputStr);
       return { found: false, data: null, source: null };
     } catch(err) {
@@ -1563,13 +1601,14 @@
     safeSetText('idbStatus', '💾 IDB ✗');
   }
 
-  // 2. Load scan data from IDB (primary source)
+  // 2. Load semua data dari IDB secara parallel (scan + master ke RAM sekaligus)
   if (idb) {
-    await loadScanFromIDB();
-    // Check master cache status
+    await Promise.all([
+      loadScanFromIDB(),
+      loadMasterToMemory()   // ← INI KUNCI UTAMA: load master ke RAM agar O(1)
+    ]);
     await refreshCacheUI();
   } else {
-    // Fallback: load from localStorage
     const saved = localStorage.getItem('scan_data');
     if (saved) { try { scanDataArray = JSON.parse(saved); } catch(e) { scanDataArray = []; } }
   }
@@ -1635,12 +1674,29 @@
     const clearFirst=document.getElementById('optClear')?.checked||false;
     const pw=document.getElementById('progressWrap');if(pw)pw.innerHTML='';
     let total=0;
+    const masterSheets = ['MASTER_BARCODE','MASTER_PRODUK','SIZE'];
+    const uploadedMasters = [];
     for(const name of selected){
       const rows=parsedSheets[name];if(!rows?.length)continue;
-      try{if(clearFirst)await deleteCollection(name,(d,t)=>{});await uploadBatched(name,rows,(d,t)=>{});total+=rows.length;if(pw)pw.innerHTML+=`<div style="color:var(--green);font-size:0.75rem;">✅ ${name} — ${rows.length} row</div>`;}
+      try{
+        if(clearFirst)await deleteCollection(name,(d,t)=>{});
+        await uploadBatched(name,rows,(d,t)=>{});
+        total+=rows.length;
+        if(pw)pw.innerHTML+=`<div style="color:var(--green);font-size:0.75rem;">✅ ${name} — ${rows.length} row</div>`;
+        if(masterSheets.includes(name)) uploadedMasters.push(name);
+      }
       catch(err){if(pw)pw.innerHTML+=`<div style="color:var(--red);font-size:0.75rem;">❌ ${name}: ${err.message}</div>`;}
     }
     showToast(`✅ ${total} data terupload!`,'success');
+    // Auto-cache master sheets that were just uploaded → hot reload memory
+    if(uploadedMasters.length > 0 && idb) {
+      showToast('⬇ Auto-cache master ke IDB...','info');
+      for(const col of uploadedMasters) { try { await cacheCollection(col); } catch(e){} }
+      await reloadMemoryAfterCache();
+      await idbPut(STORE_META, { key:'master_cache_time', value: new Date().toISOString() });
+      safeSetText('cacheLastUpdate', `Terakhir update: ${new Date().toLocaleString('id-ID')}`);
+      showToast('✅ Master cache diperbarui otomatis!','success');
+    }
   }
 
   async function clearSelected(){
