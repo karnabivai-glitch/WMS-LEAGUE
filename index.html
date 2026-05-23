@@ -511,15 +511,16 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore, collection, writeBatch, doc, getDocs, query, where, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import { getFirestore, collection, writeBatch, doc, getDocs, query, where, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
   const PROJECT_ID = "wms-league";
   const BATCH_SIZE = 200;
-  const MAX_ROWS = 19;
+  const MAX_ROWS = 20;
   const IDB_NAME = 'BRG_WMS';
-  const IDB_VERSION = 2;  // bumped for new master stores
+  const IDB_VERSION = 3;  // bumped: added delete_queue store
   const STORE_SCAN  = 'scan_data';
   const STORE_QUEUE = 'sync_queue';
+  const STORE_DELETE_QUEUE = 'delete_queue';  // antrian hapus ke Firebase saat offline
   const STORE_META  = 'meta';
   // Master cache stores (offline mode)
   const STORE_M_BARCODE = 'master_barcode';
@@ -570,6 +571,9 @@
         }
         if (!d.objectStoreNames.contains(STORE_QUEUE)) {
           d.createObjectStore(STORE_QUEUE, { keyPath: 'id' });
+        }
+        if (!d.objectStoreNames.contains(STORE_DELETE_QUEUE)) {
+          d.createObjectStore(STORE_DELETE_QUEUE, { keyPath: 'id' });
         }
         if (!d.objectStoreNames.contains(STORE_META)) {
           d.createObjectStore(STORE_META, { keyPath: 'key' });
@@ -672,6 +676,59 @@
     } catch(e) {}
   }
 
+  // ── Hapus dari Firebase by local_id ──
+  async function deleteFromFirebase(localId) {
+    if (!db) return false;
+    try {
+      const q = query(collection(db, 'SCAN_DATA'), where('local_id', '==', localId));
+      const snap = await getDocs(q);
+      if (snap.empty) return true; // sudah tidak ada, anggap sukses
+      const batch = writeBatch(db);
+      snap.docs.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      return true;
+    } catch(e) { return false; }
+  }
+
+  // Hapus satu item: lokal + Firebase (atau queue jika offline)
+  async function deleteScanItem(id) {
+    if (!idb) return;
+
+    // Cek apakah item ini masih pending upload (belum pernah masuk Firebase)
+    const stillPending = await idbGet(STORE_QUEUE, id).catch(() => null);
+
+    // Hapus dari IDB lokal + sync_queue (batalkan upload jika pending)
+    await deleteScanFromIDB(id);
+
+    if (stillPending) {
+      // Belum pernah di-upload ke Firebase — cukup hapus lokal, tidak perlu delete queue
+      return;
+    }
+
+    // Sudah pernah sync ke Firebase — perlu hapus di Firebase juga
+    if (db) {
+      const ok = await deleteFromFirebase(id);
+      if (!ok) {
+        // Gagal (misal koneksi putus tiba-tiba) — masukkan delete queue
+        await idbPut(STORE_DELETE_QUEUE, { id, queuedAt: new Date().toISOString() }).catch(() => {});
+      }
+    } else {
+      // Offline — antri untuk dihapus saat online
+      await idbPut(STORE_DELETE_QUEUE, { id, queuedAt: new Date().toISOString() }).catch(() => {});
+    }
+  }
+
+  // Proses delete queue (dipanggil saat online / setelah sync)
+  async function processDeleteQueue() {
+    if (!db || !idb) return;
+    const queue = await idbGetAll(STORE_DELETE_QUEUE);
+    if (!queue.length) return;
+    for (const item of queue) {
+      const ok = await deleteFromFirebase(item.id);
+      if (ok) await idbDelete(STORE_DELETE_QUEUE, item.id).catch(() => {});
+    }
+  }
+
   // ═══════════════ AUTO SYNC QUEUE ═══════════════
   async function autoSyncQueue() {
     if (!db || !idb || isSyncing) return;
@@ -705,6 +762,8 @@
       }
       pendingSyncCount = Math.max(0, pendingSyncCount - synced);
       if (synced > 0) showToast(`☁️ ${synced} data tersinkron!`, 'success');
+      // Proses antrian hapus yang tertunda saat offline
+      await processDeleteQueue();
     } catch(err) {
       // Retry otomatis setelah 5 detik jika masih online
       showToast('⚠️ Sync gagal, retry dalam 5 detik...', 'info');
@@ -1502,11 +1561,12 @@
     currentSessionData = currentSessionData.filter(r => r.id !== id);
     scanDataArray = scanDataArray.filter(r => r.id !== id);
     saveScanData();
-    deleteScanFromIDB(id);
     renderScanTable();
     updateScanStats();
     renderBinCardsInPopup();
     showToast('🗑 Dihapus', 'info');
+    // Hapus dari Firebase di background (atau queue jika offline)
+    deleteScanItem(id);
   };
 
   window.editScanCell = function(id, field) {
@@ -1529,10 +1589,13 @@
     showToast('✅ Updated', 'success');
   };
 
-  window.clearScanData = function() {
+  window.clearScanData = async function() {
     if (!scanDataArray.length) { showToast('📭 Kosong', 'info'); return; }
-    if (!confirm(`Hapus SEMUA ${scanDataArray.length} data?`)) return;
-    // Clear IDB
+    if (!confirm(`Hapus SEMUA ${scanDataArray.length} data? Data di Firebase juga akan dihapus.`)) return;
+
+    const idsToDelete = scanDataArray.map(r => r.id);
+
+    // Clear lokal
     if (idb) {
       const tx = idb.transaction([STORE_SCAN, STORE_QUEUE], 'readwrite');
       tx.objectStore(STORE_SCAN).clear();
@@ -1552,6 +1615,31 @@
     const binInput = document.getElementById('scanBIN');
     if (binInput) binInput.value = '';
     showToast('🗑 Semua data dihapus', 'info');
+
+    // Hapus dari Firebase di background
+    if (db) {
+      try {
+        const snap = await getDocs(collection(db, 'SCAN_DATA'));
+        if (!snap.empty) {
+          for (let i = 0; i < snap.docs.length; i += BATCH_SIZE) {
+            const batch = writeBatch(db);
+            snap.docs.slice(i, i + BATCH_SIZE).forEach(d => batch.delete(d.ref));
+            await batch.commit();
+          }
+          showToast('☁️ Firebase juga dibersihkan', 'success');
+        }
+      } catch(e) {
+        // Jika gagal, queue per-id untuk dihapus nanti
+        for (const id of idsToDelete) {
+          await idbPut(STORE_DELETE_QUEUE, { id, queuedAt: new Date().toISOString() }).catch(() => {});
+        }
+      }
+    } else {
+      // Offline — queue semua id untuk dihapus saat online
+      for (const id of idsToDelete) {
+        await idbPut(STORE_DELETE_QUEUE, { id, queuedAt: new Date().toISOString() }).catch(() => {});
+      }
+    }
   };
 
   function updateScanStats() {
@@ -1705,9 +1793,11 @@
   async function onNetworkOnline() {
     showToast('🌐 Online! Menyinkronkan...', 'info');
     updateFirestoreStatus();
-    // Jika Firebase sudah connect, langsung sync
-    if (db) { autoSyncQueue(); return; }
-    // Jika belum (misal API key ada tapi koneksi putus), reconnect dulu
+    if (db) {
+      autoSyncQueue();
+      processDeleteQueue();
+      return;
+    }
     const savedApiKey = localStorage.getItem('fb_api_key');
     if (!savedApiKey) return;
     try {
@@ -1715,6 +1805,7 @@
       db = getFirestore(app);
       updateFirestoreStatus();
       autoSyncQueue();
+      processDeleteQueue();
     } catch(e) {
       db = null;
       updateFirestoreStatus();
