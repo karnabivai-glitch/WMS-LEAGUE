@@ -539,10 +539,12 @@
       <div id="sheetsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:12px;"></div>
       <div id="sheetOptions" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;"></div>
       <div id="uploadCard" style="display:none;margin-top:16px;">
-        <label style="font-size:0.85rem;"><input type="checkbox" id="optClear" /> Hapus data lama</label>
-        <div style="display:flex;gap:8px;margin-top:10px;">
-          <button class="btn btn-upload" onclick="startUpload()" style="width:auto;">⬆ Upload</button>
-          <button class="btn btn-danger" onclick="clearSelected()" style="width:auto;">🗑 Hapus</button>
+        <div style="font-size:0.68rem;color:var(--muted);background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:7px;padding:8px 10px;margin-bottom:10px;">
+          ℹ️ Hanya article <strong>baru</strong> yang belum ada di Firebase yang akan diupload. Data lama tetap aman, tidak ada yang dihapus.
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-upload" onclick="startUpload()" style="width:auto;">⬆ Upload Article Baru</button>
+          <button class="btn btn-danger" onclick="clearSelected()" style="width:auto;">🗑 Batal</button>
         </div>
       </div>
       <div id="progressWrap"></div>
