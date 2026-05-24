@@ -2150,8 +2150,27 @@
   // ═══════════════ MASTER UPLOAD ═══════════════
   function sanitize(v) { if (v===null||v===undefined||v==='') return null; if (typeof v==='number'&&isNaN(v)) return null; if (v instanceof Date) return v.toISOString().split('T')[0]; return v; }
   function makeDocId(sheetName, row) {
-    if (sheetName==='SIZE') { const u=String(row['US_Size']||'').trim(),g=String(row['Gender']||'').trim(); if(u&&g) return `${u}_${g}`.replace(/[/?#\[\]@!$&'()*+,;=]/g,'_'); return `SIZE_${Date.now().toString(36)}`; }
-    for(const k of ['Barcode','Article']){ const r=row[k]; if(r!=null&&String(r).trim()) return String(r).trim().replace(/[/?#\[\]@!$&'()*+,;=]/g,'_'); }
+    if (sheetName === 'SIZE') {
+      const u = String(row['US_Size'] || row['US_SIZE'] || row['us_size'] || '').trim();
+      const g = String(row['Gender']  || row['GENDER']  || row['gender']  || '').trim();
+      if (u && g) return `${u}_${g}`.replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
+      return `SIZE_${Date.now().toString(36)}`;
+    }
+    // Cari field Barcode atau Article — case-insensitive
+    const keys = Object.keys(row);
+    for (const target of ['Barcode', 'BARCODE', 'barcode', 'Article', 'ARTICLE', 'article']) {
+      const key = keys.find(k => k === target);
+      if (key && row[key] != null && String(row[key]).trim()) {
+        return String(row[key]).trim().replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
+      }
+    }
+    // Fallback: cari key yang mengandung kata 'barcode' atau 'article'
+    for (const k of keys) {
+      const kl = k.toLowerCase();
+      if ((kl.includes('barcode') || kl.includes('article')) && row[k] != null && String(row[k]).trim()) {
+        return String(row[k]).trim().replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
+      }
+    }
     return `${sheetName}_${Date.now().toString(36)}`;
   }
 
@@ -2230,6 +2249,14 @@
           // Simpan sebagai Set untuk lookup O(1)
           const existingIds = new Set(snapMeta.docs.map(d => d.id));
 
+          // DEBUG: tampilkan sample docId dari Excel dan Firebase untuk diagnosa
+          const sampleXls = rows.slice(0, 3).map(r => makeDocId(name, r));
+          const sampleFb  = [...existingIds].slice(0, 3);
+          if (pw) pw.innerHTML += `<div style="color:#94a3b8;font-size:0.62rem;font-family:monospace;margin:2px 0;">
+            📋 Sample docId Excel: ${sampleXls.join(' | ')}<br>
+            ☁️ Sample docId Firebase: ${sampleFb.join(' | ')}
+          </div>`;
+
           // ── DETEKSI PENGURANGAN DATA ──
           // Jika Excel lebih sedikit dari Firebase → ada data yang dihapus dari Excel
           // Perlu replace total agar Firebase sinkron dengan Excel
@@ -2265,6 +2292,14 @@
             const docId = makeDocId(name, row);
             return !existingIds.has(docId); // gunakan existingIds (Set), bukan existing (Map lama)
           });
+
+          // Debug info — tampilkan sample docId dari Excel vs Firebase untuk diagnosa
+          if (toUpload.length === 0 && rows.length > fbCount) {
+            // Harusnya ada yang baru tapi tidak terdeteksi — tampilkan sample untuk debug
+            const sampleXls = rows.slice(0, 3).map(r => makeDocId(name, r));
+            const sampleFb  = [...existingIds].slice(0, 3);
+            if (pw) pw.innerHTML += `<div style="color:#fbbf24;font-size:0.65rem;">⚠️ Debug — DocId Excel: [${sampleXls.join(', ')}] | DocId Firebase: [${sampleFb.join(', ')}]</div>`;
+          }
 
           if (toUpload.length === 0) {
             if (pw) pw.innerHTML += `<div style="color:var(--green);font-size:0.72rem;">✅ ${name} — sudah up-to-date, tidak ada yang baru</div>`;
