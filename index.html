@@ -523,8 +523,8 @@
       </div>
       <div class="cache-progress-bar"><div class="cache-progress-fill" id="cacheProgressFill"></div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-upload" id="btnCacheAll" onclick="cacheAllMasterData()" style="width:auto;">⬇ Download & Cache Semua</button>
-        <button class="btn" onclick="refreshCacheUI()" style="width:auto;background:rgba(99,102,241,0.2);color:#a78bfa;border:1px solid rgba(99,102,241,0.4);font-size:0.65rem;">🔄 Refresh Status</button>
+        <button class="btn btn-upload" id="btnCacheAll" onclick="cacheAllMasterData()" style="width:auto;">⬇ Cek & Update Cache</button>
+        <button class="btn" onclick="forceRedownloadCache()" style="width:auto;background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.3);font-size:0.65rem;" title="Download ulang paksa meski versi sama">🔄 Force Download</button>
         <button class="btn btn-danger" onclick="clearMasterCache()" style="width:auto;padding:8px 10px;font-size:0.65rem;">🗑 Hapus Cache</button>
       </div>
       <div class="cache-last-update" id="cacheLastUpdate">Belum pernah didownload</div>
@@ -920,18 +920,68 @@
     }
   }
 
-  // Download one Firestore collection → IDB
-  async function cacheCollection(colName) {
-    const storeName = MASTER_STORE_MAP[colName];
-    setCacheItemUI(colName, 'loading', '⏳ Mendownload...', '...');
+  // ── Smart cache: cek versi dulu (1 read), download hanya kalau berubah ──
+  // Setiap kali admin upload master baru, simpan doc VERSION di Firestore:
+  //   collection: _META, doc: MASTER_BARCODE → { updatedAt: timestamp, count: N }
+  // Kalau tidak ada _META doc → fallback download langsung
+
+  async function getRemoteVersion(colName) {
+    // 1 read saja — bukan tarik semua data
     try {
+      const snap = await getDoc(doc(db, '_META', colName));
+      if (snap.exists()) return snap.data(); // { updatedAt, count }
+    } catch(e) {}
+    return null;
+  }
+
+  async function getLocalVersion(colName) {
+    try {
+      const meta = await idbGet(STORE_META, `cache_ver_${colName}`);
+      return meta ? meta.value : null; // { updatedAt, count }
+    } catch(e) { return null; }
+  }
+
+  async function saveLocalVersion(colName, ver) {
+    await idbPut(STORE_META, { key: `cache_ver_${colName}`, value: ver }).catch(() => {});
+  }
+
+  // Download one Firestore collection → IDB (dengan smart version check)
+  async function cacheCollection(colName, forceDownload = false) {
+    const storeName = MASTER_STORE_MAP[colName];
+    setCacheItemUI(colName, 'loading', '⏳ Cek versi...', '...');
+
+    try {
+      // Langkah 1: cek versi remote (1 read)
+      const remoteVer = await getRemoteVersion(colName);
+      const localVer  = await getLocalVersion(colName);
+      const localCount = await idbCountStore(storeName);
+
+      if (!forceDownload && remoteVer && localVer && localCount > 0) {
+        const remoteTime = remoteVer.updatedAt || '';
+        const localTime  = localVer.updatedAt  || '';
+        if (remoteTime === localTime) {
+          // Versi sama — skip download, pakai cache lokal
+          setCacheItemUI(colName, 'cached', '✅ Up-to-date', localCount.toLocaleString());
+          return 0; // 0 = tidak ada download baru (hemat bandwidth)
+        }
+      }
+
+      // Langkah 2: versi beda atau belum punya cache → download semua
+      setCacheItemUI(colName, 'loading', '⏳ Mendownload...', '...');
       const snap = await getDocs(collection(db, colName));
       if (snap.empty) { setCacheItemUI(colName, 'cached', '✅ Kosong', '0'); return 0; }
+
       const rows = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
       await clearIDBStore(storeName);
       await bulkPutToIDB(storeName, rows);
-      setCacheItemUI(colName, 'cached', '✅ Tersimpan', rows.length.toLocaleString());
+
+      // Simpan versi lokal
+      const verToSave = remoteVer || { updatedAt: new Date().toISOString(), count: rows.length };
+      await saveLocalVersion(colName, verToSave);
+
+      setCacheItemUI(colName, 'cached', '✅ Diperbarui', rows.length.toLocaleString());
       return rows.length;
+
     } catch(err) {
       setCacheItemUI(colName, 'error-state', '❌ Gagal', '✗');
       throw err;
@@ -985,34 +1035,49 @@
   }
 
   // Download all 3 master collections
-  window.cacheAllMasterData = async function() {
+  window.cacheAllMasterData = async function(force = false) {
     if (!db) { showToast('❌ Firebase harus online dulu', 'error'); return; }
-    const btn = document.getElementById('btnCacheAll');
+    const btn  = document.getElementById('btnCacheAll');
     const fill = document.getElementById('cacheProgressFill');
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ Downloading...'; }
+    if (btn)  { btn.disabled = true; btn.textContent = '⏳ Mengecek...'; }
     if (fill) fill.style.width = '5%';
 
     const cols = Object.keys(MASTER_STORE_MAP);
-    let done = 0, total = 0;
-    showToast('⬇ Mendownload master data...', 'info');
-    for (const col of cols) {
+    let downloaded = 0, skipped = 0, totalRows = 0;
+    showToast('🔍 Mengecek versi master data...', 'info');
+
+    for (let i = 0; i < cols.length; i++) {
+      const col = cols[i];
       try {
-        const count = await cacheCollection(col);
-        total += count; done++;
-        if (fill) fill.style.width = `${Math.round((done / cols.length) * 100)}%`;
+        const count = await cacheCollection(col, force);
+        if (count === 0) skipped++;
+        else { downloaded++; totalRows += count; }
+        if (fill) fill.style.width = `${Math.round(((i+1) / cols.length) * 100)}%`;
       } catch(e) {
         showToast(`❌ Gagal download ${col}`, 'error');
       }
     }
-    // Save timestamp
+
     await idbPut(STORE_META, { key: 'master_cache_time', value: new Date().toISOString() });
     safeSetText('cacheLastUpdate', `Terakhir update: ${new Date().toLocaleString('id-ID')}`);
-    masterCacheReady = done === cols.length;
-    // Reload RAM maps so next scan is instantly O(1) — no restart needed
+    masterCacheReady = (downloaded + skipped) === cols.length;
     await reloadMemoryAfterCache();
+    updateOfflineReadyUI();
     if (fill) fill.style.width = '100%';
-    if (btn) { btn.disabled = false; btn.textContent = '⬇ Download & Cache Semua'; }
-    showToast(`✅ ${total.toLocaleString()} data ter-cache!`, 'success');
+    if (btn)  { btn.disabled = false; btn.textContent = '⬇ Download & Cache Semua'; }
+
+    if (skipped === cols.length) {
+      showToast('✅ Sudah up-to-date! (0 reads terpakai)', 'success');
+    } else if (skipped > 0) {
+      showToast(`✅ ${totalRows.toLocaleString()} data diperbarui, ${skipped} koleksi skip`, 'success');
+    } else {
+      showToast(`✅ ${totalRows.toLocaleString()} data ter-cache!`, 'success');
+    }
+  };
+
+  window.forceRedownloadCache = function() {
+    if (!confirm('Download ulang semua master?\n⚠️ Ini menggunakan banyak reads Firestore.')) return;
+    cacheAllMasterData(true);
   };
 
   window.clearMasterCache = async function() {
@@ -2129,13 +2194,23 @@
     }
     showToast(`✅ ${total} data terupload!`,'success');
     // Auto-cache master sheets that were just uploaded → hot reload memory
-    if(uploadedMasters.length > 0 && idb) {
-      showToast('⬇ Auto-cache master ke IDB...','info');
-      for(const col of uploadedMasters) { try { await cacheCollection(col); } catch(e){} }
+    if (uploadedMasters.length > 0 && idb) {
+      showToast('⬇ Auto-cache master ke IDB...', 'info');
+      // Tulis _META version doc dulu agar device lain tahu ada update
+      const now = new Date().toISOString();
+      for (const col of uploadedMasters) {
+        try {
+          const count = parsedSheets[col]?.length || 0;
+          await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js")
+            .then(({ setDoc }) => setDoc(doc(db, '_META', col), { updatedAt: now, count, uploadedBy: document.getElementById('scanUser')?.value || 'ADMIN' }))
+            .catch(() => {});
+          await cacheCollection(col, true); // force download karena baru saja upload
+        } catch(e) {}
+      }
       await reloadMemoryAfterCache();
-      await idbPut(STORE_META, { key:'master_cache_time', value: new Date().toISOString() });
+      await idbPut(STORE_META, { key: 'master_cache_time', value: now });
       safeSetText('cacheLastUpdate', `Terakhir update: ${new Date().toLocaleString('id-ID')}`);
-      showToast('✅ Master cache diperbarui otomatis!','success');
+      showToast('✅ Master cache diperbarui otomatis!', 'success');
     }
   }
 
