@@ -2156,19 +2156,14 @@
       if (u && g) return `${u}_${g}`.replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
       return `SIZE_${Date.now().toString(36)}`;
     }
-    // Cari field Barcode atau Article — case-insensitive
+    // MASTER_BARCODE & MASTER_PRODUK:
+    // Prioritas Article dulu (cocok dengan docId lama di Firebase),
+    // fallback ke Barcode jika Article kosong
     const keys = Object.keys(row);
-    for (const target of ['Barcode', 'BARCODE', 'barcode', 'Article', 'ARTICLE', 'article']) {
+    for (const target of ['Article','ARTICLE','article','Barcode','BARCODE','barcode']) {
       const key = keys.find(k => k === target);
       if (key && row[key] != null && String(row[key]).trim()) {
         return String(row[key]).trim().replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
-      }
-    }
-    // Fallback: cari key yang mengandung kata 'barcode' atau 'article'
-    for (const k of keys) {
-      const kl = k.toLowerCase();
-      if ((kl.includes('barcode') || kl.includes('article')) && row[k] != null && String(row[k]).trim()) {
-        return String(row[k]).trim().replace(/[/?#\[\]@!$&'()*+,;=]/g, '_');
       }
     }
     return `${sheetName}_${Date.now().toString(36)}`;
@@ -2288,18 +2283,7 @@
           }
 
           // Filter: hanya row yang belum ada di Firebase (bandingkan docId)
-          const toUpload = rows.filter(row => {
-            const docId = makeDocId(name, row);
-            return !existingIds.has(docId); // gunakan existingIds (Set), bukan existing (Map lama)
-          });
-
-          // Debug info — tampilkan sample docId dari Excel vs Firebase untuk diagnosa
-          if (toUpload.length === 0 && rows.length > fbCount) {
-            // Harusnya ada yang baru tapi tidak terdeteksi — tampilkan sample untuk debug
-            const sampleXls = rows.slice(0, 3).map(r => makeDocId(name, r));
-            const sampleFb  = [...existingIds].slice(0, 3);
-            if (pw) pw.innerHTML += `<div style="color:#fbbf24;font-size:0.65rem;">⚠️ Debug — DocId Excel: [${sampleXls.join(', ')}] | DocId Firebase: [${sampleFb.join(', ')}]</div>`;
-          }
+          const toUpload = rows.filter(row => !existingIds.has(makeDocId(name, row)));
 
           if (toUpload.length === 0) {
             if (pw) pw.innerHTML += `<div style="color:var(--green);font-size:0.72rem;">✅ ${name} — sudah up-to-date, tidak ada yang baru</div>`;
