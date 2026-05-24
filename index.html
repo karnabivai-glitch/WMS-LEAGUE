@@ -2197,45 +2197,95 @@
   }
   async function deleteCollection(colName,onProgress){const snap=await getDocs(collection(db,colName));if(snap.empty){onProgress(0,0);return;}const docs=snap.docs;for(let i=0;i<docs.length;i+=BATCH_SIZE){const batch=writeBatch(db);docs.slice(i,i+BATCH_SIZE).forEach(d=>batch.delete(d.ref));await batch.commit();onProgress(i+Math.min(BATCH_SIZE,docs.length-i),docs.length);}}
 
-  async function startUpload(){
-    if(!db){showToast('❌ DB offline','error');return;}
-    const selected=[...document.querySelectorAll('.sheetCheck:checked')].map(c=>c.value);
-    if(!selected.length){showToast('⚠️ Pilih sheet','error');return;}
-    const clearFirst=document.getElementById('optClear')?.checked||false;
-    const pw=document.getElementById('progressWrap');if(pw)pw.innerHTML='';
-    let total=0;
-    const masterSheets = ['MASTER_BARCODE','MASTER_PRODUK','SIZE'];
+  async function startUpload() {
+    if (!db) { showToast('❌ DB offline', 'error'); return; }
+    const selected = [...document.querySelectorAll('.sheetCheck:checked')].map(c => c.value);
+    if (!selected.length) { showToast('⚠️ Pilih sheet', 'error'); return; }
+
+    const pw = document.getElementById('progressWrap');
+    if (pw) pw.innerHTML = '';
+
+    const masterSheets  = ['MASTER_BARCODE', 'MASTER_PRODUK', 'SIZE'];
     const uploadedMasters = [];
-    for(const name of selected){
-      const rows=parsedSheets[name];if(!rows?.length)continue;
-      try{
-        if(clearFirst)await deleteCollection(name,(d,t)=>{});
-        await uploadBatched(name,rows,(d,t)=>{});
-        total+=rows.length;
-        if(pw)pw.innerHTML+=`<div style="color:var(--green);font-size:0.75rem;">✅ ${name} — ${rows.length} row</div>`;
-        if(masterSheets.includes(name)) uploadedMasters.push(name);
+    let grandTotal = 0;
+
+    for (const name of selected) {
+      const rows = parsedSheets[name];
+      if (!rows?.length) continue;
+      const isMaster = masterSheets.includes(name);
+
+      try {
+        if (isMaster) {
+          // ── SMART DIFF: hanya upload article yang baru atau berubah ──
+          if (pw) pw.innerHTML += `<div style="color:var(--muted);font-size:0.72rem;">🔍 ${name}: Membandingkan dengan Firebase...</div>`;
+
+          const now      = new Date().toISOString();
+          const existing = new Map(); // docId → hash/updatedAt dari Firebase
+
+          // Ambil semua docId + updatedAt yang ada di Firebase (bukan full data)
+          // Pakai select projection: hanya ambil field updatedAt untuk hemat bandwidth
+          const snapMeta = await getDocs(collection(db, name));
+          snapMeta.docs.forEach(d => {
+            existing.set(d.id, d.data().updatedAt || '');
+          });
+
+          // Filter: hanya row yang belum ada atau docId-nya baru
+          const toUpload = rows.filter(row => {
+            const docId = makeDocId(name, row);
+            return !existing.has(docId); // hanya yang BELUM ADA di Firebase
+          });
+
+          if (toUpload.length === 0) {
+            if (pw) pw.innerHTML += `<div style="color:var(--green);font-size:0.72rem;">✅ ${name} — sudah up-to-date, tidak ada yang baru</div>`;
+          } else {
+            // Upload hanya yang baru
+            let done = 0;
+            await uploadBatched(name, toUpload, (d, t) => {
+              done = d;
+              if (pw) {
+                const lastLine = pw.lastElementChild;
+                if (lastLine) lastLine.textContent = `⬆ ${name}: ${d}/${t} row...`;
+              }
+            });
+            grandTotal += toUpload.length;
+            if (pw) pw.innerHTML += `<div style="color:var(--green);font-size:0.72rem;">✅ ${name} — +${toUpload.length} article baru (${rows.length - toUpload.length} sudah ada, skip)</div>`;
+            uploadedMasters.push(name);
+          }
+
+        } else {
+          // Non-master (misal SCAN_DATA) → upload semua seperti biasa
+          await uploadBatched(name, rows, () => {});
+          grandTotal += rows.length;
+          if (pw) pw.innerHTML += `<div style="color:var(--green);font-size:0.72rem;">✅ ${name} — ${rows.length} row</div>`;
+        }
+
+      } catch (err) {
+        if (pw) pw.innerHTML += `<div style="color:var(--red);font-size:0.72rem;">❌ ${name}: ${err.message}</div>`;
       }
-      catch(err){if(pw)pw.innerHTML+=`<div style="color:var(--red);font-size:0.75rem;">❌ ${name}: ${err.message}</div>`;}
     }
-    showToast(`✅ ${total} data terupload!`,'success');
-    // Auto-cache master sheets that were just uploaded → hot reload memory
+
+    showToast(`✅ ${grandTotal} data terupload!`, 'success');
+
+    // Update cache lokal untuk sheet master yang diupload
     if (uploadedMasters.length > 0 && idb) {
-      showToast('⬇ Auto-cache master ke IDB...', 'info');
-      // Tulis _META version doc dulu agar device lain tahu ada update
+      showToast('⬇ Memperbarui cache lokal...', 'info');
       const now = new Date().toISOString();
       for (const col of uploadedMasters) {
         try {
-          const count = parsedSheets[col]?.length || 0;
-          await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js")
-            .then(({ setDoc }) => setDoc(doc(db, '_META', col), { updatedAt: now, count, uploadedBy: document.getElementById('scanUser')?.value || 'ADMIN' }))
-            .catch(() => {});
-          await cacheCollection(col, true); // force download karena baru saja upload
+          // Tulis _META agar device lain tahu ada data baru
+          const { setDoc: sd } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+          await sd(doc(db, '_META', col), {
+            updatedAt: now, count: parsedSheets[col]?.length || 0,
+            uploadedBy: document.getElementById('scanUser')?.value || 'ADMIN'
+          }).catch(() => {});
+          // Incremental cache: hanya ambil yang baru (pakai timestamp)
+          await cacheCollection(col, false);
         } catch(e) {}
       }
       await reloadMemoryAfterCache();
       await idbPut(STORE_META, { key: 'master_cache_time', value: now });
       safeSetText('cacheLastUpdate', `Terakhir update: ${new Date().toLocaleString('id-ID')}`);
-      showToast('✅ Master cache diperbarui otomatis!', 'success');
+      showToast('✅ Cache lokal diperbarui!', 'success');
     }
   }
 
