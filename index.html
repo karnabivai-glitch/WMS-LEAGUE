@@ -2118,6 +2118,22 @@
       loadMasterToMemory()   // ← INI KUNCI UTAMA: load master ke RAM agar O(1)
     ]);
     await refreshCacheUI();
+
+    // Auto-deteksi data dobel: jika barcode > 100.000 pasti ada yang salah
+    const bcCount = await idbCountStore(STORE_M_BARCODE);
+    if (bcCount > 100000) {
+      const doReset = confirm(
+        `⚠️ Cache tidak normal!\n\nMaster Barcode: ${bcCount.toLocaleString()} (data dobel)\n\nReset cache master sekarang?\n(Data scan aman, tidak terhapus)`
+      );
+      if (doReset) {
+        for (const store of Object.values(MASTER_STORE_MAP)) await clearIDBStore(store);
+        memBarcode.clear(); memArticleB.clear(); memProduk.clear(); memSize.clear();
+        memLoaded = false; masterCacheReady = false;
+        updateOfflineReadyUI(); updateSyncStatusUI();
+        showToast('✅ Cache direset. Buka MASTER → Force Download.', 'success');
+        await refreshCacheUI();
+      }
+    }
   } else {
     const saved = localStorage.getItem('scan_data');
     if (saved) { try { scanDataArray = JSON.parse(saved); } catch(e) { scanDataArray = []; } }
