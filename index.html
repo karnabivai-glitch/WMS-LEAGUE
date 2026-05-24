@@ -920,68 +920,78 @@
     }
   }
 
-  // ── Smart cache: cek versi dulu (1 read), download hanya kalau berubah ──
-  // Setiap kali admin upload master baru, simpan doc VERSION di Firestore:
-  //   collection: _META, doc: MASTER_BARCODE → { updatedAt: timestamp, count: N }
-  // Kalau tidak ada _META doc → fallback download langsung
+  // ── Incremental Sync: hanya ambil data baru/berubah sejak cache terakhir ──
+  // Syarat: dokumen di Firestore punya field `updatedAt` (ISO string atau Timestamp)
+  // Jika tidak ada field updatedAt → fallback full download sekali saja
 
-  async function getRemoteVersion(colName) {
-    // 1 read saja — bukan tarik semua data
+  async function getLocalCacheTime(colName) {
     try {
-      const snap = await getDoc(doc(db, '_META', colName));
-      if (snap.exists()) return snap.data(); // { updatedAt, count }
-    } catch(e) {}
-    return null;
-  }
-
-  async function getLocalVersion(colName) {
-    try {
-      const meta = await idbGet(STORE_META, `cache_ver_${colName}`);
-      return meta ? meta.value : null; // { updatedAt, count }
+      const meta = await idbGet(STORE_META, `cache_time_${colName}`);
+      return meta ? meta.value : null; // ISO string terakhir sync
     } catch(e) { return null; }
   }
 
-  async function saveLocalVersion(colName, ver) {
-    await idbPut(STORE_META, { key: `cache_ver_${colName}`, value: ver }).catch(() => {});
+  async function saveLocalCacheTime(colName, isoTime) {
+    await idbPut(STORE_META, { key: `cache_time_${colName}`, value: isoTime }).catch(() => {});
   }
 
-  // Download one Firestore collection → IDB (dengan smart version check)
   async function cacheCollection(colName, forceDownload = false) {
-    const storeName = MASTER_STORE_MAP[colName];
-    setCacheItemUI(colName, 'loading', '⏳ Cek versi...', '...');
+    const storeName  = MASTER_STORE_MAP[colName];
+    const localCount = await idbCountStore(storeName);
+    const lastSync   = await getLocalCacheTime(colName);
 
-    try {
-      // Langkah 1: cek versi remote (1 read)
-      const remoteVer = await getRemoteVersion(colName);
-      const localVer  = await getLocalVersion(colName);
-      const localCount = await idbCountStore(storeName);
+    // ── MODE 1: INCREMENTAL — sudah ada cache & ada timestamp & tidak force ──
+    if (!forceDownload && localCount > 0 && lastSync) {
+      setCacheItemUI(colName, 'loading', '⏳ Cek update...', localCount.toLocaleString());
+      try {
+        const { Timestamp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        const sinceDate = new Date(lastSync);
+        // Query hanya dokumen yang updatedAt > lastSync
+        const q = query(
+          collection(db, colName),
+          where('updatedAt', '>', sinceDate.toISOString())
+        );
+        const snap = await getDocs(q);
 
-      if (!forceDownload && remoteVer && localVer && localCount > 0) {
-        const remoteTime = remoteVer.updatedAt || '';
-        const localTime  = localVer.updatedAt  || '';
-        if (remoteTime === localTime) {
-          // Versi sama — skip download, pakai cache lokal
+        if (snap.empty) {
+          // Tidak ada yang baru → benar-benar 0 reads data, hanya query biaya
           setCacheItemUI(colName, 'cached', '✅ Up-to-date', localCount.toLocaleString());
-          return 0; // 0 = tidak ada download baru (hemat bandwidth)
+          return 0;
         }
+
+        // Ada data baru → tambahkan/update di IDB (bukan replace semua)
+        const newRows = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+        await bulkPutToIDB(storeName, newRows); // put = upsert by _id
+
+        const newCount = await idbCountStore(storeName);
+        const added    = newRows.length;
+        const now      = new Date().toISOString();
+        await saveLocalCacheTime(colName, now);
+
+        setCacheItemUI(colName, 'cached', `✅ +${added} baru`, newCount.toLocaleString());
+        return added;
+
+      } catch(e) {
+        // Query gagal (misal index belum ada) → fallback full download
+        console.warn(`Incremental sync gagal untuk ${colName}, fallback full download:`, e.message);
       }
+    }
 
-      // Langkah 2: versi beda atau belum punya cache → download semua
-      setCacheItemUI(colName, 'loading', '⏳ Mendownload...', '...');
+    // ── MODE 2: FULL DOWNLOAD — pertama kali / force / incremental gagal ──
+    setCacheItemUI(colName, 'loading', localCount > 0 ? '⏳ Re-download...' : '⏳ Download...', '...');
+    try {
       const snap = await getDocs(collection(db, colName));
-      if (snap.empty) { setCacheItemUI(colName, 'cached', '✅ Kosong', '0'); return 0; }
-
+      if (snap.empty) {
+        setCacheItemUI(colName, 'cached', '✅ Kosong', '0');
+        await saveLocalCacheTime(colName, new Date().toISOString());
+        return 0;
+      }
       const rows = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
       await clearIDBStore(storeName);
       await bulkPutToIDB(storeName, rows);
-
-      // Simpan versi lokal
-      const verToSave = remoteVer || { updatedAt: new Date().toISOString(), count: rows.length };
-      await saveLocalVersion(colName, verToSave);
-
-      setCacheItemUI(colName, 'cached', '✅ Diperbarui', rows.length.toLocaleString());
+      await saveLocalCacheTime(colName, new Date().toISOString());
+      setCacheItemUI(colName, 'cached', '✅ Tersimpan', rows.length.toLocaleString());
       return rows.length;
-
     } catch(err) {
       setCacheItemUI(colName, 'error-state', '❌ Gagal', '✗');
       throw err;
@@ -2169,7 +2179,22 @@
   }
   window.handleFile=handleFile;
 
-  async function uploadBatched(colName,rows,onProgress){let done=0;for(let i=0;i<rows.length;i+=BATCH_SIZE){const batch=writeBatch(db);rows.slice(i,i+BATCH_SIZE).forEach(row=>batch.set(doc(db,colName,makeDocId(colName,row)),row));await batch.commit();done+=Math.min(BATCH_SIZE,rows.length-i);onProgress(done,rows.length);}}
+  async function uploadBatched(colName, rows, onProgress) {
+    const now = new Date().toISOString();
+    const isMaster = Object.keys(MASTER_STORE_MAP).includes(colName);
+    let done = 0;
+    for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+      const batch = writeBatch(db);
+      rows.slice(i, i + BATCH_SIZE).forEach(row => {
+        // Tambah updatedAt ke setiap row master agar incremental sync bisa query by timestamp
+        const data = isMaster ? { ...row, updatedAt: now } : row;
+        batch.set(doc(db, colName, makeDocId(colName, row)), data);
+      });
+      await batch.commit();
+      done += Math.min(BATCH_SIZE, rows.length - i);
+      onProgress(done, rows.length);
+    }
+  }
   async function deleteCollection(colName,onProgress){const snap=await getDocs(collection(db,colName));if(snap.empty){onProgress(0,0);return;}const docs=snap.docs;for(let i=0;i<docs.length;i+=BATCH_SIZE){const batch=writeBatch(db);docs.slice(i,i+BATCH_SIZE).forEach(d=>batch.delete(d.ref));await batch.commit();onProgress(i+Math.min(BATCH_SIZE,docs.length-i),docs.length);}}
 
   async function startUpload(){
