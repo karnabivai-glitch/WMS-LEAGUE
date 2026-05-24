@@ -2221,18 +2221,14 @@
         if (isMaster) {
           // ── SMART DIFF: hanya upload article yang baru atau berubah ──
           if (pw) pw.innerHTML += `<div style="color:var(--muted);font-size:0.72rem;">🔍 ${name}: Membandingkan dengan Firebase...</div>`;
+          const now = new Date().toISOString();
 
-          const now      = new Date().toISOString();
-          const existing = new Map(); // docId → hash/updatedAt dari Firebase
-
-          // Ambil semua docId + updatedAt yang ada di Firebase (bukan full data)
-          // Pakai select projection: hanya ambil field updatedAt untuk hemat bandwidth
+          // Ambil semua docId yang ada di Firebase
           const snapMeta = await getDocs(collection(db, name));
           const fbCount  = snapMeta.docs.length;
           const xlsCount = rows.length;
-          snapMeta.docs.forEach(d => {
-            existing.set(d.id, d.data().updatedAt || '');
-          });
+          // Simpan sebagai Set untuk lookup O(1)
+          const existingIds = new Set(snapMeta.docs.map(d => d.id));
 
           // ── DETEKSI PENGURANGAN DATA ──
           // Jika Excel lebih sedikit dari Firebase → ada data yang dihapus dari Excel
@@ -2264,10 +2260,10 @@
             continue;
           }
 
-          // Filter: hanya row yang belum ada atau docId-nya baru
+          // Filter: hanya row yang belum ada di Firebase (bandingkan docId)
           const toUpload = rows.filter(row => {
             const docId = makeDocId(name, row);
-            return !existing.has(docId); // hanya yang BELUM ADA di Firebase
+            return !existingIds.has(docId); // gunakan existingIds (Set), bukan existing (Map lama)
           });
 
           if (toUpload.length === 0) {
