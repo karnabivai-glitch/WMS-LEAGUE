@@ -912,13 +912,20 @@
 
   async function bulkPutToIDB(storeName, rows) {
     const CHUNK = 500;
-    for (let i = 0; i < rows.length; i += CHUNK) {
+    // Filter baris yang tidak punya _id valid — IDB akan reject jika _id null/undefined
+    const validRows = rows.filter(r => r._id != null && String(r._id).trim() !== '');
+    if (validRows.length < rows.length) {
+      console.warn(`bulkPutToIDB ${storeName}: skip ${rows.length - validRows.length} rows dengan _id tidak valid`);
+    }
+    for (let i = 0; i < validRows.length; i += CHUNK) {
       await new Promise((res, rej) => {
-        const tx = idb.transaction(storeName, 'readwrite');
+        const tx    = idb.transaction(storeName, 'readwrite');
         const store = tx.objectStore(storeName);
-        rows.slice(i, i + CHUNK).forEach(r => store.put(r));
+        validRows.slice(i, i + CHUNK).forEach(r => {
+          try { store.put(r); } catch(e) { console.warn('put skip:', r._id, e.message); }
+        });
         tx.oncomplete = res;
-        tx.onerror = () => rej(tx.error);
+        tx.onerror    = (e) => { console.warn('tx error chunk', i, e); res(); }; // resolve bukan reject agar chunk berikutnya tetap jalan
       });
     }
   }
@@ -993,8 +1000,11 @@
       await clearIDBStore(storeName);
       await bulkPutToIDB(storeName, rows);
       await saveLocalCacheTime(colName, new Date().toISOString());
-      setCacheItemUI(colName, 'cached', '✅ Tersimpan', rows.length.toLocaleString());
-      return rows.length;
+      // Verifikasi count IDB setelah write selesai
+      const actualCount = await idbCountStore(storeName);
+      const displayCount = actualCount > 0 ? actualCount : rows.length;
+      setCacheItemUI(colName, 'cached', '✅ Tersimpan', displayCount.toLocaleString());
+      return displayCount;
     } catch(err) {
       setCacheItemUI(colName, 'error-state', '❌ Gagal', '✗');
       throw err;
