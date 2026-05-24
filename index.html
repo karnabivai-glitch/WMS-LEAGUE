@@ -542,9 +542,10 @@
         <div style="font-size:0.68rem;color:var(--muted);background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:7px;padding:8px 10px;margin-bottom:10px;">
           ℹ️ Hanya article <strong>baru</strong> yang belum ada di Firebase yang akan diupload. Data lama tetap aman, tidak ada yang dihapus.
         </div>
-        <div style="display:flex;gap:8px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-upload" onclick="startUpload()" style="width:auto;">⬆ Upload Article Baru</button>
-          <button class="btn btn-danger" onclick="clearSelected()" style="width:auto;">🗑 Batal</button>
+          <button class="btn" onclick="resetAndUpload()" style="width:auto;background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.4);font-size:0.65rem;" title="Hapus semua di Firebase lalu upload ulang dari Excel">🔄 Reset & Upload Ulang</button>
+          <button class="btn btn-danger" onclick="clearSelected()" style="width:auto;">✕ Batal</button>
         </div>
       </div>
       <div id="progressWrap"></div>
@@ -2213,7 +2214,63 @@
   }
   async function deleteCollection(colName,onProgress){const snap=await getDocs(collection(db,colName));if(snap.empty){onProgress(0,0);return;}const docs=snap.docs;for(let i=0;i<docs.length;i+=BATCH_SIZE){const batch=writeBatch(db);docs.slice(i,i+BATCH_SIZE).forEach(d=>batch.delete(d.ref));await batch.commit();onProgress(i+Math.min(BATCH_SIZE,docs.length-i),docs.length);}}
 
-  async function startUpload() {
+  // Reset total: hapus semua di Firebase lalu upload ulang bersih dari Excel
+  window.resetAndUpload = async function() {
+    const selected = [...document.querySelectorAll('.sheetCheck:checked')].map(c => c.value);
+    if (!selected.length) { showToast('⚠️ Pilih sheet dulu', 'error'); return; }
+    if (!db) { showToast('❌ Firebase offline', 'error'); return; }
+
+    const names = selected.join(', ');
+    if (!confirm(
+      `⚠️ RESET & UPLOAD ULANG\n\n` +
+      `Sheet: ${names}\n\n` +
+      `Proses:\n` +
+      `1. Hapus SEMUA data lama di Firebase\n` +
+      `2. Upload ulang dari Excel\n\n` +
+      `Gunakan ini jika data dobel atau format docId berubah.\n` +
+      `Lanjutkan?`
+    )) return;
+
+    const pw = document.getElementById('progressWrap');
+    if (pw) pw.innerHTML = '';
+    let grandTotal = 0;
+
+    for (const name of selected) {
+      const rows = parsedSheets[name];
+      if (!rows?.length) continue;
+      try {
+        // 1. Hapus semua
+        if (pw) pw.innerHTML += `<div style="color:#fbbf24;font-size:0.72rem;">🗑 ${name}: Menghapus data lama...</div>`;
+        await deleteCollection(name, (d, t) => {
+          if (pw && pw.lastElementChild) pw.lastElementChild.textContent = `🗑 ${name}: Hapus ${d}/${t}...`;
+        });
+        // 2. Upload ulang bersih
+        if (pw) pw.innerHTML += `<div style="color:var(--muted);font-size:0.72rem;">⬆ ${name}: Upload ${rows.length.toLocaleString()} data...</div>`;
+        await uploadBatched(name, rows, (d, t) => {
+          if (pw && pw.lastElementChild) pw.lastElementChild.textContent = `⬆ ${name}: Upload ${d}/${t}...`;
+        });
+        grandTotal += rows.length;
+        if (pw) pw.innerHTML += `<div style="color:var(--green);font-size:0.72rem;">✅ ${name} — ${rows.length.toLocaleString()} data berhasil direset</div>`;
+
+        // 3. Update cache lokal — force download
+        if (idb && Object.keys(MASTER_STORE_MAP).includes(name)) {
+          await saveLocalCacheTime(name, null); // reset timestamp agar force download
+          await cacheCollection(name, true);
+        }
+      } catch(err) {
+        if (pw) pw.innerHTML += `<div style="color:var(--red);font-size:0.72rem;">❌ ${name}: ${err.message}</div>`;
+      }
+    }
+
+    if (grandTotal > 0) {
+      await reloadMemoryAfterCache();
+      await idbPut(STORE_META, { key: 'master_cache_time', value: new Date().toISOString() });
+      safeSetText('cacheLastUpdate', `Terakhir update: ${new Date().toLocaleString('id-ID')}`);
+      await refreshCacheUI();
+      showToast(`✅ Reset selesai! ${grandTotal.toLocaleString()} data terupload`, 'success');
+    }
+  };
+  window.resetAndUpload = resetAndUpload;
     if (!db) { showToast('❌ DB offline', 'error'); return; }
     const selected = [...document.querySelectorAll('.sheetCheck:checked')].map(c => c.value);
     if (!selected.length) { showToast('⚠️ Pilih sheet', 'error'); return; }
