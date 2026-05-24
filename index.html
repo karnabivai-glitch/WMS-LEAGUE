@@ -2271,7 +2271,8 @@
     }
   };
   window.resetAndUpload = resetAndUpload;
-    if (!db) { showToast('❌ DB offline', 'error'); return; }
+
+  async function startUpload() {
     const selected = [...document.querySelectorAll('.sheetCheck:checked')].map(c => c.value);
     if (!selected.length) { showToast('⚠️ Pilih sheet', 'error'); return; }
 
