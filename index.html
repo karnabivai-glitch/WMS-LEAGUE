@@ -2252,10 +2252,11 @@
         grandTotal += rows.length;
         if (pw) pw.innerHTML += `<div style="color:var(--green);font-size:0.72rem;">✅ ${name} — ${rows.length.toLocaleString()} data berhasil direset</div>`;
 
-        // 3. Update cache lokal — force download
+        // Setelah reset, selalu force download agar cache lokal = Firebase persis
         if (idb && Object.keys(MASTER_STORE_MAP).includes(name)) {
-          await saveLocalCacheTime(name, null); // reset timestamp agar force download
-          await cacheCollection(name, true);
+          await clearIDBStore(MASTER_STORE_MAP[name]);
+          await idbPut(STORE_META, { key: `cache_time_${name}`, value: null }).catch(() => {});
+          await cacheCollection(name, true); // force = download semua
         }
       } catch(err) {
         if (pw) pw.innerHTML += `<div style="color:var(--red);font-size:0.72rem;">❌ ${name}: ${err.message}</div>`;
