@@ -526,6 +526,7 @@
         <button class="btn btn-upload" id="btnCacheAll" onclick="cacheAllMasterData()" style="width:auto;">⬇ Cek & Update Cache</button>
         <button class="btn" onclick="forceRedownloadCache()" style="width:auto;background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.3);font-size:0.65rem;" title="Download ulang paksa meski versi sama">🔄 Force Download</button>
         <button class="btn btn-danger" onclick="clearMasterCache()" style="width:auto;padding:8px 10px;font-size:0.65rem;">🗑 Hapus Cache</button>
+        <button class="btn" onclick="nukeAndRebuildIDB()" style="width:auto;background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.3);font-size:0.6rem;" title="Reset total IDB jika cache korup/dobel">💣 Reset IDB</button>
       </div>
       <div class="cache-last-update" id="cacheLastUpdate">Belum pernah didownload</div>
     </div>
@@ -2156,7 +2157,20 @@
   window.addEventListener('online',  () => onNetworkOnline());
   window.addEventListener('offline', () => { db = null; updateFirestoreStatus(); showToast('📴 Offline — data tersimpan lokal', 'info'); });
 
-  window.refreshCacheUI = refreshCacheUI;
+  // Hapus total IDB dan buat ulang — untuk kasus cache korup/dobel
+  window.nukeAndRebuildIDB = async function() {
+    if (!confirm('⚠️ RESET TOTAL CACHE LOKAL\n\nHapus seluruh IndexedDB dan download ulang dari Firebase?\n\nData scan lokal yang belum sync akan ikut terhapus.\nLanjutkan?')) return;
+    showToast('🗑 Menghapus IndexedDB...', 'info');
+    idb.close();
+    await new Promise((res, rej) => {
+      const req = indexedDB.deleteDatabase(IDB_NAME);
+      req.onsuccess = res;
+      req.onerror   = rej;
+      req.onblocked = () => { showToast('⚠️ Tutup tab lain lalu coba lagi', 'error'); rej(); };
+    });
+    showToast('✅ IDB dihapus, memuat ulang halaman...', 'success');
+    setTimeout(() => location.reload(), 1000);
+  };
 
   // ═══════════════ MASTER UPLOAD ═══════════════
   function sanitize(v) { if (v===null||v===undefined||v==='') return null; if (typeof v==='number'&&isNaN(v)) return null; if (v instanceof Date) return v.toISOString().split('T')[0]; return v; }
