@@ -197,6 +197,42 @@
     .btn-sm { padding: 2px 6px; font-size: 0.6rem; border-radius: 4px; border: none; cursor: pointer; font-weight: 600; }
     .btn-sm-delete { background: var(--red); color: #fff; }
     .btn-sm:hover { opacity: 0.8; }
+
+    /* Export Modal */
+    .export-modal-backdrop {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6); z-index: 200;
+      align-items: center; justify-content: center;
+    }
+    .export-modal-backdrop.show { display: flex; }
+    .export-modal {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 22px; width: 320px; max-width: 90vw;
+    }
+    .export-modal h3 { font-size: 0.92rem; font-weight: 700; margin-bottom: 4px; }
+    .export-modal .subtitle { font-size: 0.68rem; color: var(--muted); margin-bottom: 16px; }
+    .export-opt {
+      border: 2px solid var(--border); border-radius: 10px;
+      padding: 12px 14px; margin-bottom: 10px; cursor: pointer;
+      transition: all 0.2s; display: flex; align-items: center; gap: 12px;
+    }
+    .export-opt:hover { border-color: var(--accent2); background: rgba(59,130,246,0.06); }
+    .export-opt .eo-icon { font-size: 1.6rem; flex-shrink: 0; }
+    .export-opt .eo-title { font-size: 0.78rem; font-weight: 700; }
+    .export-opt .eo-desc { font-size: 0.6rem; color: var(--muted); margin-top: 2px; }
+    .export-opt.local { --c: var(--green); }
+    .export-opt.firebase { --c: #818cf8; }
+    .export-opt:hover .eo-title { color: var(--c); }
+    .export-progress {
+      display: none; margin-top: 12px;
+      background: var(--bg); border-radius: 8px; padding: 10px 12px;
+    }
+    .export-progress.show { display: block; }
+    .export-progress-bar { height: 4px; background: var(--border); border-radius: 99px; margin: 6px 0; overflow: hidden; }
+    .export-progress-fill { height: 100%; background: linear-gradient(90deg,#818cf8,var(--accent2)); border-radius: 99px; transition: width 0.3s; width: 0%; }
+    .export-progress-label { font-size: 0.62rem; color: var(--muted); text-align: center; }
+    .export-cancel { width: 100%; margin-top: 10px; background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 7px; padding: 7px; font-size: 0.65rem; cursor: pointer; }
+    .export-cancel:hover { border-color: var(--red); color: var(--red); }
     
     .empty-state { text-align: center; padding: 50px 20px; color: var(--muted); }
     .empty-state p { font-size: 0.78rem; }
@@ -515,7 +551,32 @@
   </div>
 </div>
 
-<script type="module">
+<!-- EXPORT MODAL -->
+<div class="export-modal-backdrop" id="exportModalBackdrop" onclick="closeExportModal(event)">
+  <div class="export-modal">
+    <h3>📥 Export Data Scan</h3>
+    <p class="subtitle">Pilih sumber data yang ingin diexport</p>
+    <div class="export-opt local" onclick="doExportLocal()">
+      <div class="eo-icon">💾</div>
+      <div>
+        <div class="eo-title">Dari Lokal (Perangkat Ini)</div>
+        <div class="eo-desc">Data di IndexedDB &nbsp;·&nbsp; <span id="exportLocalCount">0</span> data &nbsp;·&nbsp; Langsung</div>
+      </div>
+    </div>
+    <div class="export-opt firebase" id="exportFbOpt" onclick="doExportFirebase()">
+      <div class="eo-icon">☁️</div>
+      <div>
+        <div class="eo-title">Dari Firebase (Semua User)</div>
+        <div class="eo-desc" id="exportFbDesc">Data keseluruhan semua device &nbsp;·&nbsp; Butuh koneksi</div>
+      </div>
+    </div>
+    <div class="export-progress" id="exportProgress">
+      <div class="export-progress-label" id="exportProgressLabel">Mengambil data...</div>
+      <div class="export-progress-bar"><div class="export-progress-fill" id="exportProgressFill"></div></div>
+    </div>
+    <button class="export-cancel" onclick="closeExportModal()">✕ Batal</button>
+  </div>
+</div>
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getFirestore, collection, writeBatch, doc, getDocs, query, where, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -1476,7 +1537,12 @@
     if (e.key === 'Enter') { e.preventDefault(); await addScanData(); } 
   };
 
-  // ── LOOKUP SINKRON (O(1), zero async) — path utama saat memory loaded ──
+  // Generate ID unik: timestamp(36) + random(4) + user_prefix(2)
+  // Dijamin tidak tabrakan antar device karena ada user prefix
+  function genId(user) {
+    const u = (user || 'XX').substring(0, 2).toUpperCase();
+    return Date.now().toString(36) + Math.random().toString(36).substring(2, 6) + u;
+  }
   function scanLookupSync(barcode) {
     const s = barcode.trim();
 
@@ -1543,7 +1609,7 @@
 
       if (found) {
         const newRow = {
-          id:          Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
+          id:          genId(user),
           BARCODE:     barcode,   LOKASI:   lokasi,
           ARTICLE:     found.article,        BIN:      binManual,
           SIZE_US:     found.sizeUS,         SIZE_UK:  found.sizeUK,
@@ -1587,7 +1653,7 @@
     if (masterResult.found && masterResult.data) {
       const d = masterResult.data._derived || {};
       const newRow = {
-        id:          Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
+        id:          genId(user),
         BARCODE:     barcode,        LOKASI:      lokasi,
         ARTICLE:     d.article || barcode,         BIN:         binManual,
         SIZE_US:     d.sizeUS || '', SIZE_UK:     d.sizeUK || '',
@@ -1787,19 +1853,125 @@
       <td><button class="btn-sm btn-sm-delete" onclick="deleteScanRow('${row.id}')">🗑</button></td>`;
   }
 
-  // ═══════════════ EXPORT & UPLOAD ═══════════════
-  window.exportScanToExcel = function() {
-    if (!scanDataArray.length) { showToast('📭 Kosong', 'error'); return; }
-    const data = scanDataArray.map(r => ({
-      BARCODE:r.BARCODE,LOKASI:r.LOKASI,ARTICLE:r.ARTICLE,BIN:r.BIN,
-      'SIZE US':r.SIZE_US,'SIZE UK':r.SIZE_UK,GENERIC:r.GENERIC||'',
-      DESCRIPTION:r.DESCRIPTION,BRAND:r.BRAND,CAT:r.CAT,SEASON:r.SEASON,DATE:r.DATE,USER:r.USER
-    }));
-    const ws = XLSX.utils.json_to_sheet(data);
+  // ═══════════════ EXPORT ═══════════════
+  function rowToExcelObj(r) {
+    return {
+      BARCODE: r.BARCODE, LOKASI: r.LOKASI, ARTICLE: r.ARTICLE, BIN: r.BIN,
+      'SIZE US': r.SIZE_US, 'SIZE UK': r.SIZE_UK, GENERIC: r.GENERIC || '',
+      DESCRIPTION: r.DESCRIPTION, BRAND: r.BRAND, CAT: r.CAT,
+      SEASON: r.SEASON, DATE: r.DATE, USER: r.USER
+    };
+  }
+
+  function downloadXlsx(rows, filename) {
+    const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "SCAN_DATA");
-    XLSX.writeFile(wb, `SCAN_${getTodayDate().replace(/\//g,'-')}.xlsx`);
-    showToast('📥 Exported!', 'success');
+    XLSX.utils.book_append_sheet(wb, ws, 'SCAN_DATA');
+    XLSX.writeFile(wb, filename);
+  }
+
+  // Buka modal pilihan export
+  window.exportScanToExcel = function() {
+    // Update info lokal
+    safeSetText('exportLocalCount', scanDataArray.length.toLocaleString());
+    // Update info Firebase
+    const fbDesc = document.getElementById('exportFbDesc');
+    const fbOpt  = document.getElementById('exportFbOpt');
+    if (!db) {
+      if (fbDesc) fbDesc.textContent = '⚠️ Firebase offline — sambungkan dulu';
+      if (fbOpt)  fbOpt.style.opacity = '0.4';
+    } else {
+      const fbCount = document.getElementById('statFirebaseTotal')?.textContent || '?';
+      if (fbDesc) fbDesc.textContent = `Data keseluruhan semua device  ·  ${fbCount} data  ·  Butuh koneksi`;
+      if (fbOpt)  fbOpt.style.opacity = '1';
+    }
+    // Reset progress
+    const prog = document.getElementById('exportProgress');
+    if (prog) prog.classList.remove('show');
+    const fill = document.getElementById('exportProgressFill');
+    if (fill) fill.style.width = '0%';
+    document.getElementById('exportModalBackdrop').classList.add('show');
+  };
+
+  window.closeExportModal = function(e) {
+    if (e && e.target !== document.getElementById('exportModalBackdrop')) return;
+    document.getElementById('exportModalBackdrop').classList.remove('show');
+  };
+
+  // Export dari lokal IDB
+  window.doExportLocal = function() {
+    if (!scanDataArray.length) { showToast('📭 Tidak ada data lokal', 'error'); return; }
+    const rows = scanDataArray.map(rowToExcelObj);
+    downloadXlsx(rows, `SCAN_LOKAL_${getTodayDate().replace(/\//g,'-')}.xlsx`);
+    document.getElementById('exportModalBackdrop').classList.remove('show');
+    showToast(`📥 ${rows.length} data diekspor!`, 'success');
+  };
+
+  // Export dari Firebase (semua user)
+  window.doExportFirebase = async function() {
+    if (!db) { showToast('❌ Firebase offline', 'error'); return; }
+
+    const prog  = document.getElementById('exportProgress');
+    const fill  = document.getElementById('exportProgressFill');
+    const label = document.getElementById('exportProgressLabel');
+    const fbOpt = document.getElementById('exportFbOpt');
+
+    prog.classList.add('show');
+    if (fbOpt) fbOpt.style.pointerEvents = 'none';
+    if (fill)  fill.style.width = '10%';
+    if (label) label.textContent = '📡 Mengambil data dari Firebase...';
+
+    try {
+      // Ambil semua dokumen dari SCAN_DATA
+      const snap = await getDocs(collection(db, 'SCAN_DATA'));
+      if (snap.empty) { showToast('📭 Firebase kosong', 'info'); return; }
+
+      if (fill)  fill.style.width = '60%';
+      if (label) label.textContent = `⚙️ Memproses ${snap.size.toLocaleString()} data...`;
+
+      const rows = snap.docs.map(d => {
+        const r = d.data();
+        return {
+          BARCODE: r.BARCODE || '', LOKASI: r.LOKASI || '',
+          ARTICLE: r.ARTICLE || '', BIN: r.BIN || '',
+          'SIZE US': r.SIZE_US || '', 'SIZE UK': r.SIZE_UK || '',
+          GENERIC: r.GENERIC || '', DESCRIPTION: r.DESCRIPTION || '',
+          BRAND: r.BRAND || '', CAT: r.CAT || '',
+          SEASON: r.SEASON || '', DATE: r.DATE || '',
+          USER: r.USER || '', TIMESTAMP: r.scanned_at || ''
+        };
+      });
+
+      // Urutkan: BIN → USER → TIMESTAMP
+      rows.sort((a, b) => {
+        if (a.BIN !== b.BIN)   return a.BIN.localeCompare(b.BIN);
+        if (a.USER !== b.USER) return a.USER.localeCompare(b.USER);
+        return (a.TIMESTAMP || '').localeCompare(b.TIMESTAMP || '');
+      });
+
+      if (fill)  fill.style.width = '90%';
+      if (label) label.textContent = `📄 Membuat file Excel...`;
+
+      const filename = `SCAN_FIREBASE_${getTodayDate().replace(/\//g,'-')}.xlsx`;
+      downloadXlsx(rows, filename);
+
+      if (fill)  fill.style.width = '100%';
+      if (label) label.textContent = `✅ ${rows.length.toLocaleString()} data diekspor!`;
+      showToast(`☁️ ${rows.length.toLocaleString()} data dari Firebase diekspor!`, 'success');
+
+      // Refresh count sekalian
+      safeSetText('statFirebaseTotal', rows.length.toLocaleString());
+
+      setTimeout(() => {
+        document.getElementById('exportModalBackdrop').classList.remove('show');
+      }, 1200);
+
+    } catch(err) {
+      if (label) label.textContent = `❌ Gagal: ${err.message}`;
+      showToast('❌ Export Firebase gagal', 'error');
+    } finally {
+      if (fbOpt) fbOpt.style.pointerEvents = '';
+    }
   };
 
   // ═══════════════ FIREBASE INIT ═══════════════
