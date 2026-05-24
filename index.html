@@ -2207,8 +2207,9 @@
     const pw = document.getElementById('progressWrap');
     if (pw) pw.innerHTML = '';
 
-    const masterSheets  = ['MASTER_BARCODE', 'MASTER_PRODUK', 'SIZE'];
+    const masterSheets   = ['MASTER_BARCODE', 'MASTER_PRODUK', 'SIZE'];
     const uploadedMasters = [];
+    const resetMasters    = new Set(); // koleksi yang di-reset total (shrink)
     let grandTotal = 0;
 
     for (const name of selected) {
@@ -2227,9 +2228,41 @@
           // Ambil semua docId + updatedAt yang ada di Firebase (bukan full data)
           // Pakai select projection: hanya ambil field updatedAt untuk hemat bandwidth
           const snapMeta = await getDocs(collection(db, name));
+          const fbCount  = snapMeta.docs.length;
+          const xlsCount = rows.length;
           snapMeta.docs.forEach(d => {
             existing.set(d.id, d.data().updatedAt || '');
           });
+
+          // ── DETEKSI PENGURANGAN DATA ──
+          // Jika Excel lebih sedikit dari Firebase → ada data yang dihapus dari Excel
+          // Perlu replace total agar Firebase sinkron dengan Excel
+          const shrink = fbCount > xlsCount;
+          if (shrink) {
+            const selisih = fbCount - xlsCount;
+            if (!confirm(
+              `⚠️ PERHATIAN!\n\n` +
+              `Excel: ${xlsCount.toLocaleString()} data\n` +
+              `Firebase: ${fbCount.toLocaleString()} data\n` +
+              `Selisih: -${selisih.toLocaleString()} (ada data yang dihapus dari Excel)\n\n` +
+              `Lanjutkan? Firebase akan direset dan diupload ulang dari Excel.\n` +
+              `(Operasi ini menggunakan ${fbCount + xlsCount} reads/writes)`
+            )) {
+              if (pw) pw.innerHTML += `<div style="color:var(--muted);font-size:0.72rem;">⏭ ${name}: Dilewati oleh user</div>`;
+              continue;
+            }
+            // Hapus semua lalu upload ulang dari Excel
+            if (pw) pw.innerHTML += `<div style="color:#fbbf24;font-size:0.72rem;">🔄 ${name}: Reset & upload ulang (${xlsCount.toLocaleString()} data)...</div>`;
+            await deleteCollection(name, () => {});
+            await uploadBatched(name, rows, (d, t) => {
+              if (pw) pw.lastElementChild.textContent = `🔄 ${name}: Upload ulang ${d}/${t}...`;
+            });
+            grandTotal += rows.length;
+            if (pw) pw.innerHTML += `<div style="color:var(--green);font-size:0.72rem;">✅ ${name} — direset: ${xlsCount.toLocaleString()} data (hapus ${selisih} lama)</div>`;
+            uploadedMasters.push(name);
+            resetMasters.add(name);
+            continue;
+          }
 
           // Filter: hanya row yang belum ada atau docId-nya baru
           const toUpload = rows.filter(row => {
@@ -2280,8 +2313,8 @@
             updatedAt: now, count: parsedSheets[col]?.length || 0,
             uploadedBy: document.getElementById('scanUser')?.value || 'ADMIN'
           }).catch(() => {});
-          // Incremental cache: hanya ambil yang baru (pakai timestamp)
-          await cacheCollection(col, false);
+          // Force download jika koleksi ini tadi di-reset, incremental jika hanya penambahan
+          await cacheCollection(col, resetMasters.has(col));
         } catch(e) {}
       }
       await reloadMemoryAfterCache();
