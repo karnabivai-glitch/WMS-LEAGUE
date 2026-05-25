@@ -590,7 +590,7 @@
   const BATCH_SIZE = 200;
   const MAX_ROWS = 20;
   const IDB_NAME = 'BRG_WMS';
-  const IDB_VERSION = 3;  // bumped: added delete_queue store
+  const IDB_VERSION = 4;  // bumped: force clean rebuild of master stores
   const STORE_SCAN  = 'scan_data';
   const STORE_QUEUE = 'sync_queue';
   const STORE_DELETE_QUEUE = 'delete_queue';  // antrian hapus ke Firebase saat offline
@@ -635,7 +635,10 @@
     return new Promise((resolve, reject) => {
       const req = indexedDB.open(IDB_NAME, IDB_VERSION);
       req.onupgradeneeded = (e) => {
-        const d = e.target.result;
+        const d   = e.target.result;
+        const old = e.oldVersion;
+
+        // Scan stores — buat kalau belum ada
         if (!d.objectStoreNames.contains(STORE_SCAN)) {
           const s = d.createObjectStore(STORE_SCAN, { keyPath: 'id' });
           s.createIndex('BIN', 'BIN', { unique: false });
@@ -651,21 +654,22 @@
         if (!d.objectStoreNames.contains(STORE_META)) {
           d.createObjectStore(STORE_META, { keyPath: 'key' });
         }
-        // Master cache stores
-        if (!d.objectStoreNames.contains(STORE_M_BARCODE)) {
-          const mb = d.createObjectStore(STORE_M_BARCODE, { keyPath: '_id' });
-          mb.createIndex('Barcode', 'Barcode', { unique: false });
-          mb.createIndex('Article', 'Article', { unique: false });
-        }
-        if (!d.objectStoreNames.contains(STORE_M_PRODUK)) {
-          const mp = d.createObjectStore(STORE_M_PRODUK, { keyPath: '_id' });
-          mp.createIndex('Article', 'Article', { unique: false });
-        }
-        if (!d.objectStoreNames.contains(STORE_M_SIZE)) {
-          const ms = d.createObjectStore(STORE_M_SIZE, { keyPath: '_id' });
-          ms.createIndex('US_Size', 'US_Size', { unique: false });
-          ms.createIndex('Gender', 'Gender', { unique: false });
-        }
+
+        // Master cache stores — v4: hapus dan buat ulang untuk bersihkan data dobel
+        const masterStores = [STORE_M_BARCODE, STORE_M_PRODUK, STORE_M_SIZE];
+        masterStores.forEach(name => {
+          if (d.objectStoreNames.contains(name)) d.deleteObjectStore(name);
+        });
+        // Buat ulang bersih
+        const mb = d.createObjectStore(STORE_M_BARCODE, { keyPath: '_id' });
+        mb.createIndex('Barcode', 'Barcode', { unique: false });
+        mb.createIndex('Article', 'Article', { unique: false });
+        const mp = d.createObjectStore(STORE_M_PRODUK, { keyPath: '_id' });
+        mp.createIndex('Article', 'Article', { unique: false });
+        const ms = d.createObjectStore(STORE_M_SIZE, { keyPath: '_id' });
+        ms.createIndex('US_Size', 'US_Size', { unique: false });
+        ms.createIndex('Gender', 'Gender', { unique: false });
+        console.log('[IDB] v4 migration: master stores rebuilt clean');
       };
       req.onsuccess = (e) => resolve(e.target.result);
       req.onerror = (e) => reject(e.target.error);
