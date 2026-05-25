@@ -998,12 +998,24 @@
         return 0;
       }
       const rows = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+      // Debug: cek apakah ada _id yang null/duplikat
+      const idSet = new Set();
+      let dupCount = 0, nullCount = 0;
+      for (const r of rows) {
+        if (!r._id || String(r._id).trim() === '') { nullCount++; continue; }
+        if (idSet.has(r._id)) dupCount++;
+        idSet.add(r._id);
+      }
+      if (nullCount > 0 || dupCount > 0) {
+        console.warn(`[IDB] ${colName}: null_id=${nullCount} duplikat=${dupCount} total=${rows.length} unique=${idSet.size}`);
+      }
+      const validRows = rows.filter(r => r._id != null && String(r._id).trim() !== '');
       await clearIDBStore(storeName);
-      await bulkPutToIDB(storeName, rows);
+      await bulkPutToIDB(storeName, validRows);
       await saveLocalCacheTime(colName, new Date().toISOString());
-      // Verifikasi count IDB setelah write selesai
       const actualCount = await idbCountStore(storeName);
-      const displayCount = actualCount > 0 ? actualCount : rows.length;
+      console.log(`[IDB] ${colName}: firebase=${snap.size} valid=${validRows.length} idb=${actualCount}`);
+      const displayCount = actualCount > 0 ? actualCount : validRows.length;
       setCacheItemUI(colName, 'cached', '✅ Tersimpan', displayCount.toLocaleString());
       return displayCount;
     } catch(err) {
