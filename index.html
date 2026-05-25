@@ -670,6 +670,10 @@
         ms.createIndex('US_Size', 'US_Size', { unique: false });
         ms.createIndex('Gender', 'Gender', { unique: false });
         console.log('[IDB] v4 migration: master stores rebuilt clean');
+        // Flag di meta agar app tahu perlu download ulang semua master
+        // (tidak bisa akses STORE_META di sini karena tx masih onupgradeneeded,
+        //  tapi kita tandai via localStorage sebagai sinyal)
+        localStorage.setItem('idb_needs_redownload', '1');
       };
       req.onsuccess = (e) => resolve(e.target.result);
       req.onerror = (e) => reject(e.target.error);
@@ -2135,7 +2139,21 @@
     ]);
     await refreshCacheUI();
 
-    // Auto-deteksi data dobel: jika barcode > 100.000 pasti ada yang salah
+    // Cek flag migrasi IDB — auto download ulang semua master
+    if (localStorage.getItem('idb_needs_redownload') === '1') {
+      localStorage.removeItem('idb_needs_redownload');
+      showToast('🔄 Cache direset — akan download ulang otomatis...', 'info');
+      const waitAndDownload = setInterval(async () => {
+        if (db) {
+          clearInterval(waitAndDownload);
+          await cacheAllMasterData(true);
+        }
+      }, 500);
+      setTimeout(() => {
+        clearInterval(waitAndDownload);
+        if (!masterCacheReady) showToast('⚠️ Buka MASTER → Force Download', 'info');
+      }, 30000);
+    }
     const bcCount = await idbCountStore(STORE_M_BARCODE);
     if (bcCount > 100000) {
       const doReset = confirm(
