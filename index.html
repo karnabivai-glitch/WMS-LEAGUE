@@ -1345,17 +1345,33 @@
 
     // Hapus dari Firebase di background
     Promise.resolve().then(async () => {
-      for (const id of ids) {
-        const stillPending = await idbGet(STORE_QUEUE, id).catch(() => null);
-        if (stillPending) continue; // belum pernah sync, tidak perlu hapus di Firebase
-        if (db) {
-          const ok = await deleteFromFirebase(id);
-          if (!ok) await idbPut(STORE_DELETE_QUEUE, { id, queuedAt: new Date().toISOString() }).catch(() => {});
-        } else {
+      if (db) {
+        try {
+          // Query semua dokumen Firebase dengan BIN ini, hapus sekaligus
+          const q = query(collection(db, 'SCAN_DATA'), where('BIN', '==', bin));
+          const snap = await getDocs(q);
+          if (!snap.empty) {
+            for (let i = 0; i < snap.docs.length; i += BATCH_SIZE) {
+              const batch = writeBatch(db);
+              snap.docs.slice(i, i + BATCH_SIZE).forEach(d => batch.delete(d.ref));
+              await batch.commit();
+            }
+          }
+          refreshFirebaseCount();
+          showToast(`☁️ BIN "${bin}" dihapus dari Firebase`, 'success');
+        } catch(e) {
+          // Fallback: queue per-id
+          for (const id of ids) {
+            await idbPut(STORE_DELETE_QUEUE, { id, queuedAt: new Date().toISOString() }).catch(() => {});
+          }
+          showToast('⚠️ Hapus Firebase gagal, akan dicoba saat online', 'info');
+        }
+      } else {
+        // Offline: queue untuk dihapus saat online
+        for (const id of ids) {
           await idbPut(STORE_DELETE_QUEUE, { id, queuedAt: new Date().toISOString() }).catch(() => {});
         }
       }
-      if (db) refreshFirebaseCount();
     });
   };
 
@@ -1828,54 +1844,35 @@
 
   window.clearScanData = async function() {
     if (!scanDataArray.length) { showToast('📭 Kosong', 'info'); return; }
-    if (!confirm(`Hapus SEMUA ${scanDataArray.length} data? Data di Firebase juga akan dihapus.`)) return;
+    if (!confirm(`Hapus SEMUA ${scanDataArray.length} data?\nData di Firebase juga akan dihapus.`)) return;
 
-    const idsToDelete = scanDataArray.map(r => r.id);
-
-    // Clear lokal
+    // ① Bersihkan lokal dulu — instant
     if (idb) {
-      const tx = idb.transaction([STORE_SCAN, STORE_QUEUE], 'readwrite');
+      const tx = idb.transaction([STORE_SCAN, STORE_QUEUE, STORE_DELETE_QUEUE], 'readwrite');
       tx.objectStore(STORE_SCAN).clear();
       tx.objectStore(STORE_QUEUE).clear();
+      tx.objectStore(STORE_DELETE_QUEUE).clear();
     }
-    scanDataArray = [];
-    currentSessionData = [];
-    currentBin = '';
-    pendingSyncCount = 0;
-    saveScanData();
-    updateSyncStatusUI();
-    renderScanTable();
-    updateScanStats();
-    renderBinCardsInPopup();
+    scanDataArray = []; currentSessionData = []; currentBin = ''; pendingSyncCount = 0;
+    saveScanData(); updateSyncStatusUI(); renderScanTable(); updateScanStats(); renderBinCardsInPopup();
     const rs = document.getElementById('recallStatus');
     if (rs) rs.classList.remove('show');
     const binInput = document.getElementById('scanBIN');
     if (binInput) binInput.value = '';
-    showToast('🗑 Semua data dihapus', 'info');
+    showToast('🗑 Data lokal dihapus', 'info');
 
-    // Hapus dari Firebase di background
+    // ② Hapus semua SCAN_DATA di Firebase — pakai deleteCollection (batch delete)
     if (db) {
       try {
-        const snap = await getDocs(collection(db, 'SCAN_DATA'));
-        if (!snap.empty) {
-          for (let i = 0; i < snap.docs.length; i += BATCH_SIZE) {
-            const batch = writeBatch(db);
-            snap.docs.slice(i, i + BATCH_SIZE).forEach(d => batch.delete(d.ref));
-            await batch.commit();
-          }
-          showToast('☁️ Firebase juga dibersihkan', 'success');
-        }
+        showToast('☁️ Menghapus dari Firebase...', 'info');
+        await deleteCollection('SCAN_DATA', () => {});
+        showToast('✅ Firebase bersih!', 'success');
+        safeSetText('statFirebaseTotal', '0');
       } catch(e) {
-        // Jika gagal, queue per-id untuk dihapus nanti
-        for (const id of idsToDelete) {
-          await idbPut(STORE_DELETE_QUEUE, { id, queuedAt: new Date().toISOString() }).catch(() => {});
-        }
+        showToast('⚠️ Gagal hapus Firebase: ' + e.message, 'error');
       }
     } else {
-      // Offline — queue semua id untuk dihapus saat online
-      for (const id of idsToDelete) {
-        await idbPut(STORE_DELETE_QUEUE, { id, queuedAt: new Date().toISOString() }).catch(() => {});
-      }
+      showToast('📴 Offline — Firebase akan dihapus saat online kembali (tidak bisa queue semua)', 'info');
     }
   };
 
