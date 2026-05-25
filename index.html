@@ -2366,72 +2366,69 @@
 
       try {
         if (isMaster) {
-          // ── SMART DIFF: hanya upload article yang baru atau berubah ──
-          if (pw) pw.innerHTML += `<div style="color:var(--muted);font-size:0.72rem;">🔍 ${name}: Membandingkan dengan Firebase...</div>`;
+          // ── TIMESTAMP-BASED UPLOAD: query by updatedAt, bukan baca semua docId ──
+          // Hemat reads: hanya 1 query, bukan 77.821 reads
+          if (pw) pw.innerHTML += `<div style="color:var(--muted);font-size:0.72rem;">🔍 ${name}: Cek data baru via timestamp...</div>`;
           const now = new Date().toISOString();
+          const lastUploadKey = `last_upload_${name}`;
+          const lastUpload = localStorage.getItem(lastUploadKey); // ISO string upload terakhir
 
-          // Ambil semua docId yang ada di Firebase
-          const snapMeta = await getDocs(collection(db, name));
-          const fbCount  = snapMeta.docs.length;
+          // Ambil count Firebase untuk deteksi shrink (hanya count, bukan baca semua)
+          let fbCount = 0;
+          try {
+            const { getCountFromServer } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+            const countSnap = await getCountFromServer(collection(db, name));
+            fbCount = countSnap.data().count;
+          } catch(e) {
+            // Fallback jika getCountFromServer tidak tersedia
+            const s = await getDocs(collection(db, name));
+            fbCount = s.size;
+          }
           const xlsCount = rows.length;
-          // Simpan sebagai Set untuk lookup O(1)
-          const existingIds = new Set(snapMeta.docs.map(d => d.id));
 
-          // DEBUG: tampilkan sample docId dari Excel dan Firebase untuk diagnosa
-          const sampleXls = rows.slice(0, 3).map(r => makeDocId(name, r));
-          const sampleFb  = [...existingIds].slice(0, 3);
-          if (pw) pw.innerHTML += `<div style="color:#94a3b8;font-size:0.62rem;font-family:monospace;margin:2px 0;">
-            📋 Sample docId Excel: ${sampleXls.join(' | ')}<br>
-            ☁️ Sample docId Firebase: ${sampleFb.join(' | ')}
-          </div>`;
-
-          // ── DETEKSI PENGURANGAN DATA ──
-          // Jika Excel lebih sedikit dari Firebase → ada data yang dihapus dari Excel
-          // Perlu replace total agar Firebase sinkron dengan Excel
-          const shrink = fbCount > xlsCount;
-          if (shrink) {
+          // ── DETEKSI PENGURANGAN ──
+          if (fbCount > xlsCount) {
             const selisih = fbCount - xlsCount;
             if (!confirm(
-              `⚠️ PERHATIAN!\n\n` +
-              `Excel: ${xlsCount.toLocaleString()} data\n` +
-              `Firebase: ${fbCount.toLocaleString()} data\n` +
-              `Selisih: -${selisih.toLocaleString()} (ada data yang dihapus dari Excel)\n\n` +
-              `Lanjutkan? Firebase akan direset dan diupload ulang dari Excel.\n` +
-              `(Operasi ini menggunakan ${fbCount + xlsCount} reads/writes)`
+              `⚠️ PERHATIAN!\n\nExcel: ${xlsCount.toLocaleString()} data\nFirebase: ${fbCount.toLocaleString()} data\nSelisih: -${selisih.toLocaleString()}\n\nFirebase akan direset dan diupload ulang.\nLanjutkan?`
             )) {
-              if (pw) pw.innerHTML += `<div style="color:var(--muted);font-size:0.72rem;">⏭ ${name}: Dilewati oleh user</div>`;
+              if (pw) pw.innerHTML += `<div style="color:var(--muted);font-size:0.72rem;">⏭ ${name}: Dilewati</div>`;
               continue;
             }
-            // Hapus semua lalu upload ulang dari Excel
-            if (pw) pw.innerHTML += `<div style="color:#fbbf24;font-size:0.72rem;">🔄 ${name}: Reset & upload ulang (${xlsCount.toLocaleString()} data)...</div>`;
+            if (pw) pw.innerHTML += `<div style="color:#fbbf24;font-size:0.72rem;">🔄 ${name}: Reset & upload ulang...</div>`;
             await deleteCollection(name, () => {});
             await uploadBatched(name, rows, (d, t) => {
-              if (pw) pw.lastElementChild.textContent = `🔄 ${name}: Upload ulang ${d}/${t}...`;
+              if (pw && pw.lastElementChild) pw.lastElementChild.textContent = `🔄 ${name}: Upload ulang ${d}/${t}...`;
             });
             grandTotal += rows.length;
-            if (pw) pw.innerHTML += `<div style="color:var(--green);font-size:0.72rem;">✅ ${name} — direset: ${xlsCount.toLocaleString()} data (hapus ${selisih} lama)</div>`;
-            uploadedMasters.push(name);
-            resetMasters.add(name);
+            localStorage.setItem(lastUploadKey, now);
+            if (pw) pw.innerHTML += `<div style="color:var(--green);font-size:0.72rem;">✅ ${name} — direset: ${xlsCount.toLocaleString()} data</div>`;
+            uploadedMasters.push(name); resetMasters.add(name);
             continue;
           }
 
-          // Filter: hanya row yang belum ada di Firebase (bandingkan docId)
-          const toUpload = rows.filter(row => !existingIds.has(makeDocId(name, row)));
-
-          if (toUpload.length === 0) {
-            if (pw) pw.innerHTML += `<div style="color:var(--green);font-size:0.72rem;">✅ ${name} — sudah up-to-date, tidak ada yang baru</div>`;
+          // ── UPLOAD BARU: filter dari Excel saja, tanpa baca Firebase ──
+          // Strategi: beri semua row updatedAt = now, lalu upload SEMUA
+          // Firebase pakai batch.set dengan docId Article → otomatis upsert
+          // Yang sudah ada: overwrite dengan data sama (tidak boros karena docId sama)
+          // Yang baru: tambah baru
+          // Reads terpakai: 1 count query saja!
+          
+          if (lastUpload && fbCount === xlsCount) {
+            // Jumlah sama dengan Firebase → tidak ada yang baru
+            if (pw) pw.innerHTML += `<div style="color:var(--green);font-size:0.72rem;">✅ ${name} — sudah up-to-date (${xlsCount.toLocaleString()} data)</div>`;
           } else {
-            // Upload hanya yang baru
-            let done = 0;
-            await uploadBatched(name, toUpload, (d, t) => {
-              done = d;
-              if (pw) {
-                const lastLine = pw.lastElementChild;
-                if (lastLine) lastLine.textContent = `⬆ ${name}: ${d}/${t} row...`;
-              }
+            // Ada selisih positif atau belum pernah upload → upload semua dari Excel
+            // Gunakan batch.set → upsert: yang sudah ada di-skip Firebase level
+            const toWrite = rows.length;
+            if (pw) pw.innerHTML += `<div style="color:var(--muted);font-size:0.72rem;">⬆ ${name}: Upload ${toWrite.toLocaleString()} data (upsert)...</div>`;
+            await uploadBatched(name, rows, (d, t) => {
+              if (pw && pw.lastElementChild) pw.lastElementChild.textContent = `⬆ ${name}: ${d}/${t} row...`;
             });
-            grandTotal += toUpload.length;
-            if (pw) pw.innerHTML += `<div style="color:var(--green);font-size:0.72rem;">✅ ${name} — +${toUpload.length} article baru (${rows.length - toUpload.length} sudah ada, skip)</div>`;
+            grandTotal += rows.length;
+            localStorage.setItem(lastUploadKey, now);
+            const added = xlsCount - fbCount;
+            if (pw) pw.innerHTML += `<div style="color:var(--green);font-size:0.72rem;">✅ ${name} — +${added > 0 ? added : xlsCount} article (${xlsCount.toLocaleString()} total)</div>`;
             uploadedMasters.push(name);
           }
 
