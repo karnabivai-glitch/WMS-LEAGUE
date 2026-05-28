@@ -3573,9 +3573,10 @@
       card.className = `wms-lbin ${wmsLayoutEdit ? 'edit-mode' : ''} ${qty>0?'has-stock':''} ${isEmpty?'empty-bin':''} ${isHL?'hl':''}`;
       card.style.cssText = `left:${pos.x}px;top:${pos.y}px;width:${pos.w}px;height:${pos.h}px;`;
       card.dataset.lk = lk;
+      const clickAttr = wmsLayoutEdit ? '' : `onclick="wmsOpenBinDetail('${store}','${bin}')"`;
       card.innerHTML = `
         <button class="wms-lbin-del" onclick="wmsDeleteLayoutBin('${lk}')">✕</button>
-        <div class="wms-lbin-header" onclick="${wmsLayoutEdit?'':``wmsOpenBinDetail('${store}','${bin}')``}">
+        <div class="wms-lbin-header" ${clickAttr}>
           <div class="wms-lbin-code">${bin}</div>
           <div class="wms-lbin-qty">${qty > 0 ? qty+' pcs' : 'Kosong'}</div>
         </div>
