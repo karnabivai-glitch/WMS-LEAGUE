@@ -559,6 +559,7 @@
       <span id="idbStatus" class="idb-status">💾 IDB...</span>
       <span id="syncStatus" class="sync-status pending">⏳</span>
       <span id="offlineMiniStatus" class="offline-mini not-ready" title="Master Cache">📦 ...</span>
+      <span id="scanStoreBadge" style="display:none;font-size:0.55rem;padding:2px 6px;border-radius:4px;background:rgba(249,115,22,0.15);color:var(--accent);border:1px solid rgba(249,115,22,0.3);font-weight:700;"></span>
     </div>
     
     <!-- STATS -->
@@ -1233,7 +1234,7 @@
   async function deleteFromFirebase(localId) {
     if (!db) return false;
     try {
-      const q = query(collection(db, 'SCAN_DATA'), where('local_id', '==', localId));
+      const q = query(getScanCollectionRef(), where('local_id', '==', localId));
       const snap = await getDocs(q);
       if (snap.empty) return true; // sudah tidak ada, anggap sukses
       const batch = writeBatch(db);
@@ -1302,7 +1303,7 @@
         const batch = writeBatch(db);
         validRows.forEach(row => {
           const { synced: _, ...data } = row;
-          batch.set(doc(collection(db, 'SCAN_DATA')), {
+          batch.set(doc(getScanCollectionRef()), {
             BARCODE:data.BARCODE, LOKASI:data.LOKASI, ARTICLE:data.ARTICLE||'',
             BIN:data.BIN||'', SIZE_US:data.SIZE_US||'', SIZE_UK:data.SIZE_UK||'',
             GENERIC:data.GENERIC||'', DESCRIPTION:data.DESCRIPTION||'',
@@ -1820,7 +1821,7 @@
       if (db) {
         try {
           // Query semua dokumen Firebase dengan BIN ini, hapus sekaligus
-          const q = query(collection(db, 'SCAN_DATA'), where('BIN', '==', bin));
+          const q = query(getScanCollectionRef(), where('BIN', '==', bin));
           const snap = await getDocs(q);
           if (!snap.empty) {
             for (let i = 0; i < snap.docs.length; i += BATCH_SIZE) {
@@ -2351,7 +2352,7 @@
     if (db) {
       try {
         showToast('☁️ Menghapus dari Firebase...', 'info');
-        await deleteCollection('SCAN_DATA', () => {});
+        await deleteCollection(getScanCollectionPath(), () => {});
         showToast('✅ Firebase bersih!', 'success');
         safeSetText('statFirebaseTotal', '0');
       } catch(e) {
@@ -2381,12 +2382,12 @@
     safeSetText('statFirebaseTotal', '...');
     try {
       const { getCountFromServer } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-      const snap = await getCountFromServer(collection(db, 'SCAN_DATA'));
+      const snap = await getCountFromServer(getScanCollectionRef());
       safeSetText('statFirebaseTotal', snap.data().count.toLocaleString());
     } catch(e) {
       // Fallback getDocs jika getCountFromServer tidak tersedia
       try {
-        const snap = await getDocs(collection(db, 'SCAN_DATA'));
+        const snap = await getDocs(getScanCollectionRef());
         safeSetText('statFirebaseTotal', snap.size.toLocaleString());
       } catch(e2) { safeSetText('statFirebaseTotal', '—'); }
     } finally { fbCountFetching = false; }
@@ -2517,7 +2518,7 @@
 
     try {
       // Ambil semua dokumen dari SCAN_DATA
-      const snap = await getDocs(collection(db, 'SCAN_DATA'));
+      const snap = await getDocs(getScanCollectionRef());
       if (snap.empty) { showToast('📭 Firebase kosong', 'info'); return; }
 
       if (fill)  fill.style.width = '60%';
@@ -2969,6 +2970,33 @@
   let wmsScanMode     = 'upload';
   let wmsStoreList    = [];    // [{ code, name }]
 
+  // ── SCAN COLLECTION ROUTER ──
+  // Jika login WMS → data masuk ke STORES/{store_code}/SCAN_DATA (per toko)
+  // Jika belum login → fallback ke SCAN_DATA global
+  function getScanCollectionRef() {
+    if (wmsCurrentUser?.store_code) {
+      return collection(db, 'STORES', wmsCurrentUser.store_code, 'SCAN_DATA');
+    }
+    return collection(db, 'SCAN_DATA');
+  }
+  function getScanCollectionPath() {
+    if (wmsCurrentUser?.store_code) {
+      return `STORES/${wmsCurrentUser.store_code}/SCAN_DATA`;
+    }
+    return 'SCAN_DATA';
+  }
+  // Tampilkan toko aktif di status bar scan
+  function updateStoreBadge() {
+    const el = document.getElementById('scanStoreBadge');
+    if (!el) return;
+    if (wmsCurrentUser?.store_code) {
+      el.textContent = `🏪 ${wmsCurrentUser.store_code}`;
+      el.style.display = 'inline-flex';
+    } else {
+      el.style.display = 'none';
+    }
+  }
+
   // ── LOGIN ──
   window.wmsLogin = async function() {
     const user = document.getElementById('wmsUser').value.trim();
@@ -2986,7 +3014,7 @@
 
       wmsCurrentUser = {
         username:   udata.username,
-        role:       udata.role || 'TOKO',  // ADMIN atau TOKO
+        role:       udata.role || 'TOKO',
         store_code: udata.store_code || udata.username.toUpperCase(),
         store_name: udata.store_name || udata.username,
       };
@@ -2994,6 +3022,8 @@
       document.getElementById('wmsStoreBadge').textContent =
         wmsCurrentUser.role === 'ADMIN' ? '👑 ADMIN' : `🏪 ${wmsCurrentUser.store_name}`;
       document.getElementById('page-wms').classList.add('show');
+      updateStoreBadge();        // update badge di sidebar scan
+      refreshFirebaseCount();    // hitung ulang berdasarkan toko
       await wmsLoadStores();
       await wmsLoadData();
       wmsPopulateSelects();
@@ -3003,6 +3033,8 @@
   window.wmsLogout = function() {
     wmsCurrentUser = null; wmsAllData = []; wmsFilteredData = [];
     document.getElementById('page-wms').classList.remove('show');
+    updateStoreBadge();
+    refreshFirebaseCount();
     switchPage('scan');
   };
 
