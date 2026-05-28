@@ -316,8 +316,224 @@
     .offline-mini { font-size: 0.55rem; padding: 2px 5px; border-radius: 4px; }
     .offline-mini.ready { background: #14532d33; color: var(--green); }
     .offline-mini.not-ready { background: #78350f33; color: #fbbf24; }
-  </style>
-</head>
+    /* ══════════════════════════════════════
+       WMS STYLES
+    ══════════════════════════════════════ */
+    /* Login Overlay */
+    .wms-login-overlay {
+      display: none; position: fixed; inset: 0;
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      z-index: 9999; align-items: center; justify-content: center;
+    }
+    .wms-login-overlay.show { display: flex; }
+    .wms-login-box {
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(20px); border-radius: 20px;
+      padding: 40px 36px; width: 340px; text-align: center;
+    }
+    .wms-login-box h2 { color: #fff; font-size: 1.6rem; font-weight: 800; letter-spacing: 2px; margin-bottom: 4px; }
+    .wms-login-box .sub { color: rgba(255,255,255,0.4); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 28px; }
+    .wms-login-box input {
+      width: 100%; padding: 12px 14px; background: rgba(255,255,255,0.08);
+      border: 1.5px solid rgba(255,255,255,0.15); border-radius: 10px;
+      color: #fff; font-size: 0.9rem; margin-bottom: 10px; outline: none; transition: 0.2s;
+    }
+    .wms-login-box input:focus { border-color: #818cf8; background: rgba(99,102,241,0.12); }
+    .wms-login-box input::placeholder { color: rgba(255,255,255,0.3); }
+    .wms-btn-login {
+      width: 100%; padding: 13px; background: #6366f1; color: #fff;
+      border: none; border-radius: 10px; font-weight: 700; font-size: 0.95rem;
+      cursor: pointer; letter-spacing: 1px; transition: 0.2s; margin-top: 4px;
+    }
+    .wms-btn-login:hover { background: #818cf8; }
+    .wms-login-err { color: #f87171; font-size: 0.72rem; margin-top: 8px; min-height: 18px; }
+
+    /* WMS Page Layout */
+    #page-wms {
+      display: none; position: fixed; inset: 0;
+      background: var(--bg); z-index: 100; overflow: hidden;
+      flex-direction: column;
+    }
+    #page-wms.show { display: flex; }
+    .wms-topbar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 16px; background: var(--card);
+      border-bottom: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap;
+    }
+    .wms-topbar-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+    .wms-logo { font-size: 0.85rem; font-weight: 800; letter-spacing: 1px; color: var(--text); }
+    .wms-logo span { color: #818cf8; }
+    .wms-store-badge {
+      background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3);
+      color: #818cf8; font-size: 0.62rem; font-weight: 700;
+      padding: 3px 8px; border-radius: 99px; letter-spacing: 0.5px;
+    }
+    .wms-tabs { display: flex; gap: 4px; }
+    .wms-tab {
+      padding: 6px 12px; border-radius: 6px; font-size: 0.68rem; font-weight: 600;
+      border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; transition: 0.15s;
+    }
+    .wms-tab.active { background: #6366f1; color: #fff; border-color: #6366f1; }
+    .wms-tab:hover:not(.active) { background: rgba(99,102,241,0.1); color: var(--text); }
+    .wms-topbar-right { display: flex; align-items: center; gap: 6px; }
+    .wms-search-bar {
+      padding: 6px 12px; border-radius: 7px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--text); font-size: 0.78rem; width: 200px; outline: none;
+    }
+    .wms-search-bar:focus { border-color: #6366f1; }
+
+    /* WMS Content Area */
+    .wms-body { flex: 1; overflow: hidden; display: flex; }
+    .wms-panel { display: none; flex: 1; overflow: auto; padding: 16px; flex-direction: column; gap: 12px; }
+    .wms-panel.active { display: flex; }
+
+    /* Stok Panel */
+    .wms-filter-bar {
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 12px; flex-shrink: 0;
+    }
+    .wms-filter-bar select, .wms-filter-bar input {
+      padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--text); font-size: 0.72rem; outline: none;
+    }
+    .wms-filter-bar select:focus, .wms-filter-bar input:focus { border-color: #6366f1; }
+    .wms-summary-bar {
+      display: flex; gap: 10px; flex-wrap: wrap;
+    }
+    .wms-sum-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+      padding: 8px 14px; min-width: 100px;
+    }
+    .wms-sum-card .sv { font-size: 1.2rem; font-weight: 700; color: #818cf8; }
+    .wms-sum-card .sl { font-size: 0.55rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .wms-table-wrap { flex: 1; overflow: auto; border-radius: 10px; border: 1px solid var(--border); background: var(--card); }
+    .wms-table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+    .wms-table thead { position: sticky; top: 0; background: #14161f; z-index: 5; }
+    .wms-table th {
+      padding: 8px 8px; text-align: left; font-size: 0.58rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted);
+      border-bottom: 2px solid var(--border); white-space: nowrap;
+    }
+    .wms-table td { padding: 6px 8px; border-bottom: 1px solid rgba(42,45,58,0.5); white-space: nowrap; }
+    .wms-table tbody tr:hover { background: rgba(99,102,241,0.05); }
+    .wms-qty-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 28px; height: 20px; border-radius: 5px; font-size: 0.72rem; font-weight: 700;
+      background: rgba(99,102,241,0.15); color: #818cf8; padding: 0 6px;
+    }
+    .wms-qty-badge.low { background: rgba(239,68,68,0.15); color: var(--red); }
+    .wms-bin-tag {
+      display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 4px;
+      background: rgba(167,139,250,0.15); color: #a78bfa; font-size: 0.68rem; font-weight: 700; font-family: monospace;
+    }
+    .wms-action-btn {
+      padding: 3px 8px; border-radius: 4px; border: none; cursor: pointer;
+      font-size: 0.62rem; font-weight: 600; transition: 0.15s;
+    }
+    .wms-action-btn.jual { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+    .wms-action-btn.move { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+    .wms-action-btn.jual:hover { background: var(--green); color: #fff; }
+    .wms-action-btn.move:hover { background: #fbbf24; color: #000; }
+
+    /* BIN Layout Panel */
+    .wms-bin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+    .wms-bin-card {
+      background: var(--card); border: 2px solid var(--border); border-radius: 10px;
+      padding: 12px; cursor: pointer; transition: all 0.2s; position: relative;
+    }
+    .wms-bin-card:hover { border-color: #6366f1; transform: translateY(-2px); }
+    .wms-bin-card.has-item { border-color: rgba(99,102,241,0.4); }
+    .wms-bin-card.highlighted { border-color: #10b981; background: rgba(16,185,129,0.08); animation: wmsGlow 1.2s ease-in-out infinite; }
+    @keyframes wmsGlow {
+      0%,100% { box-shadow: 0 0 0 2px rgba(16,185,129,0.3); }
+      50%      { box-shadow: 0 0 0 6px rgba(16,185,129,0.15), 0 0 20px rgba(16,185,129,0.4); }
+    }
+    .wms-bin-card .bc-code { font-size: 0.82rem; font-weight: 800; color: #a78bfa; font-family: monospace; margin-bottom: 4px; }
+    .wms-bin-card .bc-store { font-size: 0.55rem; color: var(--muted); margin-bottom: 6px; }
+    .wms-bin-card .bc-qty { font-size: 1.3rem; font-weight: 700; color: var(--text); }
+    .wms-bin-card .bc-sku { font-size: 0.55rem; color: var(--muted); margin-top: 2px; }
+
+    /* WMS Layout Canvas */
+    .wms-lbin { position:absolute; min-width:90px; min-height:70px; background:var(--card); border:2px solid var(--border); border-radius:10px; cursor:pointer; user-select:none; overflow:hidden; display:flex; flex-direction:column; transition:border-color 0.15s, box-shadow 0.15s; }
+    .wms-lbin:hover { border-color:#6366f1; box-shadow:0 4px 16px rgba(99,102,241,0.2); }
+    .wms-lbin.edit-mode { cursor:grab; }
+    .wms-lbin.dragging { z-index:999; opacity:0.9; box-shadow:0 8px 28px rgba(0,0,0,0.3); transform:scale(1.03); }
+    .wms-lbin.hl { border-color:#10b981!important; animation:wmsGlow 1.2s ease-in-out infinite; }
+    .wms-lbin.dim { opacity:0.18; filter:grayscale(80%); }
+    .wms-lbin.empty-bin { border-style:dashed; opacity:0.55; }
+    .wms-lbin-header { background:#6366f1; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px 8px; text-align:center; border-radius:8px; }
+    .wms-lbin.has-stock .wms-lbin-header { background:#006994; }
+    .wms-lbin.empty-bin .wms-lbin-header { background:#475569; }
+    .wms-lbin-code { font-family:monospace; font-size:1.1rem; font-weight:800; color:#fff; letter-spacing:1px; line-height:1; }
+    .wms-lbin-qty { font-size:0.55rem; background:rgba(255,255,255,0.2); color:#fff; padding:2px 6px; border-radius:8px; margin-top:4px; font-weight:700; }
+    .wms-lbin-del { position:absolute; top:3px; right:3px; width:16px; height:16px; background:var(--red); color:#fff; border:none; border-radius:50%; font-size:10px; cursor:pointer; display:none; align-items:center; justify-content:center; z-index:10; }
+    .wms-lbin.edit-mode .wms-lbin-del { display:flex; }
+    .wms-lbin-resize { position:absolute; bottom:0; right:0; width:12px; height:12px; cursor:se-resize; background:linear-gradient(135deg,transparent 50%,rgba(99,102,241,0.5) 50%); border-radius:0 0 8px 0; display:none; z-index:10; }
+    .wms-lbin.edit-mode .wms-lbin-resize { display:block; }
+
+    /* Inbound Panel */
+    .wms-inbound-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; max-width: 600px;
+    }
+    .wms-inbound-card h3 { font-size: 0.88rem; font-weight: 700; margin-bottom: 14px; }
+    .wms-field { margin-bottom: 10px; }
+    .wms-field label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); display: block; margin-bottom: 3px; }
+    .wms-field input, .wms-field select {
+      width: 100%; padding: 8px 10px; border-radius: 7px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--text); font-size: 0.8rem; outline: none;
+    }
+    .wms-field input:focus, .wms-field select:focus { border-color: #6366f1; }
+    .wms-btn { padding: 9px 16px; border-radius: 7px; border: none; cursor: pointer; font-weight: 700; font-size: 0.72rem; transition: 0.2s; }
+    .wms-btn.primary { background: #6366f1; color: #fff; }
+    .wms-btn.success { background: var(--green); color: #fff; }
+    .wms-btn.danger  { background: var(--red);   color: #fff; }
+    .wms-btn.warning { background: #f59e0b; color: #000; }
+    .wms-btn:hover { opacity: 0.85; }
+    .wms-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Modal Jual/Move */
+    .wms-modal-backdrop {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65); z-index: 500;
+      align-items: center; justify-content: center;
+    }
+    .wms-modal-backdrop.show { display: flex; }
+    .wms-modal {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 24px; width: 360px; max-width: 92vw;
+    }
+    .wms-modal h3 { font-size: 0.9rem; font-weight: 700; margin-bottom: 16px; }
+    .wms-modal-info {
+      background: var(--bg); border-radius: 8px; padding: 10px 12px;
+      margin-bottom: 14px; font-size: 0.72rem; line-height: 1.6;
+    }
+    .wms-modal-info .mi-label { color: var(--muted); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .wms-modal-info .mi-val { font-weight: 600; color: var(--text); }
+
+    /* Inbound dari Scan */
+    .wms-scan-import {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px;
+    }
+    .wms-scan-import h3 { font-size: 0.88rem; font-weight: 700; margin-bottom: 6px; }
+    .wms-scan-import .sub { font-size: 0.68rem; color: var(--muted); margin-bottom: 14px; }
+    .wms-scan-preview { max-height: 200px; overflow-y: auto; font-size: 0.68rem; margin: 10px 0; }
+    .wms-scan-preview table { width: 100%; border-collapse: collapse; }
+    .wms-scan-preview td, .wms-scan-preview th { padding: 4px 6px; border-bottom: 1px solid var(--border); }
+    .wms-scan-preview th { color: var(--muted); font-size: 0.58rem; text-transform: uppercase; }
+    .wms-mode-tabs { display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap; }
+    .wms-mode-tab {
+      padding: 5px 10px; border-radius: 5px; border: 1px solid var(--border);
+      background: none; color: var(--muted); font-size: 0.62rem; font-weight: 600; cursor: pointer;
+    }
+    .wms-mode-tab.active { background: #6366f1; color: #fff; border-color: #6366f1; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .wms-topbar { padding: 6px 10px; }
+      .wms-search-bar { width: 130px; }
+      .wms-bin-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+    }
 <body>
 
 <div class="toast" id="toast"></div>
@@ -329,6 +545,7 @@
     <div class="nav-tabs">
       <button class="nav-tab active" onclick="switchPage('scan')">📱 SCAN</button>
       <button class="nav-tab" onclick="switchPage('master')">📦 MASTER</button>
+      <button class="nav-tab" onclick="switchPage('wms')">🏭 WMS</button>
     </div>
     
     <div class="sidebar-header">
@@ -555,7 +772,260 @@
   </div>
 </div>
 
-<!-- EXPORT MODAL -->
+<!-- WMS LOGIN OVERLAY -->
+<div class="wms-login-overlay" id="wmsLoginOverlay">
+  <div class="wms-login-box">
+    <div style="font-size:2.5rem;margin-bottom:8px;">🏭</div>
+    <h2>WMS</h2>
+    <div class="sub">Warehouse Management System</div>
+    <input type="text" id="wmsUser" placeholder="Username" autocomplete="off" onkeydown="if(event.key==='Enter')wmsLogin()" />
+    <input type="password" id="wmsPass" placeholder="Password" onkeydown="if(event.key==='Enter')wmsLogin()" />
+    <button class="wms-btn-login" onclick="wmsLogin()">MASUK</button>
+    <div class="wms-login-err" id="wmsLoginErr"></div>
+    <button onclick="switchPage('scan')" style="margin-top:14px;background:none;border:none;color:rgba(255,255,255,0.3);font-size:0.65rem;cursor:pointer;">← Kembali ke Scan</button>
+  </div>
+</div>
+
+<!-- WMS MAIN PAGE -->
+<div id="page-wms">
+  <!-- TOP BAR -->
+  <div class="wms-topbar">
+    <div class="wms-topbar-left">
+      <div class="wms-logo">WMS <span>LEAGUE</span></div>
+      <div class="wms-store-badge" id="wmsStoreBadge">-</div>
+      <div class="wms-tabs">
+        <button class="wms-tab active" onclick="wmsShowPanel('stok')">📊 Stok</button>
+        <button class="wms-tab" onclick="wmsShowPanel('bin')">📦 BIN View</button>
+        <button class="wms-tab" onclick="wmsShowPanel('layout')">🗺️ Layout</button>
+        <button class="wms-tab" onclick="wmsShowPanel('inbound')">⬇ Inbound</button>
+        <button class="wms-tab" onclick="wmsShowPanel('scan-import')">📱 Dari Scan</button>
+        <button class="wms-tab" id="wmsTabAdmin" onclick="wmsShowPanel('admin')" style="display:none;">⚙️ Admin</button>
+      </div>
+    </div>
+    <div class="wms-topbar-right">
+      <input class="wms-search-bar" id="wmsSearchBar" placeholder="🔍 Cari SKU / BIN / Brand..." oninput="wmsApplyFilter()" />
+      <button class="wms-btn primary" onclick="wmsDownloadExcel()" style="padding:6px 10px;font-size:0.65rem;" title="Download Excel">📥</button>
+      <button class="wms-btn primary" onclick="wmsLoadData()" style="padding:6px 10px;font-size:0.65rem;" title="Refresh data">🔄</button>
+      <div style="display:flex;align-items:center;gap:4px;font-size:0.6rem;color:var(--green);font-weight:700;background:rgba(34,197,94,0.1);padding:4px 8px;border-radius:6px;" title="Auto-refresh 30 detik">
+        <span style="width:7px;height:7px;background:var(--green);border-radius:50%;display:inline-block;animation:pulse 1.5s infinite;"></span>LIVE
+      </div>
+      <button class="wms-btn danger" onclick="wmsLogout()" style="padding:6px 10px;font-size:0.65rem;">⏏ Keluar</button>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div class="wms-body">
+
+    <!-- ── PANEL STOK ── -->
+    <div class="wms-panel active" id="wmsPanel-stok">
+      <div class="wms-filter-bar">
+        <select id="wmsFilterStore" onchange="wmsApplyFilter()">
+          <option value="">🏪 Semua Toko</option>
+        </select>
+        <select id="wmsFilterBin" onchange="wmsApplyFilter()">
+          <option value="">📦 Semua BIN</option>
+        </select>
+        <select id="wmsFilterCat" onchange="wmsApplyFilter()">
+          <option value="">🏷 Semua CAT</option>
+        </select>
+        <div class="wms-summary-bar" id="wmsSummaryBar">
+          <div class="wms-sum-card"><div class="sv" id="wmsTotalSKU">0</div><div class="sl">Total SKU</div></div>
+          <div class="wms-sum-card"><div class="sv" id="wmsTotalQty">0</div><div class="sl">Total Qty</div></div>
+          <div class="wms-sum-card"><div class="sv" id="wmsTotalBin">0</div><div class="sl">Total BIN</div></div>
+        </div>
+      </div>
+      <div class="wms-table-wrap">
+        <table class="wms-table">
+          <thead>
+            <tr>
+              <th>#</th><th>Toko</th><th>Generic</th><th>SKU/Variant</th>
+              <th>Nama</th><th>Cat</th><th>Size US</th><th>Size UK</th>
+              <th>BIN</th><th>Qty</th><th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="wmsStokBody">
+            <tr><td colspan="11" style="text-align:center;padding:40px;color:var(--muted);">Loading data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── PANEL BIN VIEW ── -->
+    <div class="wms-panel" id="wmsPanel-bin">
+      <div class="wms-filter-bar">
+        <select id="wmsFilterStoreBin" onchange="wmsRenderBinView()">
+          <option value="">🏪 Semua Toko</option>
+        </select>
+        <span style="font-size:0.65rem;color:var(--muted);">Klik BIN untuk lihat detail</span>
+      </div>
+      <div class="wms-bin-grid" id="wmsBinGrid">
+        <div style="color:var(--muted);font-size:0.72rem;">Load data dulu...</div>
+      </div>
+    </div>
+
+    <!-- ── PANEL INBOUND ── -->
+    <div class="wms-panel" id="wmsPanel-inbound">
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">
+        <div class="wms-inbound-card" style="flex:1;min-width:280px;">
+          <h3>⬇ Inbound Barang</h3>
+          <div class="wms-field">
+            <label>Toko</label>
+            <select id="wmsInbStore"></select>
+          </div>
+          <div class="wms-field">
+            <label>SKU / Article</label>
+            <input id="wmsInbSKU" placeholder="Scan atau ketik SKU..." onkeydown="if(event.key==='Enter')document.getElementById('wmsInbBIN').focus()" />
+          </div>
+          <div class="wms-field">
+            <label>BIN</label>
+            <input id="wmsInbBIN" placeholder="Contoh: D1" style="text-transform:uppercase" onkeydown="if(event.key==='Enter')document.getElementById('wmsInbQty').focus()" />
+          </div>
+          <div class="wms-field">
+            <label>Qty</label>
+            <input id="wmsInbQty" type="number" value="1" min="1" onkeydown="if(event.key==='Enter')wmsDoInbound()" />
+          </div>
+          <button class="wms-btn success" onclick="wmsDoInbound()" style="width:100%;">✅ Inbound</button>
+          <div id="wmsInbMsg" style="margin-top:8px;font-size:0.7rem;min-height:18px;"></div>
+        </div>
+        <div class="wms-inbound-card" style="flex:1;min-width:280px;">
+          <h3>🔀 Move Barang Antar BIN</h3>
+          <div class="wms-field">
+            <label>Toko</label>
+            <select id="wmsMoveStore"></select>
+          </div>
+          <div class="wms-field">
+            <label>SKU / Article</label>
+            <input id="wmsMoveSKU" placeholder="SKU..." />
+          </div>
+          <div class="wms-field">
+            <label>BIN Asal</label>
+            <input id="wmsMoveFrom" placeholder="Dari BIN..." style="text-transform:uppercase" />
+          </div>
+          <div class="wms-field">
+            <label>BIN Tujuan</label>
+            <input id="wmsMoveTo" placeholder="Ke BIN..." style="text-transform:uppercase" />
+          </div>
+          <div class="wms-field">
+            <label>Qty</label>
+            <input id="wmsMoveQty" type="number" value="1" min="1" />
+          </div>
+          <button class="wms-btn warning" onclick="wmsDoMove()" style="width:100%;">🔀 Move</button>
+          <div id="wmsMoveMsg" style="margin-top:8px;font-size:0.7rem;min-height:18px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PANEL DARI SCAN ── -->
+    <div class="wms-panel" id="wmsPanel-scan-import">
+      <div class="wms-scan-import">
+        <h3>📱 Import dari Data Scan</h3>
+        <p class="sub">Ambil data scan yang sudah ada lalu proses ke WMS. Qty dihitung otomatis per SKU+BIN.</p>
+
+        <div class="wms-field">
+          <label>Toko Tujuan</label>
+          <select id="wmsScanStore"></select>
+        </div>
+
+        <div class="wms-mode-tabs">
+          <button class="wms-mode-tab active" data-mode="upload" onclick="wmsScanSetMode(this)">🔄 Upload (Replace)</button>
+          <button class="wms-mode-tab" data-mode="inbound" onclick="wmsScanSetMode(this)">➕ Inbound (Tambah)</button>
+          <button class="wms-mode-tab" data-mode="cycle" onclick="wmsScanSetMode(this)">🔁 Cycle Count (Per BIN)</button>
+        </div>
+        <div id="wmsScanModeDesc" style="font-size:0.65rem;color:var(--muted);margin-bottom:10px;">
+          Replace: hapus stok lama toko ini, isi ulang dari data scan.
+        </div>
+
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:10px;">
+          <div style="font-size:0.68rem;color:var(--muted);margin-bottom:6px;">Preview data scan yang akan diproses:</div>
+          <div class="wms-scan-preview" id="wmsScanPreview">
+            <span style="color:var(--muted);">Belum ada data scan di sesi ini</span>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button class="wms-btn primary" onclick="wmsPreviewScan()">👁 Preview</button>
+          <button class="wms-btn success" onclick="wmsDoScanImport()" id="wmsScanImportBtn" disabled>✅ Proses ke WMS</button>
+          <span id="wmsScanImportMsg" style="font-size:0.7rem;color:var(--muted);"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PANEL LAYOUT BIN ── -->
+    <div class="wms-panel" id="wmsPanel-layout" style="padding:0;overflow:hidden;">
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;">
+        <span style="font-size:0.7rem;font-weight:700;color:var(--muted);">🗺️ LAYOUT BIN</span>
+        <input id="wmsLayoutSearch" placeholder="🔍 Cari SKU/Article..." style="padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.72rem;width:200px;" oninput="wmsLayoutDoSearch(this.value)" />
+        <button onclick="wmsLayoutClearSearch()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--muted);font-size:0.65rem;cursor:pointer;">Reset</button>
+        <button id="wmsEditLayoutBtn" onclick="wmsToggleLayoutEdit()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.65rem;cursor:pointer;">✏️ Edit Layout</button>
+        <button onclick="wmsAddBinToLayout()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.65rem;cursor:pointer;">+ Bin</button>
+        <button id="wmsSaveLayoutBtn" onclick="wmsSaveLayout()" style="padding:4px 10px;border-radius:6px;background:var(--green);color:#fff;border:none;font-size:0.65rem;cursor:pointer;opacity:0.5;">💾 Simpan</button>
+        <span id="wmsLayoutSaveOk" style="font-size:0.6rem;color:var(--green);display:none;">✅ Tersimpan!</span>
+        <select id="wmsLayoutFloorSel" onchange="wmsSetLayoutFloor(parseInt(this.value))" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.65rem;margin-left:auto;"></select>
+        <button onclick="wmsAddLayoutFloor()" style="padding:4px 8px;border-radius:6px;border:1px dashed var(--border);background:transparent;color:var(--muted);font-size:0.65rem;cursor:pointer;">+ Lantai</button>
+      </div>
+      <div id="wmsLayoutScroll" style="flex:1;overflow:auto;position:relative;">
+        <div id="wmsLayoutCanvas" style="position:relative;min-height:500px;min-width:800px;background:#f0f4f8;background-image:linear-gradient(rgba(0,105,148,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(0,105,148,0.06) 1px,transparent 1px);background-size:32px 32px;"></div>
+      </div>
+    </div>
+
+    <!-- ── PANEL ADMIN ── -->
+    <div class="wms-panel" id="wmsPanel-admin">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">
+
+        <!-- Kelola User -->
+        <div class="wms-inbound-card">
+          <h3>👤 Tambah User WMS</h3>
+          <div class="wms-field"><label>Username</label><input id="admUser" placeholder="username..." /></div>
+          <div class="wms-field"><label>Password</label><input id="admPass" type="password" placeholder="password..." /></div>
+          <div class="wms-field"><label>Role</label>
+            <select id="admRole"><option value="TOKO">TOKO</option><option value="ADMIN">ADMIN</option></select>
+          </div>
+          <div class="wms-field"><label>Kode Toko</label><input id="admStoreCode" placeholder="Contoh: BRG" /></div>
+          <div class="wms-field"><label>Nama Toko</label><input id="admStoreName" placeholder="Nama lengkap toko..." /></div>
+          <button class="wms-btn primary" onclick="wmsAdmAddUser()" style="width:100%;">✅ Simpan User</button>
+          <div id="admUserMsg" style="margin-top:8px;font-size:0.7rem;min-height:18px;"></div>
+          <div id="admUserList" style="margin-top:12px;font-size:0.68rem;"></div>
+        </div>
+
+        <!-- Kelola Toko -->
+        <div class="wms-inbound-card">
+          <h3>🏪 Kelola Toko</h3>
+          <div class="wms-field"><label>Kode Toko</label><input id="admTCode" placeholder="Contoh: BRG" /></div>
+          <div class="wms-field"><label>Nama Toko</label><input id="admTName" placeholder="Nama lengkap toko..." /></div>
+          <button class="wms-btn primary" onclick="wmsAdmAddStore()" style="width:100%;">✅ Tambah Toko</button>
+          <div id="admStoreMsg" style="margin-top:8px;font-size:0.7rem;min-height:18px;"></div>
+          <div id="admStoreList" style="margin-top:12px;font-size:0.68rem;"></div>
+        </div>
+
+        <!-- Reset / Hapus Stok Toko -->
+        <div class="wms-inbound-card">
+          <h3 style="color:var(--red);">⚠️ Reset Stok Toko</h3>
+          <div class="wms-field"><label>Pilih Toko</label>
+            <select id="admResetStore"></select>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="wms-btn danger" onclick="wmsAdmResetStore(false)" style="flex:2;">🔄 Hapus Semua Stok</button>
+          </div>
+          <div id="admResetMsg" style="margin-top:8px;font-size:0.7rem;min-height:18px;"></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- end wms-body -->
+</div><!-- end page-wms -->
+
+<!-- WMS MODAL JUAL/MOVE/DETAIL -->
+<div class="wms-modal-backdrop" id="wmsModalBackdrop" onclick="if(event.target===this)wmsCloseModal()">
+  <div class="wms-modal">
+    <h3 id="wmsModalTitle">Detail</h3>
+    <div class="wms-modal-info" id="wmsModalInfo"></div>
+    <div id="wmsModalBody"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="wms-btn danger" onclick="wmsCloseModal()" style="flex:1;">Tutup</button>
+    </div>
+  </div>
+</div>
 <div class="export-modal-backdrop" id="exportModalBackdrop" onclick="closeExportModal(event)">
   <div class="export-modal">
     <h3>📥 Export Data Scan</h3>
@@ -1627,21 +2097,35 @@
 
   // ═══════════════ PAGE SWITCH ═══════════════
   window.switchPage = function(page) {
-    const sidebar = document.getElementById('sidebar');
+    const sidebar     = document.getElementById('sidebar');
     const mainContent = document.getElementById('mainContent');
-    const masterPage = document.getElementById('page-master');
-    const tabs = document.querySelectorAll('.nav-tab');
-    
+    const masterPage  = document.getElementById('page-master');
+    const wmsPage     = document.getElementById('page-wms');
+    const tabs        = document.querySelectorAll('.nav-tab');
+
+    // Hide all pages
+    if (sidebar)     sidebar.style.display     = 'none';
+    if (mainContent) mainContent.style.display = 'none';
+    if (masterPage)  masterPage.style.display  = 'none';
+    if (wmsPage)     wmsPage.classList.remove('show');
+    tabs.forEach(t => t.classList.remove('active'));
+
     if (page === 'master') {
-      if (sidebar) sidebar.style.display = 'none';
-      if (mainContent) mainContent.style.display = 'none';
       if (masterPage) masterPage.style.display = 'block';
-      tabs.forEach((t,i) => t.classList.toggle('active', i === 1));
+      tabs[1]?.classList.add('active');
+    } else if (page === 'wms') {
+      tabs[2]?.classList.add('active');
+      // Show login if not logged in
+      if (!wmsCurrentUser) {
+        document.getElementById('wmsLoginOverlay').classList.add('show');
+      } else {
+        if (wmsPage) wmsPage.classList.add('show');
+        wmsLoadData();
+      }
     } else {
-      if (sidebar) sidebar.style.display = 'flex';
+      if (sidebar)     sidebar.style.display     = 'flex';
       if (mainContent) mainContent.style.display = 'flex';
-      if (masterPage) masterPage.style.display = 'none';
-      tabs.forEach((t,i) => t.classList.toggle('active', i === 0));
+      tabs[0]?.classList.add('active');
       focusBarcode();
       updateScanStats();
       renderBinCardsInPopup();
@@ -2473,7 +2957,950 @@
     for(const name of selected){try{await deleteCollection(name,(d,t)=>{});showToast(`✅ ${name} dihapus`,'success');}catch(err){showToast(`❌ ${err.message}`,'error');}}
   }
 
-  window.initFirebase=initFirebase; window.startUpload=startUpload; window.clearSelected=clearSelected;
+  // ═══════════════════════════════════════════════════
+  // WMS MODULE — Firebase-native, no GAS
+  // Collections: STOCK, STORES, USERS_WMS
+  // ═══════════════════════════════════════════════════
+  let wmsCurrentUser  = null;  // { username, role, store_code, store_name }
+  let wmsAllData      = [];    // all STOCK docs
+  let wmsFilteredData = [];
+  let wmsScanMode     = 'upload';
+  let wmsStoreList    = [];    // [{ code, name }]
+
+  // ── LOGIN ──
+  window.wmsLogin = async function() {
+    const user = document.getElementById('wmsUser').value.trim();
+    const pass = document.getElementById('wmsPass').value.trim();
+    const errEl = document.getElementById('wmsLoginErr');
+    errEl.textContent = '';
+    if (!user || !pass) { errEl.textContent = 'Isi username dan password'; return; }
+    if (!db) { errEl.textContent = '⚠️ Firebase offline'; return; }
+    try {
+      const q    = query(collection(db, 'USERS_WMS'), where('username', '==', user.toLowerCase()));
+      const snap = await getDocs(q);
+      if (snap.empty) { errEl.textContent = '❌ User tidak ditemukan'; return; }
+      const udata = snap.docs[0].data();
+      if (String(udata.password) !== String(pass)) { errEl.textContent = '❌ Password salah'; return; }
+
+      wmsCurrentUser = {
+        username:   udata.username,
+        role:       udata.role || 'TOKO',  // ADMIN atau TOKO
+        store_code: udata.store_code || udata.username.toUpperCase(),
+        store_name: udata.store_name || udata.username,
+      };
+      document.getElementById('wmsLoginOverlay').classList.remove('show');
+      document.getElementById('wmsStoreBadge').textContent =
+        wmsCurrentUser.role === 'ADMIN' ? '👑 ADMIN' : `🏪 ${wmsCurrentUser.store_name}`;
+      document.getElementById('page-wms').classList.add('show');
+      await wmsLoadStores();
+      await wmsLoadData();
+      wmsPopulateSelects();
+    } catch(e) { errEl.textContent = '❌ Error: ' + e.message; }
+  };
+
+  window.wmsLogout = function() {
+    wmsCurrentUser = null; wmsAllData = []; wmsFilteredData = [];
+    document.getElementById('page-wms').classList.remove('show');
+    switchPage('scan');
+  };
+
+  // ── LOAD STORES (daftar toko dari Firebase) ──
+  async function wmsLoadStores() {
+    if (!db) return;
+    try {
+      const snap = await getDocs(collection(db, 'STORES'));
+      wmsStoreList = snap.docs.map(d => ({ code: d.id, ...d.data() }));
+    } catch(e) {}
+    // Fallback: derive from STOCK data
+    if (!wmsStoreList.length && wmsAllData.length) {
+      const codes = [...new Set(wmsAllData.map(r => r.store_code))];
+      wmsStoreList = codes.map(c => ({ code: c, name: c }));
+    }
+  }
+
+  function wmsPopulateSelects() {
+    const stores = wmsCurrentUser?.role === 'ADMIN'
+      ? wmsStoreList
+      : wmsStoreList.filter(s => s.code === wmsCurrentUser.store_code);
+
+    const opts = stores.map(s => `<option value="${s.code}">${s.name || s.code}</option>`).join('');
+    const allOpt = wmsCurrentUser?.role === 'ADMIN' ? '<option value="">🏪 Semua Toko</option>' : '';
+
+    ['wmsFilterStore','wmsFilterStoreBin','wmsInbStore','wmsMoveStore','wmsScanStore'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (id === 'wmsFilterStore' || id === 'wmsFilterStoreBin') el.innerHTML = allOpt + opts;
+      else el.innerHTML = opts;
+      // Auto-select toko jika TOKO role
+      if (wmsCurrentUser?.role === 'TOKO' && stores.length) el.value = stores[0].code;
+    });
+  }
+
+  // ── LOAD STOCK DATA ──
+  window.wmsLoadData = async function() {
+    if (!db) { showToast('❌ Firebase offline', 'error'); return; }
+    try {
+      let q;
+      if (wmsCurrentUser?.role === 'ADMIN') {
+        q = collection(db, 'STOCK');
+      } else {
+        q = query(collection(db, 'STOCK'), where('store_code', '==', wmsCurrentUser.store_code));
+      }
+      const snap = await getDocs(q);
+      wmsAllData = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+      // Derive stores from data if not loaded
+      if (!wmsStoreList.length) await wmsLoadStores();
+      wmsPopulateSelects();
+      wmsApplyFilter();
+      wmsRenderBinView();
+      wmsUpdateSummary();
+      showToast(`✅ ${wmsAllData.length.toLocaleString()} data stok dimuat`, 'success');
+    } catch(e) { showToast('❌ Load gagal: ' + e.message, 'error'); }
+  };
+
+  // ── FILTER & RENDER STOK TABLE ──
+  window.wmsApplyFilter = function() {
+    const search   = (document.getElementById('wmsSearchBar')?.value || '').toLowerCase();
+    const store    = document.getElementById('wmsFilterStore')?.value || '';
+    const bin      = document.getElementById('wmsFilterBin')?.value  || '';
+    const cat      = document.getElementById('wmsFilterCat')?.value  || '';
+
+    wmsFilteredData = wmsAllData.filter(r => {
+      if (store && r.store_code !== store) return false;
+      if (bin   && r.bin        !== bin)   return false;
+      if (cat   && r.cat        !== cat)   return false;
+      if (search) {
+        const hay = `${r.variant||''} ${r.generic||''} ${r.name||''} ${r.bin||''} ${r.brand||''}`.toLowerCase();
+        if (!hay.includes(search)) return false;
+      }
+      return true;
+    });
+
+    wmsRenderStokTable();
+    wmsUpdateSummary();
+    wmsUpdateFilterOptions();
+  };
+
+  function wmsUpdateFilterOptions() {
+    const bins = [...new Set(wmsAllData.map(r => r.bin).filter(Boolean))].sort();
+    const cats = [...new Set(wmsAllData.map(r => r.cat).filter(Boolean))].sort();
+    const binSel = document.getElementById('wmsFilterBin');
+    const catSel = document.getElementById('wmsFilterCat');
+    if (binSel) binSel.innerHTML = '<option value="">📦 Semua BIN</option>' + bins.map(b => `<option value="${b}">${b}</option>`).join('');
+    if (catSel) catSel.innerHTML = '<option value="">🏷 Semua CAT</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('');
+  }
+
+  function wmsUpdateSummary() {
+    const data  = wmsFilteredData.length ? wmsFilteredData : wmsAllData;
+    const totalQty = data.reduce((s, r) => s + (Number(r.qty) || 0), 0);
+    const totalBin = new Set(data.map(r => r.bin)).size;
+    safeSetText('wmsTotalSKU', data.length.toLocaleString());
+    safeSetText('wmsTotalQty', totalQty.toLocaleString());
+    safeSetText('wmsTotalBin', totalBin.toLocaleString());
+  }
+
+  function wmsRenderStokTable() {
+    const tbody = document.getElementById('wmsStokBody');
+    if (!tbody) return;
+    const data  = wmsFilteredData.length || document.getElementById('wmsSearchBar')?.value
+      ? wmsFilteredData : wmsAllData;
+
+    if (!data.length) {
+      tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--muted);">Tidak ada data</td></tr>`;
+      return;
+    }
+
+    const isAdmin = wmsCurrentUser?.role === 'ADMIN';
+    tbody.innerHTML = data.map((r, i) => {
+      const qty = Number(r.qty) || 0;
+      const qtyClass = qty <= 2 ? 'low' : '';
+      return `<tr>
+        <td style="color:var(--muted);font-size:0.62rem;">${i+1}</td>
+        <td style="font-size:0.68rem;color:#818cf8;font-weight:600;">${r.store_code||'-'}</td>
+        <td style="font-family:monospace;font-size:0.68rem;">${r.generic||'-'}</td>
+        <td style="font-family:monospace;font-weight:600;color:var(--accent);">${r.variant||r.sku||'-'}</td>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;" title="${r.name||''}">${r.name||'-'}</td>
+        <td style="color:#f59e0b;font-weight:700;">${r.cat||'-'}</td>
+        <td>${r.size_us||'-'}</td>
+        <td style="color:var(--accent2);">${r.size_uk||'-'}</td>
+        <td><span class="wms-bin-tag">${r.bin||'-'}</span></td>
+        <td><span class="wms-qty-badge ${qtyClass}">${qty}</span></td>
+        <td>
+          ${isAdmin || r.store_code === wmsCurrentUser?.store_code ? `
+            <button class="wms-action-btn jual" onclick="wmsOpenJual('${r._id}')">Jual</button>
+            <button class="wms-action-btn move" onclick="wmsOpenMove('${r._id}')">Move</button>
+          ` : ''}
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── BIN VIEW ──
+  window.wmsRenderBinView = function() {
+    const grid     = document.getElementById('wmsBinGrid');
+    const search   = (document.getElementById('wmsSearchBar')?.value || '').toLowerCase();
+    const storeF   = document.getElementById('wmsFilterStoreBin')?.value || '';
+    if (!grid) return;
+
+    const data = wmsAllData.filter(r => {
+      if (storeF && r.store_code !== storeF) return false;
+      return true;
+    });
+
+    // Group by BIN
+    const binMap = {};
+    data.forEach(r => {
+      const key = `${r.store_code}__${r.bin}`;
+      if (!binMap[key]) binMap[key] = { bin: r.bin, store: r.store_code, items: [], qty: 0 };
+      binMap[key].items.push(r);
+      binMap[key].qty += Number(r.qty) || 0;
+    });
+
+    const bins = Object.values(binMap).sort((a, b) => a.bin.localeCompare(b.bin));
+    if (!bins.length) { grid.innerHTML = '<span style="color:var(--muted);font-size:0.72rem;">Tidak ada data</span>'; return; }
+
+    grid.innerHTML = bins.map(b => {
+      const skuCount  = b.items.length;
+      const highlight = search && b.items.some(r =>
+        `${r.variant||''} ${r.generic||''} ${r.name||''}`.toLowerCase().includes(search)
+      );
+      return `<div class="wms-bin-card ${b.qty > 0 ? 'has-item' : ''} ${highlight ? 'highlighted' : ''}"
+        onclick="wmsOpenBinDetail('${b.store}','${b.bin}')">
+        <div class="bc-code">📦 ${b.bin}</div>
+        <div class="bc-store">${b.store}</div>
+        <div class="bc-qty">${b.qty}</div>
+        <div class="bc-sku">${skuCount} SKU</div>
+      </div>`;
+    }).join('');
+  };
+
+  // ── OPEN BIN DETAIL MODAL ──
+  window.wmsOpenBinDetail = function(store, bin) {
+    const items = wmsAllData.filter(r => r.store_code === store && r.bin === bin);
+    const isOwner = wmsCurrentUser?.role === 'ADMIN' || wmsCurrentUser?.store_code === store;
+    document.getElementById('wmsModalTitle').textContent = `📦 BIN ${bin} — ${store}`;
+    document.getElementById('wmsModalInfo').innerHTML =
+      `<div class="mi-label">Total Qty</div><div class="mi-val" style="font-size:1.2rem;">${items.reduce((s,r)=>s+Number(r.qty||0),0)}</div>`;
+    document.getElementById('wmsModalBody').innerHTML = items.map(r => `
+      <div style="background:var(--bg);border-radius:8px;padding:10px;margin-bottom:8px;font-size:0.72rem;">
+        <div style="font-family:monospace;font-weight:700;color:var(--accent);margin-bottom:3px;">${r.variant||r.sku||'-'}</div>
+        <div style="color:var(--muted);margin-bottom:5px;">${r.name||''} | Size US ${r.size_us||'-'} / UK ${r.size_uk||'-'}</div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span class="wms-qty-badge">${r.qty}</span>
+          ${isOwner ? `
+            <button class="wms-action-btn jual" onclick="wmsCloseModal();wmsOpenJual('${r._id}')">Jual</button>
+            <button class="wms-action-btn move" onclick="wmsCloseModal();wmsOpenMove('${r._id}')">Move</button>
+          ` : ''}
+        </div>
+      </div>
+    `).join('') || '<div style="color:var(--muted);">Kosong</div>';
+    document.getElementById('wmsModalBackdrop').classList.add('show');
+  };
+
+  window.wmsCloseModal = () => document.getElementById('wmsModalBackdrop').classList.remove('show');
+
+  // ── JUAL ──
+  window.wmsOpenJual = function(docId) {
+    const item = wmsAllData.find(r => r._id === docId);
+    if (!item) return;
+    document.getElementById('wmsModalTitle').textContent = '💰 Jual Barang';
+    document.getElementById('wmsModalInfo').innerHTML = `
+      <div class="mi-label">SKU</div><div class="mi-val">${item.variant||item.sku}</div>
+      <div class="mi-label" style="margin-top:4px;">BIN</div><div class="mi-val">${item.bin} — Stok: ${item.qty}</div>`;
+    document.getElementById('wmsModalBody').innerHTML = `
+      <div class="wms-field"><label>Qty Jual</label>
+        <input id="wmsJualQty" type="number" value="1" min="1" max="${item.qty}" style="width:120px;" /></div>
+      <button class="wms-btn success" onclick="wmsDoJual('${docId}')" style="width:100%;">✅ Konfirmasi Jual</button>
+      <div id="wmsJualMsg" style="margin-top:6px;font-size:0.7rem;"></div>`;
+    document.getElementById('wmsModalBackdrop').classList.add('show');
+  };
+
+  window.wmsDoJual = async function(docId) {
+    if (!db) return;
+    const item = wmsAllData.find(r => r._id === docId);
+    if (!item) return;
+    const qty = parseInt(document.getElementById('wmsJualQty')?.value || 1);
+    if (qty <= 0 || qty > item.qty) {
+      document.getElementById('wmsJualMsg').textContent = '❌ Qty tidak valid';
+      return;
+    }
+    try {
+      const newQty = item.qty - qty;
+      if (newQty === 0) {
+        await deleteDoc(doc(db, 'STOCK', docId));
+        wmsAllData = wmsAllData.filter(r => r._id !== docId);
+      } else {
+        await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js")
+          .then(({ updateDoc }) => updateDoc(doc(db, 'STOCK', docId), { qty: newQty, updated_at: new Date().toISOString() }));
+        const found = wmsAllData.find(r => r._id === docId);
+        if (found) found.qty = newQty;
+      }
+      wmsCloseModal(); wmsApplyFilter(); wmsRenderBinView();
+      showToast(`✅ Terjual ${qty} pcs. Sisa: ${newQty}`, 'success');
+    } catch(e) { document.getElementById('wmsJualMsg').textContent = '❌ ' + e.message; }
+  };
+
+  // ── MOVE ──
+  window.wmsOpenMove = function(docId) {
+    const item = wmsAllData.find(r => r._id === docId);
+    if (!item) return;
+    document.getElementById('wmsModalTitle').textContent = '🔀 Move Barang';
+    document.getElementById('wmsModalInfo').innerHTML = `
+      <div class="mi-label">SKU</div><div class="mi-val">${item.variant||item.sku}</div>
+      <div class="mi-label" style="margin-top:4px;">BIN Asal</div><div class="mi-val">${item.bin} — Stok: ${item.qty}</div>`;
+    document.getElementById('wmsModalBody').innerHTML = `
+      <div class="wms-field"><label>BIN Tujuan</label>
+        <input id="wmsMoveTargetBin" placeholder="Contoh: E2" style="text-transform:uppercase;width:120px;" /></div>
+      <div class="wms-field"><label>Qty</label>
+        <input id="wmsMoveFinalQty" type="number" value="${item.qty}" min="1" max="${item.qty}" style="width:120px;" /></div>
+      <button class="wms-btn warning" onclick="wmsDoMoveModal('${docId}')" style="width:100%;">🔀 Pindahkan</button>
+      <div id="wmsMoveModalMsg" style="margin-top:6px;font-size:0.7rem;"></div>`;
+    document.getElementById('wmsModalBackdrop').classList.add('show');
+  };
+
+  window.wmsDoMoveModal = async function(docId) {
+    if (!db) return;
+    const item   = wmsAllData.find(r => r._id === docId);
+    const toBin  = document.getElementById('wmsMoveTargetBin')?.value.trim().toUpperCase();
+    const qty    = parseInt(document.getElementById('wmsMoveFinalQty')?.value || 0);
+    const msgEl  = document.getElementById('wmsMoveModalMsg');
+    if (!toBin) { msgEl.textContent = '❌ Isi BIN tujuan'; return; }
+    if (!qty || qty <= 0 || qty > item.qty) { msgEl.textContent = '❌ Qty tidak valid'; return; }
+    try {
+      const { updateDoc, setDoc: sd } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+      // Kurangi asal
+      const newQtyAsal = item.qty - qty;
+      if (newQtyAsal === 0) {
+        await deleteDoc(doc(db, 'STOCK', docId));
+        wmsAllData = wmsAllData.filter(r => r._id !== docId);
+      } else {
+        await updateDoc(doc(db, 'STOCK', docId), { qty: newQtyAsal, updated_at: new Date().toISOString() });
+        const f = wmsAllData.find(r => r._id === docId); if (f) f.qty = newQtyAsal;
+      }
+      // Cek apakah SKU+BIN tujuan sudah ada
+      const existing = wmsAllData.find(r => r.store_code === item.store_code &&
+        (r.variant||r.sku) === (item.variant||item.sku) && r.bin === toBin);
+      if (existing) {
+        await updateDoc(doc(db, 'STOCK', existing._id), { qty: existing.qty + qty, updated_at: new Date().toISOString() });
+        existing.qty += qty;
+      } else {
+        const newId  = `${item.store_code}_${(item.variant||item.sku)}_${toBin}`;
+        const newDoc = { ...item, _id: undefined, bin: toBin, qty, updated_at: new Date().toISOString() };
+        delete newDoc._id;
+        await sd(doc(db, 'STOCK', newId), newDoc);
+        wmsAllData.push({ _id: newId, ...newDoc });
+      }
+      wmsCloseModal(); wmsApplyFilter(); wmsRenderBinView();
+      showToast(`✅ ${qty} pcs dipindah ke BIN ${toBin}`, 'success');
+    } catch(e) { msgEl.textContent = '❌ ' + e.message; }
+  };
+
+  // ── INBOUND MANUAL ──
+  window.wmsDoInbound = async function() {
+    if (!db) { showToast('❌ Firebase offline', 'error'); return; }
+    const store = document.getElementById('wmsInbStore')?.value;
+    const sku   = document.getElementById('wmsInbSKU')?.value.trim().toUpperCase();
+    const bin   = document.getElementById('wmsInbBIN')?.value.trim().toUpperCase();
+    const qty   = parseInt(document.getElementById('wmsInbQty')?.value || 1);
+    const msgEl = document.getElementById('wmsInbMsg');
+    if (!store || !sku || !bin || qty <= 0) { msgEl.textContent = '❌ Lengkapi semua field'; return; }
+
+    try {
+      // Lookup master untuk enrichment
+      const barcodeResult = await idbSearchBarcode(sku) || await idbSearchProduk(sku);
+      const masterData    = barcodeResult?.found ? barcodeResult.data : null;
+
+      const docId   = `${store}_${sku}_${bin}`;
+      const { updateDoc, setDoc: sd } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+      const existing = wmsAllData.find(r => r._id === docId);
+
+      const sizeUS  = sku.slice(-3);
+      const gc      = sku.charAt(0);
+      const gender  = gc==='1'?'Laki-laki': gc==='2'?'Perempuan':'Anak-anak';
+      const sizeUK  = memSize.get(`${sizeUS}|${gender}`) || '';
+      const generic = sku.length > 3 ? sku.substring(0, sku.length-3) : sku;
+      const prodRow = memProduk.get(generic);
+
+      const storeObj = wmsStoreList.find(s => s.code === store);
+      const payload = {
+        store_code:  store,
+        store_name:  storeObj?.name || store,
+        generic:     prodRow?.Article || generic,
+        cat:         prodRow?.Merch_Cat?.charAt(1) || '',
+        variant:     sku, sku,
+        name:        prodRow?.Description || masterData?.Description || '',
+        brand:       prodRow?.Brand_Name || prodRow?.Brand || '',
+        size_us:     sizeUS,
+        size_uk:     sizeUK,
+        bin,
+        updated_at:  new Date().toISOString(),
+      };
+
+      if (existing) {
+        const newQty = existing.qty + qty;
+        await updateDoc(doc(db, 'STOCK', docId), { qty: newQty, updated_at: payload.updated_at });
+        existing.qty = newQty;
+        msgEl.style.color = 'var(--green)';
+        msgEl.textContent = `✅ +${qty} → Stok jadi ${newQty}`;
+      } else {
+        await sd(doc(db, 'STOCK', docId), { ...payload, qty });
+        wmsAllData.push({ _id: docId, ...payload, qty });
+        msgEl.style.color = 'var(--green)';
+        msgEl.textContent = `✅ Inbound baru: ${sku} x${qty} di ${bin}`;
+      }
+      document.getElementById('wmsInbSKU').value = '';
+      document.getElementById('wmsInbBIN').value = '';
+      document.getElementById('wmsInbQty').value = '1';
+      document.getElementById('wmsInbSKU').focus();
+      wmsApplyFilter(); wmsRenderBinView();
+    } catch(e) { msgEl.style.color='var(--red)'; msgEl.textContent = '❌ ' + e.message; }
+  };
+
+  // ── MOVE MANUAL (dari panel inbound) ──
+  window.wmsDoMove = async function() {
+    const store  = document.getElementById('wmsMoveStore')?.value;
+    const sku    = document.getElementById('wmsMoveSKU')?.value.trim().toUpperCase();
+    const from   = document.getElementById('wmsMoveFrom')?.value.trim().toUpperCase();
+    const to     = document.getElementById('wmsMoveTo')?.value.trim().toUpperCase();
+    const qty    = parseInt(document.getElementById('wmsMoveQty')?.value || 0);
+    const msgEl  = document.getElementById('wmsMoveMsg');
+    if (!store || !sku || !from || !to || qty <= 0) { msgEl.textContent = '❌ Lengkapi semua field'; return; }
+    const fromId = `${store}_${sku}_${from}`;
+    const fake   = wmsAllData.find(r => r._id === fromId);
+    if (!fake) { msgEl.textContent = '❌ SKU+BIN asal tidak ditemukan di stok'; return; }
+    await wmsOpenMove(fromId);
+    document.getElementById('wmsMoveTargetBin').value = to;
+    document.getElementById('wmsMoveFinalQty').value  = qty;
+  };
+
+  // ── IMPORT DARI SCAN ──
+  window.wmsScanSetMode = function(btn) {
+    wmsScanMode = btn.dataset.mode;
+    document.querySelectorAll('.wms-mode-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const descs = {
+      upload:  'Replace: hapus stok lama toko ini, isi ulang dari data scan.',
+      inbound: 'Inbound: tambahkan qty dari scan ke stok yang sudah ada.',
+      cycle:   'Cycle Count: update stok per BIN yang di-scan, BIN lain tidak terpengaruh.',
+    };
+    safeSetText('wmsScanModeDesc', descs[wmsScanMode] || '');
+  };
+
+  window.wmsPreviewScan = function() {
+    const prevEl  = document.getElementById('wmsScanPreview');
+    const importBtn = document.getElementById('wmsScanImportBtn');
+    if (!scanDataArray.length) {
+      prevEl.innerHTML = '<span style="color:var(--muted);">Tidak ada data scan</span>';
+      importBtn.disabled = true;
+      return;
+    }
+    // Pivot: SKU+BIN → count
+    const pivot = {};
+    scanDataArray.forEach(r => {
+      const key = `${r.ARTICLE}|${r.BIN}`;
+      if (!pivot[key]) pivot[key] = { sku: r.ARTICLE, bin: r.BIN, qty: 0, desc: r.DESCRIPTION||'', size_us: r.SIZE_US||'', size_uk: r.SIZE_UK||'', generic: r.GENERIC||'', cat: r.CAT||'', brand: r.BRAND||'' };
+      pivot[key].qty++;
+    });
+    const rows = Object.values(pivot);
+    prevEl.innerHTML = `<table>
+      <tr><th>SKU/Article</th><th>BIN</th><th>Qty</th><th>Deskripsi</th></tr>
+      ${rows.map(r => `<tr><td style="font-family:monospace;">${r.sku}</td><td><span class="wms-bin-tag">${r.bin}</span></td><td><b>${r.qty}</b></td><td style="color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;">${r.desc}</td></tr>`).join('')}
+    </table>`;
+    importBtn.disabled = false;
+    safeSetText('wmsScanImportMsg', `${rows.length} SKU+BIN unik dari ${scanDataArray.length} scan`);
+  };
+
+  window.wmsDoScanImport = async function() {
+    if (!db || !scanDataArray.length) return;
+    const store  = document.getElementById('wmsScanStore')?.value;
+    const msgEl  = document.getElementById('wmsScanImportMsg');
+    if (!store) { msgEl.textContent = '❌ Pilih toko dulu'; return; }
+
+    document.getElementById('wmsScanImportBtn').disabled = true;
+    msgEl.textContent = '⏳ Memproses...';
+
+    // Build pivot dari scanDataArray
+    const pivot = {};
+    scanDataArray.forEach(r => {
+      const key = `${r.ARTICLE}|${r.BIN}`;
+      if (!pivot[key]) pivot[key] = { sku: r.ARTICLE, bin: r.BIN, qty: 0,
+        desc: r.DESCRIPTION||'', size_us: r.SIZE_US||'', size_uk: r.SIZE_UK||'',
+        generic: r.GENERIC||'', cat: r.CAT||'', brand: r.BRAND||'', season: r.SEASON||'' };
+      pivot[key].qty++;
+    });
+
+    const storeObj = wmsStoreList.find(s => s.code === store);
+    const { updateDoc, setDoc: sd } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+
+    try {
+      if (wmsScanMode === 'upload') {
+        // Hapus semua stok toko ini dulu
+        const existing = wmsAllData.filter(r => r.store_code === store);
+        for (let i = 0; i < existing.length; i += BATCH_SIZE) {
+          const batch = writeBatch(db);
+          existing.slice(i, i + BATCH_SIZE).forEach(r => batch.delete(doc(db, 'STOCK', r._id)));
+          await batch.commit();
+        }
+        wmsAllData = wmsAllData.filter(r => r.store_code !== store);
+      }
+
+      let addedCount = 0, updatedCount = 0;
+      const binsUpdated = new Set();
+
+      for (const key in pivot) {
+        const item   = pivot[key];
+        const docId  = `${store}_${item.sku}_${item.bin}`;
+        const payload = {
+          store_code: store, store_name: storeObj?.name || store,
+          generic: item.generic, cat: item.cat, variant: item.sku, sku: item.sku,
+          name: item.desc, brand: item.brand, size_us: item.size_us, size_uk: item.size_uk,
+          bin: item.bin, updated_at: new Date().toISOString(),
+        };
+
+        if (wmsScanMode === 'inbound') {
+          const existing = wmsAllData.find(r => r._id === docId);
+          if (existing) {
+            await updateDoc(doc(db, 'STOCK', docId), { qty: existing.qty + item.qty, updated_at: payload.updated_at });
+            existing.qty += item.qty; updatedCount++;
+          } else {
+            await sd(doc(db, 'STOCK', docId), { ...payload, qty: item.qty });
+            wmsAllData.push({ _id: docId, ...payload, qty: item.qty }); addedCount++;
+          }
+        } else if (wmsScanMode === 'cycle') {
+          binsUpdated.add(item.bin);
+          await sd(doc(db, 'STOCK', docId), { ...payload, qty: item.qty });
+          const idx = wmsAllData.findIndex(r => r._id === docId);
+          if (idx >= 0) wmsAllData[idx] = { _id: docId, ...payload, qty: item.qty };
+          else wmsAllData.push({ _id: docId, ...payload, qty: item.qty });
+          addedCount++;
+        } else { // upload — all deleted, just insert
+          await sd(doc(db, 'STOCK', docId), { ...payload, qty: item.qty });
+          wmsAllData.push({ _id: docId, ...payload, qty: item.qty }); addedCount++;
+        }
+      }
+
+      wmsApplyFilter(); wmsRenderBinView();
+      const modeLabel = { upload:'Upload', inbound:'Inbound', cycle:'Cycle Count' }[wmsScanMode];
+      msgEl.textContent = `✅ ${modeLabel} selesai: ${addedCount} baru, ${updatedCount} update`;
+      showToast(`✅ WMS ${modeLabel} selesai!`, 'success');
+    } catch(e) {
+      msgEl.textContent = '❌ ' + e.message;
+      showToast('❌ Import gagal: ' + e.message, 'error');
+    } finally {
+      document.getElementById('wmsScanImportBtn').disabled = false;
+    }
+  };
+
+  // ── WMS PANEL SWITCH ──
+  window.wmsShowPanel = function(name) {
+    document.querySelectorAll('.wms-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.wms-tab').forEach(t => t.classList.remove('active'));
+    const panel = document.getElementById(`wmsPanel-${name}`);
+    if (panel) panel.classList.add('active');
+    const clickedTab = event?.target;
+    if (clickedTab) clickedTab.classList.add('active');
+    if (name === 'bin') wmsRenderBinView();
+    if (name === 'scan-import') wmsPreviewScan();
+    if (name === 'layout') wmsRenderLayout();
+    if (name === 'admin') wmsAdmInit();
+  };
+
+  // ═══════════════ WMS BIN LAYOUT ═══════════════
+  let wmsLayoutPos    = {};   // key "store|bin|floor" → {x,y,w,h,label,floor}
+  let wmsLayoutDirty  = false;
+  let wmsLayoutEdit   = false;
+  let wmsLayoutFloor  = 1;
+  let wmsLayoutFloors = ['Lantai 1'];
+  let wmsLayoutHL     = new Set();  // highlighted bin keys
+  let wmsLayoutDrag   = null;
+  const WL_PAD = 20, WL_CW = 110, WL_CH = 90;
+
+  function wmsLayoutKey(store, bin, floor) { return `${store}|${bin}|${floor}`; }
+
+  function wmsBuildBinGroups() {
+    const storeF = document.getElementById('wmsFilterStoreBin')?.value || wmsCurrentUser?.store_code || '';
+    const data = wmsAllData.filter(r => !storeF || r.store_code === storeF);
+    const groups = {};
+    data.forEach(r => {
+      const k = `${r.store_code}|${r.bin}`;
+      if (!groups[k]) groups[k] = { store: r.store_code, bin: r.bin, items: [], qty: 0 };
+      groups[k].items.push(r);
+      groups[k].qty += Number(r.qty) || 0;
+    });
+    return groups;
+  }
+
+  function wmsAutoLayout(groups, floor) {
+    const cvs = document.getElementById('wmsLayoutCanvas');
+    const cw = cvs ? cvs.offsetWidth || 900 : 900;
+    const cols = Math.max(1, Math.floor((cw - WL_PAD * 2) / (WL_CW + 16)));
+    let idx = Object.keys(wmsLayoutPos).filter(k => k.endsWith(`|${floor}`)).length;
+    Object.keys(groups).forEach(k => {
+      const [store, bin] = k.split('|');
+      const lk = wmsLayoutKey(store, bin, floor);
+      if (wmsLayoutPos[lk]) return;
+      const col = idx % cols, row = Math.floor(idx / cols);
+      wmsLayoutPos[lk] = { x: WL_PAD + col*(WL_CW+16), y: WL_PAD + row*(WL_CH+16), w: WL_CW, h: WL_CH, floor };
+      idx++;
+    });
+  }
+
+  window.wmsRenderLayout = function() {
+    const groups = wmsBuildBinGroups();
+    wmsAutoLayout(groups, wmsLayoutFloor);
+    const canvas = document.getElementById('wmsLayoutCanvas');
+    if (!canvas) return;
+
+    // Update floor selector
+    const sel = document.getElementById('wmsLayoutFloorSel');
+    if (sel) sel.innerHTML = wmsLayoutFloors.map((f,i) =>
+      `<option value="${i+1}" ${i+1===wmsLayoutFloor?'selected':''}>${f}</option>`).join('');
+
+    // Render bin cards
+    canvas.innerHTML = '';
+    const keysOnFloor = Object.keys(wmsLayoutPos).filter(k => k.endsWith(`|${wmsLayoutFloor}`));
+    keysOnFloor.forEach(lk => {
+      const pos = wmsLayoutPos[lk];
+      const [store, bin] = lk.split('|');
+      const group = groups[`${store}|${bin}`];
+      const qty   = group?.qty || 0;
+      const isHL  = wmsLayoutHL.has(lk);
+      const isEmpty = qty === 0;
+
+      const card = document.createElement('div');
+      card.className = `wms-lbin ${wmsLayoutEdit ? 'edit-mode' : ''} ${qty>0?'has-stock':''} ${isEmpty?'empty-bin':''} ${isHL?'hl':''}`;
+      card.style.cssText = `left:${pos.x}px;top:${pos.y}px;width:${pos.w}px;height:${pos.h}px;`;
+      card.dataset.lk = lk;
+      card.innerHTML = `
+        <button class="wms-lbin-del" onclick="wmsDeleteLayoutBin('${lk}')">✕</button>
+        <div class="wms-lbin-header" onclick="${wmsLayoutEdit?'':``wmsOpenBinDetail('${store}','${bin}')``}">
+          <div class="wms-lbin-code">${bin}</div>
+          <div class="wms-lbin-qty">${qty > 0 ? qty+' pcs' : 'Kosong'}</div>
+        </div>
+        <div class="wms-lbin-resize"></div>`;
+
+      if (wmsLayoutEdit) {
+        wmsSetupDrag(card, lk);
+        wmsSetupResize(card.querySelector('.wms-lbin-resize'), card, lk);
+      } else {
+        card.querySelector('.wms-lbin-header').onclick = () => wmsOpenBinDetail(store, bin);
+      }
+      canvas.appendChild(card);
+    });
+
+    // Update canvas min-height
+    const maxY = Math.max(400, ...keysOnFloor.map(lk => {
+      const p = wmsLayoutPos[lk]; return p ? p.y + p.h + 40 : 400;
+    }));
+    canvas.style.minHeight = maxY + 'px';
+
+    // Edit button state
+    const btn = document.getElementById('wmsEditLayoutBtn');
+    if (btn) btn.textContent = wmsLayoutEdit ? '🔒 Selesai Edit' : '✏️ Edit Layout';
+    const savBtn = document.getElementById('wmsSaveLayoutBtn');
+    if (savBtn) savBtn.style.opacity = wmsLayoutDirty ? '1' : '0.5';
+  };
+
+  function wmsSetupDrag(card, lk) {
+    card.addEventListener('mousedown', e => {
+      if (e.target.classList.contains('wms-lbin-del') || e.target.classList.contains('wms-lbin-resize')) return;
+      e.preventDefault();
+      const canvas = document.getElementById('wmsLayoutCanvas');
+      const rect = canvas.getBoundingClientRect();
+      const offX = e.clientX - rect.left - wmsLayoutPos[lk].x;
+      const offY = e.clientY - rect.top  - wmsLayoutPos[lk].y;
+      card.classList.add('dragging');
+      const onMove = ev => {
+        let nx = ev.clientX - rect.left - offX;
+        let ny = ev.clientY - rect.top  - offY;
+        nx = Math.max(0, Math.round(nx / 8) * 8);
+        ny = Math.max(0, Math.round(ny / 8) * 8);
+        wmsLayoutPos[lk].x = nx; wmsLayoutPos[lk].y = ny;
+        card.style.left = nx + 'px'; card.style.top = ny + 'px';
+      };
+      const onUp = () => {
+        card.classList.remove('dragging');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        wmsLayoutDirty = true;
+        const savBtn = document.getElementById('wmsSaveLayoutBtn');
+        if (savBtn) savBtn.style.opacity = '1';
+        // Update canvas height
+        const canvas2 = document.getElementById('wmsLayoutCanvas');
+        const pos = wmsLayoutPos[lk];
+        const curH = parseInt(canvas2.style.minHeight) || 400;
+        canvas2.style.minHeight = Math.max(curH, pos.y + pos.h + 40) + 'px';
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
+  function wmsSetupResize(handle, card, lk) {
+    if (!handle) return;
+    handle.addEventListener('mousedown', e => {
+      e.preventDefault(); e.stopPropagation();
+      const startX = e.clientX, startY = e.clientY;
+      const sw = wmsLayoutPos[lk].w, sh = wmsLayoutPos[lk].h;
+      const onMove = ev => {
+        const nw = Math.max(80, sw + ev.clientX - startX);
+        const nh = Math.max(60, sh + ev.clientY - startY);
+        wmsLayoutPos[lk].w = nw; wmsLayoutPos[lk].h = nh;
+        card.style.width = nw + 'px'; card.style.height = nh + 'px';
+      };
+      const onUp = () => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        wmsLayoutDirty = true;
+        const savBtn = document.getElementById('wmsSaveLayoutBtn');
+        if (savBtn) savBtn.style.opacity = '1';
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
+  window.wmsToggleLayoutEdit = function() {
+    wmsLayoutEdit = !wmsLayoutEdit;
+    wmsRenderLayout();
+  };
+
+  window.wmsAddBinToLayout = function() {
+    const bin = prompt('Kode BIN baru (contoh: X1):');
+    if (!bin) return;
+    const store = wmsCurrentUser?.store_code || 'TOKO';
+    const lk = wmsLayoutKey(store, bin.toUpperCase(), wmsLayoutFloor);
+    if (wmsLayoutPos[lk]) { showToast('BIN sudah ada di layout', 'info'); return; }
+    const canvas = document.getElementById('wmsLayoutCanvas');
+    const cw = canvas ? canvas.offsetWidth || 900 : 900;
+    wmsLayoutPos[lk] = { x: WL_PAD, y: parseInt(canvas?.style.minHeight||400) - WL_CH - 20, w: WL_CW, h: WL_CH, floor: wmsLayoutFloor };
+    wmsLayoutDirty = true;
+    wmsRenderLayout();
+  };
+
+  window.wmsDeleteLayoutBin = function(lk) {
+    if (!confirm(`Hapus BIN dari layout?`)) return;
+    delete wmsLayoutPos[lk];
+    wmsLayoutDirty = true;
+    wmsRenderLayout();
+  };
+
+  window.wmsAddLayoutFloor = function() {
+    wmsLayoutFloors.push(`Lantai ${wmsLayoutFloors.length + 1}`);
+    wmsLayoutFloor = wmsLayoutFloors.length;
+    wmsRenderLayout();
+  };
+
+  window.wmsSetLayoutFloor = function(f) {
+    wmsLayoutFloor = f;
+    wmsRenderLayout();
+  };
+
+  window.wmsSaveLayout = async function() {
+    if (!db) { showToast('❌ Firebase offline', 'error'); return; }
+    const store = wmsCurrentUser?.store_code || 'TOKO';
+    const { setDoc: sd } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+    try {
+      await sd(doc(db, 'BIN_LAYOUT', store), {
+        positions: JSON.stringify(wmsLayoutPos),
+        floors: wmsLayoutFloors,
+        updated_at: new Date().toISOString()
+      });
+      wmsLayoutDirty = false;
+      const savBtn = document.getElementById('wmsSaveLayoutBtn');
+      if (savBtn) { savBtn.style.opacity = '0.5'; savBtn.textContent = '✅ Tersimpan'; }
+      const ok = document.getElementById('wmsLayoutSaveOk');
+      if (ok) { ok.style.display = 'inline'; setTimeout(() => ok.style.display = 'none', 2000); }
+      showToast('✅ Layout tersimpan!', 'success');
+    } catch(e) { showToast('❌ Simpan gagal: ' + e.message, 'error'); }
+  };
+
+  async function wmsLoadLayout() {
+    if (!db) return;
+    try {
+      const store = wmsCurrentUser?.store_code || 'TOKO';
+      const snap = await getDoc(doc(db, 'BIN_LAYOUT', store));
+      if (snap.exists()) {
+        const d = snap.data();
+        wmsLayoutPos    = JSON.parse(d.positions || '{}');
+        wmsLayoutFloors = d.floors || ['Lantai 1'];
+      }
+    } catch(e) {}
+  }
+
+  window.wmsLayoutDoSearch = function(val) {
+    wmsLayoutHL.clear();
+    if (!val) { wmsRenderLayout(); return; }
+    const q = val.toLowerCase();
+    wmsAllData.forEach(r => {
+      if (`${r.variant||''} ${r.generic||''} ${r.name||''} ${r.bin||''}`.toLowerCase().includes(q)) {
+        const lk = wmsLayoutKey(r.store_code, r.bin, wmsLayoutFloor);
+        wmsLayoutHL.add(lk);
+      }
+    });
+    wmsRenderLayout();
+  };
+
+  window.wmsLayoutClearSearch = function() {
+    const el = document.getElementById('wmsLayoutSearch');
+    if (el) el.value = '';
+    wmsLayoutHL.clear();
+    wmsRenderLayout();
+  };
+
+  // ═══════════════ WMS DOWNLOAD EXCEL ═══════════════
+  window.wmsDownloadExcel = function() {
+    const data = wmsFilteredData.length ? wmsFilteredData : wmsAllData;
+    if (!data.length) { showToast('📭 Tidak ada data', 'error'); return; }
+    const headers = ['Code Store','Store Name','Generic','Cat','Variant','Name','Size US','Size UK','Bin','Qty'];
+    const rows = data.map(r => [r.store_code||'',r.store_name||'',r.generic||'',r.cat||'',r.variant||r.sku||'',r.name||'',r.size_us||'',r.size_uk||'',r.bin||'',r.qty||0]);
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    ws['!cols'] = [{wch:10},{wch:20},{wch:12},{wch:8},{wch:16},{wch:30},{wch:8},{wch:8},{wch:8},{wch:6}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'WMS');
+    XLSX.writeFile(wb, `WMS_${wmsCurrentUser?.store_code||'ALL'}_${new Date().toISOString().slice(0,10)}.xlsx`);
+    showToast(`📥 ${data.length.toLocaleString()} data diekspor!`, 'success');
+  };
+
+  // ═══════════════ WMS AUTO-REFRESH ═══════════════
+  let wmsAutoRefreshTimer = null;
+  function wmsStartAutoRefresh() {
+    wmsStopAutoRefresh();
+    wmsAutoRefreshTimer = setInterval(() => {
+      if (document.getElementById('page-wms')?.classList.contains('show')) wmsLoadData();
+    }, 30000);
+  }
+  function wmsStopAutoRefresh() {
+    if (wmsAutoRefreshTimer) { clearInterval(wmsAutoRefreshTimer); wmsAutoRefreshTimer = null; }
+  }
+
+  // ═══════════════ WMS ADMIN ═══════════════
+  async function wmsAdmInit() {
+    if (wmsCurrentUser?.role !== 'ADMIN') { showToast('❌ Hanya Admin', 'error'); return; }
+    document.getElementById('wmsTabAdmin').style.display = '';
+    // Populate reset store select
+    const sel = document.getElementById('admResetStore');
+    if (sel) sel.innerHTML = wmsStoreList.map(s => `<option value="${s.code}">${s.name||s.code}</option>`).join('');
+    // Load user list
+    await wmsAdmLoadUsers();
+    // Load store list
+    await wmsAdmLoadStores();
+  }
+
+  async function wmsAdmLoadUsers() {
+    if (!db) return;
+    const el = document.getElementById('admUserList');
+    try {
+      const snap = await getDocs(collection(db, 'USERS_WMS'));
+      if (el) el.innerHTML = '<b style="font-size:0.65rem;">User terdaftar:</b><br>' +
+        snap.docs.map(d => {
+          const u = d.data();
+          return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);">
+            <span>${u.username} — <span style="color:#f59e0b;">${u.role}</span> — ${u.store_code||''}</span>
+            <button onclick="wmsAdmDeleteUser('${d.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.65rem;">🗑</button>
+          </div>`;
+        }).join('');
+    } catch(e) {}
+  }
+
+  async function wmsAdmLoadStores() {
+    if (!db) return;
+    const el = document.getElementById('admStoreList');
+    try {
+      const snap = await getDocs(collection(db, 'STORES'));
+      if (el) el.innerHTML = '<b style="font-size:0.65rem;">Toko terdaftar:</b><br>' +
+        snap.docs.map(d => {
+          const s = d.data();
+          return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);">
+            <span>${d.id} — ${s.name||''}</span>
+            <button onclick="wmsAdmDeleteStore('${d.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.65rem;">🗑</button>
+          </div>`;
+        }).join('');
+    } catch(e) {}
+  }
+
+  window.wmsAdmAddUser = async function() {
+    const user  = document.getElementById('admUser')?.value.trim().toLowerCase();
+    const pass  = document.getElementById('admPass')?.value.trim();
+    const role  = document.getElementById('admRole')?.value;
+    const code  = document.getElementById('admStoreCode')?.value.trim().toUpperCase();
+    const name  = document.getElementById('admStoreName')?.value.trim();
+    const msgEl = document.getElementById('admUserMsg');
+    if (!user||!pass) { msgEl.textContent='❌ Username & password wajib'; return; }
+    try {
+      const { setDoc: sd } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+      await sd(doc(db, 'USERS_WMS', user), { username: user, password: pass, role, store_code: code, store_name: name });
+      // Also register store if provided
+      if (code) await sd(doc(db, 'STORES', code), { name: name||code });
+      msgEl.style.color = 'var(--green)'; msgEl.textContent = `✅ User ${user} disimpan`;
+      await wmsAdmLoadUsers(); await wmsLoadStores(); wmsPopulateSelects();
+    } catch(e) { msgEl.style.color='var(--red)'; msgEl.textContent='❌ '+e.message; }
+  };
+
+  window.wmsAdmAddStore = async function() {
+    const code  = document.getElementById('admTCode')?.value.trim().toUpperCase();
+    const name  = document.getElementById('admTName')?.value.trim();
+    const msgEl = document.getElementById('admStoreMsg');
+    if (!code) { msgEl.textContent='❌ Kode toko wajib'; return; }
+    try {
+      const { setDoc: sd } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+      await sd(doc(db, 'STORES', code), { name: name||code });
+      msgEl.style.color='var(--green)'; msgEl.textContent=`✅ Toko ${code} disimpan`;
+      await wmsAdmLoadStores(); await wmsLoadStores(); wmsPopulateSelects();
+    } catch(e) { msgEl.style.color='var(--red)'; msgEl.textContent='❌ '+e.message; }
+  };
+
+  window.wmsAdmDeleteUser = async function(uid) {
+    if (!confirm(`Hapus user ${uid}?`)) return;
+    try { await deleteDoc(doc(db,'USERS_WMS',uid)); await wmsAdmLoadUsers(); showToast('🗑 User dihapus','info'); }
+    catch(e) { showToast('❌ '+e.message,'error'); }
+  };
+
+  window.wmsAdmDeleteStore = async function(code) {
+    if (!confirm(`Hapus toko ${code}?`)) return;
+    try { await deleteDoc(doc(db,'STORES',code)); await wmsAdmLoadStores(); await wmsLoadStores(); wmsPopulateSelects(); showToast('🗑 Toko dihapus','info'); }
+    catch(e) { showToast('❌ '+e.message,'error'); }
+  };
+
+  window.wmsAdmResetStore = async function() {
+    const store = document.getElementById('admResetStore')?.value;
+    const msgEl = document.getElementById('admResetMsg');
+    if (!store) { msgEl.textContent='❌ Pilih toko'; return; }
+    if (!confirm(`Hapus SEMUA stok toko ${store}?\nTidak bisa dikembalikan!`)) return;
+    try {
+      const q = query(collection(db,'STOCK'), where('store_code','==',store));
+      const snap = await getDocs(q);
+      for (let i=0; i<snap.docs.length; i+=BATCH_SIZE) {
+        const batch = writeBatch(db);
+        snap.docs.slice(i,i+BATCH_SIZE).forEach(d=>batch.delete(d.ref));
+        await batch.commit();
+      }
+      wmsAllData = wmsAllData.filter(r=>r.store_code!==store);
+      wmsApplyFilter(); wmsRenderBinView();
+      msgEl.style.color='var(--green)'; msgEl.textContent=`✅ ${snap.size} data dihapus dari ${store}`;
+      showToast(`✅ Reset toko ${store} selesai`,'success');
+    } catch(e) { msgEl.style.color='var(--red)'; msgEl.textContent='❌ '+e.message; }
+  };
+
+  // Patch wmsLogin to also load layout and start auto-refresh + show admin tab
+  const _origWmsLogin = window.wmsLogin;
+  window.wmsLogin = async function() {
+    await _origWmsLogin();
+    if (wmsCurrentUser) {
+      await wmsLoadLayout();
+      wmsStartAutoRefresh();
+      if (wmsCurrentUser.role === 'ADMIN') {
+        const t = document.getElementById('wmsTabAdmin');
+        if (t) t.style.display = '';
+      }
+    }
+  };
+
+  // Patch wmsLogout to stop auto-refresh
+  const _origWmsLogout = window.wmsLogout;
+  window.wmsLogout = function() {
+    wmsStopAutoRefresh(); _origWmsLogout();
+  };
   // Already assigned above: window.cacheAllMasterData, window.clearMasterCache, window.refreshCacheUI
 
   renderScanTable(); updateScanStats(); renderBinCardsInPopup(); updateFirestoreStatus(); updateSyncStatusUI();
