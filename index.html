@@ -3139,11 +3139,14 @@
   // WMS MODULE — Firebase-native, no GAS
   // Collections: STOCK, STORES, USERS_WMS
   // ═══════════════════════════════════════════════════
-  let wmsCurrentUser  = null;  // { username, role, store_code, store_name }
-  let wmsAllData      = [];    // all STOCK docs
+  let wmsCurrentUser  = null;
+  let wmsAllData      = [];
   let wmsFilteredData = [];
   let wmsScanMode     = 'upload';
-  let wmsStoreList    = [];    // [{ code, name }]
+  let wmsStoreList    = [];
+  let wmsBinSearchQuery    = '';   // state pencarian BIN VIEW
+  let wmsBinScanDebounce   = null;
+  let wmsLayoutScanDebounce = null;
 
   // ── SCAN COLLECTION ROUTER ──
   // Jika login WMS → data masuk ke STORES/{store_code}/SCAN_DATA (per toko)
@@ -3340,7 +3343,6 @@
 
   // ── SCAN BARCODE di BIN VIEW ──
   // Scan barcode → cari article di memBarcode → pakai article sebagai query
-  let wmsBinScanDebounce = null;
   window.wmsBinScanBarcode = function(val) {
     clearTimeout(wmsBinScanDebounce);
     wmsBinScanDebounce = setTimeout(() => {
@@ -3360,7 +3362,6 @@
   };
 
   // ── SCAN BARCODE di LAYOUT ──
-  let wmsLayoutScanDebounce = null;
   window.wmsLayoutScanBarcode = function(val) {
     clearTimeout(wmsLayoutScanDebounce);
     wmsLayoutScanDebounce = setTimeout(() => {
