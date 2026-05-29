@@ -866,7 +866,6 @@
         <button class="wms-tab active" onclick="wmsShowPanel('stok')">📊 Stok</button>
         <button class="wms-tab" onclick="wmsShowPanel('bin')">📦 BIN View</button>
         <button class="wms-tab" onclick="wmsShowPanel('layout')">🗺️ Layout</button>
-        <button class="wms-tab" onclick="wmsShowPanel('inbound')">⬇ Inbound</button>
         <button class="wms-tab" onclick="wmsShowPanel('scan-import')">📱 Dari Scan</button>
         <button class="wms-tab" id="wmsTabAdmin" onclick="wmsShowPanel('admin')" style="display:none;">⚙️ Admin</button>
       </div>
@@ -939,58 +938,6 @@
       </div>
       <div class="wms-bin-grid" id="wmsBinGrid">
         <div style="color:var(--muted);font-size:0.72rem;">Load data dulu...</div>
-      </div>
-    </div>
-
-    <!-- ── PANEL INBOUND ── -->
-    <div class="wms-panel" id="wmsPanel-inbound">
-      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">
-        <div class="wms-inbound-card" style="flex:1;min-width:280px;">
-          <h3>⬇ Inbound Barang</h3>
-          <div class="wms-field">
-            <label>Toko</label>
-            <select id="wmsInbStore"></select>
-          </div>
-          <div class="wms-field">
-            <label>SKU / Article</label>
-            <input id="wmsInbSKU" placeholder="Scan atau ketik SKU..." onkeydown="if(event.key==='Enter')document.getElementById('wmsInbBIN').focus()" />
-          </div>
-          <div class="wms-field">
-            <label>BIN</label>
-            <input id="wmsInbBIN" placeholder="Contoh: D1" style="text-transform:uppercase" onkeydown="if(event.key==='Enter')document.getElementById('wmsInbQty').focus()" />
-          </div>
-          <div class="wms-field">
-            <label>Qty</label>
-            <input id="wmsInbQty" type="number" value="1" min="1" onkeydown="if(event.key==='Enter')wmsDoInbound()" />
-          </div>
-          <button class="wms-btn success" onclick="wmsDoInbound()" style="width:100%;">✅ Inbound</button>
-          <div id="wmsInbMsg" style="margin-top:8px;font-size:0.7rem;min-height:18px;"></div>
-        </div>
-        <div class="wms-inbound-card" style="flex:1;min-width:280px;">
-          <h3>🔀 Move Barang Antar BIN</h3>
-          <div class="wms-field">
-            <label>Toko</label>
-            <select id="wmsMoveStore"></select>
-          </div>
-          <div class="wms-field">
-            <label>SKU / Article</label>
-            <input id="wmsMoveSKU" placeholder="SKU..." />
-          </div>
-          <div class="wms-field">
-            <label>BIN Asal</label>
-            <input id="wmsMoveFrom" placeholder="Dari BIN..." style="text-transform:uppercase" />
-          </div>
-          <div class="wms-field">
-            <label>BIN Tujuan</label>
-            <input id="wmsMoveTo" placeholder="Ke BIN..." style="text-transform:uppercase" />
-          </div>
-          <div class="wms-field">
-            <label>Qty</label>
-            <input id="wmsMoveQty" type="number" value="1" min="1" />
-          </div>
-          <button class="wms-btn warning" onclick="wmsDoMove()" style="width:100%;">🔀 Move</button>
-          <div id="wmsMoveMsg" style="margin-top:8px;font-size:0.7rem;min-height:18px;"></div>
-        </div>
       </div>
     </div>
 
@@ -3858,29 +3805,40 @@
   }
 
   window.wmsRenderLayout = function() {
-    const groups = wmsBuildBinGroups();
+    const groups   = wmsBuildBinGroups();
     wmsAutoLayout(groups, wmsLayoutFloor);
-    const canvas = document.getElementById('wmsLayoutCanvas');
+    const canvas   = document.getElementById('wmsLayoutCanvas');
     if (!canvas) return;
+
+    // Toko aktif — hanya tampilkan bin toko sendiri
+    const myStore  = wmsCurrentUser?.store_code || '';
 
     // Update floor selector
     const sel = document.getElementById('wmsLayoutFloorSel');
     if (sel) sel.innerHTML = wmsLayoutFloors.map((f,i) =>
       `<option value="${i+1}" ${i+1===wmsLayoutFloor?'selected':''}>${f}</option>`).join('');
 
-    // Render bin cards
+    // Filter hanya key milik toko sendiri di floor ini
+    const keysOnFloor = Object.keys(wmsLayoutPos).filter(k => {
+      if (!k.endsWith(`|${wmsLayoutFloor}`)) return false;
+      const [store] = k.split('|');
+      // Admin bisa lihat semua, toko hanya lihat punyanya sendiri
+      if (wmsCurrentUser?.role === 'ADMIN') return true;
+      return store === myStore;
+    });
+
     canvas.innerHTML = '';
-    const keysOnFloor = Object.keys(wmsLayoutPos).filter(k => k.endsWith(`|${wmsLayoutFloor}`));
     keysOnFloor.forEach(lk => {
-      const pos = wmsLayoutPos[lk];
+      const pos      = wmsLayoutPos[lk];
       const [store, bin] = lk.split('|');
-      const group = groups[`${store}|${bin}`];
-      const qty   = group?.qty || 0;
-      const isHL  = wmsLayoutHL.has(lk);
-      const isEmpty = qty === 0;
+      const group    = groups[`${store}|${bin}`];
+      const qty      = group?.qty || 0;
+      const isHL     = wmsLayoutHL.has(lk);
+      // Sembunyikan bin kosong milik toko lain
+      if (!group && store !== myStore && wmsCurrentUser?.role !== 'ADMIN') return;
 
       const card = document.createElement('div');
-      card.className = `wms-lbin ${wmsLayoutEdit ? 'edit-mode' : ''} ${qty>0?'has-stock':''} ${isEmpty?'empty-bin':''} ${isHL?'hl':''}`;
+      card.className = `wms-lbin ${wmsLayoutEdit ? 'edit-mode' : ''} ${qty>0?'has-stock':''} ${qty===0?'empty-bin':''} ${isHL?'hl':''}`;
       card.style.cssText = `left:${pos.x}px;top:${pos.y}px;width:${pos.w}px;height:${pos.h}px;`;
       card.dataset.lk = lk;
       const clickAttr = wmsLayoutEdit ? '' : `onclick="wmsOpenBinDetail('${store}','${bin}')"`;
@@ -3907,7 +3865,6 @@
     }));
     canvas.style.minHeight = maxY + 'px';
 
-    // Edit button state
     const btn = document.getElementById('wmsEditLayoutBtn');
     if (btn) btn.textContent = wmsLayoutEdit ? '🔒 Selesai Edit' : '✏️ Edit Layout';
     const savBtn = document.getElementById('wmsSaveLayoutBtn');
