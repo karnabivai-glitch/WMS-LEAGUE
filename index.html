@@ -477,10 +477,10 @@
       0%,100% { box-shadow: 0 0 0 2px rgba(16,185,129,0.3); }
       50%      { box-shadow: 0 0 0 6px rgba(16,185,129,0.15), 0 0 20px rgba(16,185,129,0.4); }
     }
-    .wms-bin-card .bc-code { font-size: 0.82rem; font-weight: 800; color: #a78bfa; font-family: monospace; margin-bottom: 4px; }
-    .wms-bin-card .bc-store { font-size: 0.68rem; font-weight: 700; color: var(--accent2); margin-bottom: 6px; letter-spacing: 0.03em; }
-    .wms-bin-card .bc-qty { font-size: 1.3rem; font-weight: 700; color: var(--text); }
-    .wms-bin-card .bc-sku { font-size: 0.55rem; color: var(--muted); margin-top: 2px; }
+    .wms-bin-card .bc-code { font-size: 1.1rem; font-weight: 900; color: #a78bfa; font-family: monospace; margin-bottom: 2px; letter-spacing: 0.02em; }
+    .wms-bin-card .bc-store { font-size: 0.65rem; font-weight: 700; color: var(--accent2); margin-bottom: 5px; letter-spacing: 0.03em; }
+    .wms-bin-card .bc-qty { font-size: 1.4rem; font-weight: 700; color: var(--text); line-height: 1; }
+    .wms-bin-card .bc-sku { font-size: 0.55rem; color: var(--muted); margin-top: 3px; }
 
     /* Marker label di layout */
     .wms-marker {
@@ -1022,7 +1022,9 @@
         <button id="wmsSaveLayoutBtn" onclick="wmsSaveLayout()" style="padding:4px 10px;border-radius:6px;background:var(--green);color:#fff;border:none;font-size:0.65rem;cursor:pointer;opacity:0.5;">💾 Simpan</button>
         <span id="wmsLayoutSaveOk" style="font-size:0.6rem;color:var(--green);display:none;">✅ Tersimpan!</span>
         <select id="wmsLayoutFloorSel" onchange="wmsSetLayoutFloor(parseInt(this.value))" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.65rem;margin-left:auto;"></select>
-        <button onclick="wmsAddLayoutFloor()" style="padding:4px 8px;border-radius:6px;border:1px dashed var(--border);background:transparent;color:var(--muted);font-size:0.65rem;cursor:pointer;">+ Lantai</button>
+        <button onclick="wmsRenameLayoutFloor()" style="padding:4px 8px;border-radius:6px;border:1px solid rgba(99,102,241,0.4);background:rgba(99,102,241,0.1);color:#a78bfa;font-size:0.65rem;cursor:pointer;" title="Rename lantai aktif">✏️</button>
+        <button onclick="wmsAddLayoutFloor()" style="padding:4px 8px;border-radius:6px;border:1px dashed var(--border);background:transparent;color:var(--muted);font-size:0.65rem;cursor:pointer;" title="Tambah lantai baru">+ Lantai</button>
+        <button onclick="wmsDeleteLayoutFloor()" style="padding:4px 8px;border-radius:6px;border:1px solid rgba(239,68,68,0.4);background:rgba(239,68,68,0.1);color:var(--red);font-size:0.65rem;cursor:pointer;" title="Hapus lantai aktif">🗑</button>
       </div>
       <div id="wmsLayoutScroll" style="flex:1;overflow:auto;position:relative;">
         <div id="wmsLayoutCanvas" style="position:relative;min-height:500px;min-width:800px;background:#f0f4f8;background-image:linear-gradient(rgba(0,105,148,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(0,105,148,0.06) 1px,transparent 1px);background-size:32px 32px;"></div>
@@ -3246,17 +3248,19 @@
   window.wmsLoadData = async function() {
     if (!db) { showToast('❌ Firebase offline', 'error'); return; }
     try {
-      let q;
-      if (wmsCurrentUser?.role === 'ADMIN') {
-        q = collection(db, 'STOCK');
-      } else {
-        q = query(collection(db, 'STOCK'), where('store_code', '==', wmsCurrentUser.store_code));
-      }
-      const snap = await getDocs(q);
+      // Semua role load semua toko — multistore view
+      // Aksi Jual/Move tetap hanya untuk toko sendiri (dicek di modal)
+      const snap = await getDocs(collection(db, 'STOCK'));
       wmsAllData = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
-      // Derive stores from data if not loaded
       if (!wmsStoreList.length) await wmsLoadStores();
       wmsPopulateSelects();
+      // Default filter ke toko sendiri untuk TOKO role
+      if (wmsCurrentUser?.role !== 'ADMIN') {
+        const storeSel = document.getElementById('wmsFilterStore');
+        if (storeSel) storeSel.value = wmsCurrentUser?.store_code || '';
+        const storeBinSel = document.getElementById('wmsFilterStoreBin');
+        if (storeBinSel) storeBinSel.value = wmsCurrentUser?.store_code || '';
+      }
       wmsApplyFilter();
       wmsRenderBinView();
       wmsUpdateSummary();
@@ -3465,11 +3469,46 @@
   function wmsRenderMarkerEl(key, pos) {
     const el = document.createElement('div');
     el.className = `wms-marker ${wmsLayoutEdit ? 'edit-mode' : ''}`;
-    el.style.cssText = `left:${pos.x}px;top:${pos.y}px;min-width:${pos.w}px;height:${pos.h}px;background:${pos.bg};color:${pos.color};`;
+    el.style.cssText = `left:${pos.x}px;top:${pos.y}px;width:${pos.w||130}px;height:${pos.h||36}px;background:${pos.bg};color:${pos.color};font-size:${Math.max(10, Math.min(20, (pos.h||36)*0.4))}px;`;
     el.dataset.lk = key;
-    el.innerHTML = `<button class="wms-marker-del" onclick="wmsDeleteMarker('${key}')">✕</button><span style="font-size:0.8rem;font-weight:700;">${pos.label}</span>`;
+    el.innerHTML = `
+      <button class="wms-marker-del" onclick="wmsDeleteMarker('${key}')">✕</button>
+      <span style="font-weight:700;flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;">${pos.label}</span>
+      <div class="wms-lbin-resize" style="${wmsLayoutEdit ? '' : 'display:none'}"></div>`;
     if (wmsLayoutEdit) {
-      wmsSetupDrag(el, key);
+      // Drag — skip resize handle and del button
+      el.addEventListener('mousedown', e => {
+        if (e.target.classList.contains('wms-marker-del') || e.target.classList.contains('wms-lbin-resize')) return;
+        e.preventDefault();
+        const canvas = document.getElementById('wmsLayoutCanvas');
+        const rect = canvas.getBoundingClientRect();
+        const offX = e.clientX - rect.left - wmsLayoutPos[key].x;
+        const offY = e.clientY - rect.top  - wmsLayoutPos[key].y;
+        const onMove = ev => {
+          let nx = Math.max(0, Math.round((ev.clientX - rect.left - offX) / 8) * 8);
+          let ny = Math.max(0, Math.round((ev.clientY - rect.top  - offY) / 8) * 8);
+          wmsLayoutPos[key].x = nx; wmsLayoutPos[key].y = ny;
+          el.style.left = nx + 'px'; el.style.top = ny + 'px';
+          wmsLayoutDirty = true;
+        };
+        const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+      // Resize
+      const resizeHandle = el.querySelector('.wms-lbin-resize');
+      if (resizeHandle) {
+        wmsSetupResize(resizeHandle, el, key);
+        // Also update font-size on resize
+        const orig = wmsSetupResize.toString();
+        resizeHandle.addEventListener('mousedown', () => {
+          const check = setInterval(() => {
+            const h = wmsLayoutPos[key]?.h || 36;
+            el.style.fontSize = Math.max(10, Math.min(20, h * 0.4)) + 'px';
+          }, 16);
+          document.addEventListener('mouseup', () => clearInterval(check), { once: true });
+        });
+      }
     }
     return el;
   }
@@ -3535,7 +3574,7 @@
     const binMap = {};
     data.forEach(r => {
       const key = `${r.store_code}__${r.bin}`;
-      if (!binMap[key]) binMap[key] = { bin: r.bin, store: r.store_code, items: [], qty: 0 };
+      if (!binMap[key]) binMap[key] = { bin: r.bin, store: r.store_code, storeName: r.store_name || r.store_code, items: [], qty: 0 };
       binMap[key].items.push(r);
       binMap[key].qty += Number(r.qty) || 0;
     });
@@ -3554,8 +3593,8 @@
       ).length : 0;
       return `<div class="wms-bin-card ${b.qty > 0 ? 'has-item' : ''} ${highlight ? 'highlighted' : ''}"
         onclick="wmsOpenBinDetail('${b.store}','${b.bin}')">
-        <div class="bc-code">📦 ${b.bin}</div>
-        <div class="bc-store">${b.store}</div>
+        <div class="bc-code">${b.bin}</div>
+        <div class="bc-store">🏪 ${b.storeName || b.store}</div>
         <div class="bc-qty">${b.qty}</div>
         <div class="bc-sku">${skuCount} SKU${highlight ? ` <span style="color:#10b981;font-weight:700;">· ${matchCount} match</span>` : ''}</div>
       </div>`;
@@ -4138,13 +4177,38 @@
   };
 
   window.wmsAddLayoutFloor = function() {
-    wmsLayoutFloors.push(`Lantai ${wmsLayoutFloors.length + 1}`);
+    const name = prompt('Nama lantai baru:', `Lantai ${wmsLayoutFloors.length + 1}`);
+    if (!name) return;
+    wmsLayoutFloors.push(name.trim());
     wmsLayoutFloor = wmsLayoutFloors.length;
+    wmsLayoutDirty = true;
     wmsRenderLayout();
   };
 
   window.wmsSetLayoutFloor = function(f) {
     wmsLayoutFloor = f;
+    wmsRenderLayout();
+  };
+
+  window.wmsRenameLayoutFloor = function() {
+    const idx  = wmsLayoutFloor - 1;
+    const name = prompt('Nama lantai:', wmsLayoutFloors[idx] || `Lantai ${wmsLayoutFloor}`);
+    if (!name) return;
+    wmsLayoutFloors[idx] = name.trim();
+    wmsLayoutDirty = true;
+    wmsRenderLayout();
+  };
+
+  window.wmsDeleteLayoutFloor = function() {
+    if (wmsLayoutFloors.length <= 1) { showToast('Minimal 1 lantai', 'error'); return; }
+    const name = wmsLayoutFloors[wmsLayoutFloor - 1];
+    const count = Object.keys(wmsLayoutPos).filter(k => k.endsWith(`|${wmsLayoutFloor}`)).length;
+    if (!confirm(`Hapus lantai "${name}"?\n${count > 0 ? `⚠️ Ada ${count} elemen yang akan ikut terhapus.` : 'Lantai kosong.'}`)) return;
+    // Hapus semua pos di lantai ini
+    Object.keys(wmsLayoutPos).filter(k => k.endsWith(`|${wmsLayoutFloor}`)).forEach(k => delete wmsLayoutPos[k]);
+    wmsLayoutFloors.splice(wmsLayoutFloor - 1, 1);
+    wmsLayoutFloor = Math.min(wmsLayoutFloor, wmsLayoutFloors.length);
+    wmsLayoutDirty = true;
     wmsRenderLayout();
   };
 
