@@ -463,6 +463,16 @@
     .wms-bin-card:hover { border-color: #6366f1; transform: translateY(-2px); }
     .wms-bin-card.has-item { border-color: rgba(99,102,241,0.4); }
     .wms-bin-card.highlighted { border-color: #10b981; background: rgba(16,185,129,0.08); animation: wmsGlow 1.2s ease-in-out infinite; }
+    .wms-modal-item.search-match {
+      border: 2px solid #fbbf24 !important;
+      background: rgba(251,191,36,0.08) !important;
+      position: relative;
+    }
+    .wms-modal-item.search-match::before {
+      content: '🎯';
+      position: absolute; top: 6px; right: 8px; font-size: 0.75rem;
+    }
+    .wms-modal-item .highlight-text { background: rgba(251,191,36,0.35); border-radius: 3px; padding: 0 2px; font-weight: 700; color: var(--text); }
     @keyframes wmsGlow {
       0%,100% { box-shadow: 0 0 0 2px rgba(16,185,129,0.3); }
       50%      { box-shadow: 0 0 0 6px rgba(16,185,129,0.15), 0 0 20px rgba(16,185,129,0.4); }
@@ -893,11 +903,21 @@
 
     <!-- ── PANEL BIN VIEW ── -->
     <div class="wms-panel" id="wmsPanel-bin">
-      <div class="wms-filter-bar">
+      <div class="wms-filter-bar" style="flex-wrap:wrap;gap:8px;">
         <select id="wmsFilterStoreBin" onchange="wmsRenderBinView()">
           <option value="">🏪 Semua Toko</option>
         </select>
-        <span style="font-size:0.65rem;color:var(--muted);">Klik BIN untuk lihat detail</span>
+        <div style="flex:1;min-width:180px;position:relative;">
+          <input id="wmsBinSearchInput" placeholder="🔍 Cari SKU / BIN / Brand / Description..."
+            oninput="wmsBinSearchLive(this.value)"
+            style="width:100%;padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.72rem;" />
+        </div>
+        <button onclick="wmsClearBinSearch()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:5px 10px;font-size:0.65rem;cursor:pointer;">✕ Clear</button>
+      </div>
+      <!-- Info description hasil pencarian -->
+      <div id="wmsBinSearchInfo" style="display:none;padding:8px 12px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:8px;margin-bottom:10px;font-size:0.7rem;">
+        <span id="wmsBinSearchDesc" style="color:#10b981;font-weight:600;"></span>
+        <span id="wmsBinSearchMeta" style="color:var(--muted);margin-left:8px;"></span>
       </div>
       <div class="wms-bin-grid" id="wmsBinGrid">
         <div style="color:var(--muted);font-size:0.72rem;">Load data dulu...</div>
@@ -3316,17 +3336,59 @@
     }).join('');
   }
 
-  // ── BIN VIEW ──
+  // ── BIN SEARCH STATE ──
+  let wmsBinSearchQuery = '';
+
+  window.wmsBinSearchLive = function(val) {
+    wmsBinSearchQuery = val.trim().toLowerCase();
+    wmsRenderBinView();
+    // Update info bar
+    const infoEl  = document.getElementById('wmsBinSearchInfo');
+    const descEl  = document.getElementById('wmsBinSearchDesc');
+    const metaEl  = document.getElementById('wmsBinSearchMeta');
+    if (!wmsBinSearchQuery) {
+      if (infoEl) infoEl.style.display = 'none';
+      return;
+    }
+    // Cari match pertama untuk tampilkan description
+    const match = wmsAllData.find(r =>
+      `${r.variant||''} ${r.generic||''} ${r.name||''} ${r.brand||''} ${r.bin||''}`.toLowerCase().includes(wmsBinSearchQuery)
+    );
+    if (match && infoEl) {
+      infoEl.style.display = 'block';
+      if (descEl) descEl.textContent = match.name || match.variant || '-';
+      if (metaEl) {
+        const matchCount = wmsAllData.filter(r =>
+          `${r.variant||''} ${r.generic||''} ${r.name||''} ${r.brand||''} ${r.bin||''}`.toLowerCase().includes(wmsBinSearchQuery)
+        ).length;
+        const binCount = new Set(wmsAllData.filter(r =>
+          `${r.variant||''} ${r.generic||''} ${r.name||''} ${r.brand||''} ${r.bin||''}`.toLowerCase().includes(wmsBinSearchQuery)
+        ).map(r => r.bin)).size;
+        metaEl.textContent = `${matchCount} SKU di ${binCount} BIN`;
+      }
+    } else if (infoEl) {
+      infoEl.style.display = wmsBinSearchQuery ? 'block' : 'none';
+      if (descEl) descEl.textContent = '⚠️ Tidak ditemukan';
+      if (metaEl) metaEl.textContent = '';
+    }
+  };
+
+  window.wmsClearBinSearch = function() {
+    const inp = document.getElementById('wmsBinSearchInput');
+    if (inp) inp.value = '';
+    wmsBinSearchQuery = '';
+    wmsRenderBinView();
+    const infoEl = document.getElementById('wmsBinSearchInfo');
+    if (infoEl) infoEl.style.display = 'none';
+  };
+
+  // ── BIN VIEW RENDER ──
   window.wmsRenderBinView = function() {
-    const grid     = document.getElementById('wmsBinGrid');
-    const search   = (document.getElementById('wmsSearchBar')?.value || '').toLowerCase();
-    const storeF   = document.getElementById('wmsFilterStoreBin')?.value || '';
+    const grid   = document.getElementById('wmsBinGrid');
+    const storeF = document.getElementById('wmsFilterStoreBin')?.value || '';
     if (!grid) return;
 
-    const data = wmsAllData.filter(r => {
-      if (storeF && r.store_code !== storeF) return false;
-      return true;
-    });
+    const data = wmsAllData.filter(r => !storeF || r.store_code === storeF);
 
     // Group by BIN
     const binMap = {};
@@ -3342,30 +3404,69 @@
 
     grid.innerHTML = bins.map(b => {
       const skuCount  = b.items.length;
-      const highlight = search && b.items.some(r =>
-        `${r.variant||''} ${r.generic||''} ${r.name||''}`.toLowerCase().includes(search)
+      const highlight = wmsBinSearchQuery && b.items.some(r =>
+        `${r.variant||''} ${r.generic||''} ${r.name||''} ${r.brand||''} ${b.bin}`.toLowerCase().includes(wmsBinSearchQuery)
       );
+      // Hitung berapa item match
+      const matchCount = wmsBinSearchQuery ? b.items.filter(r =>
+        `${r.variant||''} ${r.generic||''} ${r.name||''} ${r.brand||''} ${b.bin}`.toLowerCase().includes(wmsBinSearchQuery)
+      ).length : 0;
       return `<div class="wms-bin-card ${b.qty > 0 ? 'has-item' : ''} ${highlight ? 'highlighted' : ''}"
         onclick="wmsOpenBinDetail('${b.store}','${b.bin}')">
         <div class="bc-code">📦 ${b.bin}</div>
         <div class="bc-store">${b.store}</div>
         <div class="bc-qty">${b.qty}</div>
-        <div class="bc-sku">${skuCount} SKU</div>
+        <div class="bc-sku">${skuCount} SKU${highlight ? ` <span style="color:#10b981;font-weight:700;">· ${matchCount} match</span>` : ''}</div>
       </div>`;
     }).join('');
+
+    // Auto-scroll ke bin pertama yang highlighted
+    if (wmsBinSearchQuery) {
+      setTimeout(() => {
+        const first = grid.querySelector('.wms-bin-card.highlighted');
+        if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
   };
+
+  // Helper: highlight text dalam string
+  function wmsHighlightText(text, query) {
+    if (!query || !text) return text || '';
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return String(text).replace(new RegExp(`(${escaped})`, 'gi'),
+      '<span class="highlight-text">$1</span>');
+  }
 
   // ── OPEN BIN DETAIL MODAL ──
   window.wmsOpenBinDetail = function(store, bin) {
-    const items = wmsAllData.filter(r => r.store_code === store && r.bin === bin);
+    const q = wmsBinSearchQuery;
+    let items = wmsAllData.filter(r => r.store_code === store && r.bin === bin);
     const isOwner = wmsCurrentUser?.role === 'ADMIN' || wmsCurrentUser?.store_code === store;
+
+    // Urutkan: item yang match query di paling atas
+    if (q) {
+      items = [
+        ...items.filter(r => `${r.variant||''} ${r.generic||''} ${r.name||''} ${r.brand||''}`.toLowerCase().includes(q)),
+        ...items.filter(r => !`${r.variant||''} ${r.generic||''} ${r.name||''} ${r.brand||''}`.toLowerCase().includes(q)),
+      ];
+    }
+
     document.getElementById('wmsModalTitle').textContent = `📦 BIN ${bin} — ${store}`;
     document.getElementById('wmsModalInfo').innerHTML =
-      `<div class="mi-label">Total Qty</div><div class="mi-val" style="font-size:1.2rem;">${items.reduce((s,r)=>s+Number(r.qty||0),0)}</div>`;
-    document.getElementById('wmsModalBody').innerHTML = items.map(r => `
-      <div style="background:var(--bg);border-radius:8px;padding:10px;margin-bottom:8px;font-size:0.72rem;">
-        <div style="font-family:monospace;font-weight:700;color:var(--accent);margin-bottom:3px;">${r.variant||r.sku||'-'}</div>
-        <div style="color:var(--muted);margin-bottom:5px;">${r.name||''} | Size US ${r.size_us||'-'} / UK ${r.size_uk||'-'}</div>
+      `<div class="mi-label">Total Qty</div><div class="mi-val" style="font-size:1.2rem;">${items.reduce((s,r)=>s+Number(r.qty||0),0)}</div>
+       ${q ? `<div class="mi-label" style="margin-top:4px;">Pencarian</div><div class="mi-val" style="color:#fbbf24;">"${q}"</div>` : ''}`;
+
+    document.getElementById('wmsModalBody').innerHTML = items.map(r => {
+      const isMatch = q && `${r.variant||''} ${r.generic||''} ${r.name||''} ${r.brand||''}`.toLowerCase().includes(q);
+      const variantHtml = wmsHighlightText(r.variant || r.sku || '-', q);
+      const nameHtml    = wmsHighlightText(r.name || '', q);
+      const brandHtml   = wmsHighlightText(r.brand || '', q);
+      return `
+      <div class="wms-modal-item ${isMatch ? 'search-match' : ''}"
+        style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;font-size:0.72rem;position:relative;">
+        <div style="font-family:monospace;font-weight:700;color:var(--accent);margin-bottom:3px;">${variantHtml}</div>
+        <div style="color:var(--muted);margin-bottom:3px;">${nameHtml}</div>
+        <div style="color:var(--muted);font-size:0.62rem;margin-bottom:5px;">${brandHtml} | Size US ${r.size_us||'-'} / UK ${r.size_uk||'-'}</div>
         <div style="display:flex;gap:6px;align-items:center;">
           <span class="wms-qty-badge">${r.qty}</span>
           ${isOwner ? `
@@ -3373,9 +3474,19 @@
             <button class="wms-action-btn move" onclick="wmsCloseModal();wmsOpenMove('${r._id}')">Move</button>
           ` : ''}
         </div>
-      </div>
-    `).join('') || '<div style="color:var(--muted);">Kosong</div>';
+        ${isMatch ? '<div style="position:absolute;top:6px;right:8px;font-size:0.7rem;">🎯</div>' : ''}
+      </div>`;
+    }).join('') || '<div style="color:var(--muted);">Kosong</div>';
+
     document.getElementById('wmsModalBackdrop').classList.add('show');
+
+    // Auto-scroll ke item match pertama di modal
+    if (q) {
+      setTimeout(() => {
+        const firstMatch = document.querySelector('#wmsModalBody .search-match');
+        if (firstMatch) firstMatch.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 150);
+    }
   };
 
   window.wmsCloseModal = () => document.getElementById('wmsModalBackdrop').classList.remove('show');
