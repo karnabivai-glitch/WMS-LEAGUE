@@ -478,9 +478,33 @@
       50%      { box-shadow: 0 0 0 6px rgba(16,185,129,0.15), 0 0 20px rgba(16,185,129,0.4); }
     }
     .wms-bin-card .bc-code { font-size: 0.82rem; font-weight: 800; color: #a78bfa; font-family: monospace; margin-bottom: 4px; }
-    .wms-bin-card .bc-store { font-size: 0.55rem; color: var(--muted); margin-bottom: 6px; }
+    .wms-bin-card .bc-store { font-size: 0.68rem; font-weight: 700; color: var(--accent2); margin-bottom: 6px; letter-spacing: 0.03em; }
     .wms-bin-card .bc-qty { font-size: 1.3rem; font-weight: 700; color: var(--text); }
     .wms-bin-card .bc-sku { font-size: 0.55rem; color: var(--muted); margin-top: 2px; }
+
+    /* Marker label di layout */
+    .wms-marker {
+      position: absolute; cursor: move; user-select: none;
+      padding: 4px 10px; border-radius: 6px;
+      font-weight: 700; font-size: 0.8rem;
+      border: 2px solid rgba(0,0,0,0.15);
+      display: flex; align-items: center; gap: 6px; white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .wms-marker.edit-mode { outline: 2px dashed rgba(255,165,0,0.6); }
+    .wms-marker-del {
+      background: rgba(239,68,68,0.8); color: #fff; border: none;
+      border-radius: 3px; width: 16px; height: 16px; font-size: 0.6rem;
+      cursor: pointer; display: none; align-items: center; justify-content: center; padding: 0;
+    }
+    .wms-marker.edit-mode .wms-marker-del { display: flex; }
+    /* Color presets untuk marker */
+    .wms-marker-picker { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+    .wms-marker-swatch {
+      width: 22px; height: 22px; border-radius: 4px; cursor: pointer;
+      border: 2px solid transparent; transition: transform 0.15s;
+    }
+    .wms-marker-swatch:hover, .wms-marker-swatch.active { transform: scale(1.2); border-color: #fff; }
 
     /* WMS Layout Canvas */
     .wms-lbin { position:absolute; min-width:90px; min-height:70px; background:var(--card); border:2px solid var(--border); border-radius:10px; cursor:pointer; user-select:none; overflow:hidden; display:flex; flex-direction:column; transition:border-color 0.15s, box-shadow 0.15s; }
@@ -929,6 +953,11 @@
             oninput="wmsBinSearchLive(this.value)"
             style="width:100%;padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.72rem;" />
         </div>
+        <input id="wmsBinScanInput" placeholder="📷 Scan Barcode..."
+          oninput="wmsBinScanBarcode(this.value)"
+          onkeydown="if(event.key==='Enter'){wmsBinScanBarcode(this.value);}"
+          style="width:160px;padding:7px 10px;border-radius:7px;border:1px solid rgba(99,102,241,0.4);background:var(--bg);color:var(--text);font-size:0.72rem;font-family:monospace;"
+          title="Scan barcode untuk langsung cari & highlight BIN yang mengandung article tersebut" />
         <button onclick="wmsClearBinSearch()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:5px 10px;font-size:0.65rem;cursor:pointer;">✕ Clear</button>
       </div>
       <!-- Info description hasil pencarian -->
@@ -980,10 +1009,16 @@
     <div class="wms-panel" id="wmsPanel-layout" style="padding:0;overflow:hidden;">
       <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;">
         <span style="font-size:0.7rem;font-weight:700;color:var(--muted);">🗺️ LAYOUT BIN</span>
-        <input id="wmsLayoutSearch" placeholder="🔍 Cari SKU/Article..." style="padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.72rem;width:200px;" oninput="wmsLayoutDoSearch(this.value)" />
+        <input id="wmsLayoutSearch" placeholder="🔍 Cari SKU/Article..." style="padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.72rem;width:180px;" oninput="wmsLayoutDoSearch(this.value)" />
+        <input id="wmsLayoutScanInput" placeholder="📷 Scan Barcode..."
+          onkeydown="if(event.key==='Enter'||event.key===undefined){wmsLayoutScanBarcode(this.value);}"
+          oninput="wmsLayoutScanBarcode(this.value)"
+          style="width:150px;padding:5px 10px;border-radius:6px;border:1px solid rgba(99,102,241,0.4);background:var(--bg);color:var(--text);font-size:0.72rem;font-family:monospace;"
+          title="Scan barcode untuk highlight posisi BIN di layout" />
         <button onclick="wmsLayoutClearSearch()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--muted);font-size:0.65rem;cursor:pointer;">Reset</button>
         <button id="wmsEditLayoutBtn" onclick="wmsToggleLayoutEdit()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.65rem;cursor:pointer;">✏️ Edit Layout</button>
         <button onclick="wmsAddBinToLayout()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.65rem;cursor:pointer;">+ Bin</button>
+        <button onclick="wmsAddMarker()" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(251,191,36,0.5);background:rgba(251,191,36,0.1);color:#fbbf24;font-size:0.65rem;cursor:pointer;" title="Tambah label penanda (pintu, tangga, kasir, dll)">🏷️ + Marker</button>
         <button id="wmsSaveLayoutBtn" onclick="wmsSaveLayout()" style="padding:4px 10px;border-radius:6px;background:var(--green);color:#fff;border:none;font-size:0.65rem;cursor:pointer;opacity:0.5;">💾 Simpan</button>
         <span id="wmsLayoutSaveOk" style="font-size:0.6rem;color:var(--green);display:none;">✅ Tersimpan!</span>
         <select id="wmsLayoutFloorSel" onchange="wmsSetLayoutFloor(parseInt(this.value))" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.65rem;margin-left:auto;"></select>
@@ -3303,8 +3338,146 @@
     }).join('');
   }
 
-  // ── BIN SEARCH STATE ──
-  let wmsBinSearchQuery = '';
+  // ── SCAN BARCODE di BIN VIEW ──
+  // Scan barcode → cari article di memBarcode → pakai article sebagai query
+  let wmsBinScanDebounce = null;
+  window.wmsBinScanBarcode = function(val) {
+    clearTimeout(wmsBinScanDebounce);
+    wmsBinScanDebounce = setTimeout(() => {
+      if (!val || val.trim().length < 3) return;
+      const barcode = val.trim();
+      // Lookup article dari memory map (master barcode)
+      const bcRow = memBarcode.get(barcode) || memArticleB.get(barcode.toLowerCase());
+      const article = bcRow ? (bcRow.Article || bcRow.article || barcode) : barcode;
+      // Set ke search input
+      const inp = document.getElementById('wmsBinSearchInput');
+      if (inp) inp.value = article;
+      wmsBinSearchLive(article);
+      // Clear scan input setelah dipakai
+      const scanInp = document.getElementById('wmsBinScanInput');
+      if (scanInp) setTimeout(() => { scanInp.value = ''; }, 400);
+    }, 300);
+  };
+
+  // ── SCAN BARCODE di LAYOUT ──
+  let wmsLayoutScanDebounce = null;
+  window.wmsLayoutScanBarcode = function(val) {
+    clearTimeout(wmsLayoutScanDebounce);
+    wmsLayoutScanDebounce = setTimeout(() => {
+      if (!val || val.trim().length < 3) return;
+      const barcode = val.trim();
+      const bcRow = memBarcode.get(barcode) || memArticleB.get(barcode.toLowerCase());
+      const article = bcRow ? (bcRow.Article || bcRow.article || barcode) : barcode;
+      // Set ke layout search
+      const inp = document.getElementById('wmsLayoutSearch');
+      if (inp) inp.value = article;
+      wmsLayoutDoSearch(article);
+      const scanInp = document.getElementById('wmsLayoutScanInput');
+      if (scanInp) setTimeout(() => { scanInp.value = ''; }, 400);
+    }, 300);
+  };
+
+  // ── MARKER SYSTEM ──
+  const MARKER_PRESETS = [
+    { label: '🚪 Pintu',    bg: '#1e3a5f', color: '#60a5fa' },
+    { label: '🪜 Tangga',   bg: '#3b1f2b', color: '#f472b6' },
+    { label: '💰 Kasir',    bg: '#1a2e1a', color: '#4ade80' },
+    { label: '🛒 Gudang',   bg: '#2a1a0e', color: '#fb923c' },
+    { label: '⚠️ Area',     bg: '#2a2a00', color: '#facc15' },
+    { label: '📦 Rak',      bg: '#1a1a2e', color: '#a78bfa' },
+  ];
+  const MARKER_COLORS = [
+    { bg:'#1e3a5f', color:'#60a5fa' }, { bg:'#3b1f2b', color:'#f472b6' },
+    { bg:'#1a2e1a', color:'#4ade80' }, { bg:'#2a1a0e', color:'#fb923c' },
+    { bg:'#2a2a00', color:'#facc15' }, { bg:'#1a1a2e', color:'#a78bfa' },
+    { bg:'#1f1f1f', color:'#e2e8f0' }, { bg:'#2d1515', color:'#f87171' },
+  ];
+
+  // Marker data tersimpan di wmsLayoutPos dengan key 'marker|id|floor'
+  let wmsMarkerIdCounter = Date.now();
+
+  window.wmsAddMarker = function() {
+    if (!wmsLayoutEdit) {
+      showToast('Aktifkan ✏️ Edit Layout dulu', 'info');
+      return;
+    }
+    // Tampilkan picker modal kecil
+    const existing = document.getElementById('wmsMarkerModal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'wmsMarkerModal';
+    modal.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:600;display:flex;align-items:center;justify-content:center;`;
+    modal.innerHTML = `
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;width:320px;max-width:90vw;">
+        <h3 style="font-size:0.88rem;font-weight:700;margin-bottom:12px;">🏷️ Tambah Marker</h3>
+        <div style="font-size:0.65rem;color:var(--muted);margin-bottom:8px;">Preset cepat:</div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:12px;">
+          ${MARKER_PRESETS.map(p => `
+            <button onclick="wmsCreateMarker('${p.label}','${p.bg}','${p.color}')"
+              style="padding:7px;border-radius:7px;border:1px solid ${p.color}44;background:${p.bg};color:${p.color};font-size:0.72rem;font-weight:700;cursor:pointer;text-align:left;">
+              ${p.label}
+            </button>`).join('')}
+        </div>
+        <div style="font-size:0.65rem;color:var(--muted);margin-bottom:6px;">Atau custom:</div>
+        <input id="markerCustomText" placeholder="Nama marker..." style="width:100%;padding:7px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.75rem;box-sizing:border-box;margin-bottom:8px;" />
+        <div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap;">
+          ${MARKER_COLORS.map((c,i) => `
+            <div class="wms-marker-swatch ${i===0?'active':''}" data-idx="${i}"
+              style="background:${c.bg};border-color:${i===0?c.color:'transparent'}"
+              onclick="this.parentElement.querySelectorAll('.wms-marker-swatch').forEach(s=>s.classList.remove('active'));this.classList.add('active');this.parentElement.querySelectorAll('.wms-marker-swatch').forEach((s,j)=>{if(s.classList.contains('active'))window._mci=j;});"
+              title="${c.color}"></div>`).join('')}
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="wmsCreateCustomMarker()" style="flex:1;padding:8px;border-radius:7px;background:var(--accent2);color:#fff;border:none;font-size:0.72rem;cursor:pointer;font-weight:700;">+ Tambah</button>
+          <button onclick="document.getElementById('wmsMarkerModal').remove()" style="padding:8px 14px;border-radius:7px;border:1px solid var(--border);background:none;color:var(--muted);font-size:0.72rem;cursor:pointer;">Batal</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    window._mci = 0; // selected color index
+    setTimeout(() => document.getElementById('markerCustomText')?.focus(), 100);
+  };
+
+  window.wmsCreateCustomMarker = function() {
+    const txt = document.getElementById('markerCustomText')?.value.trim();
+    if (!txt) { showToast('Isi nama marker dulu', 'error'); return; }
+    const c = MARKER_COLORS[window._mci || 0];
+    wmsCreateMarker(txt, c.bg, c.color);
+  };
+
+  window.wmsCreateMarker = function(label, bg, color) {
+    document.getElementById('wmsMarkerModal')?.remove();
+    const id  = `m${wmsMarkerIdCounter++}`;
+    const key = `marker|${id}|${wmsLayoutFloor}`;
+    // Posisi default: tengah viewport layout
+    const scroll = document.getElementById('wmsLayoutScroll');
+    const cx = (scroll?.scrollLeft || 0) + (scroll?.offsetWidth || 600) / 2 - 60;
+    const cy = (scroll?.scrollTop  || 0) + (scroll?.offsetHeight|| 400) / 2 - 20;
+    wmsLayoutPos[key] = { x: Math.max(10, cx), y: Math.max(10, cy), w: 130, h: 36, floor: wmsLayoutFloor, type:'marker', label, bg, color };
+    wmsLayoutDirty = true;
+    wmsRenderLayout();
+    showToast(`🏷️ Marker "${label}" ditambahkan`, 'success');
+  };
+
+  // Render marker element (dipanggil dari wmsRenderLayout)
+  function wmsRenderMarkerEl(key, pos) {
+    const el = document.createElement('div');
+    el.className = `wms-marker ${wmsLayoutEdit ? 'edit-mode' : ''}`;
+    el.style.cssText = `left:${pos.x}px;top:${pos.y}px;min-width:${pos.w}px;height:${pos.h}px;background:${pos.bg};color:${pos.color};`;
+    el.dataset.lk = key;
+    el.innerHTML = `<button class="wms-marker-del" onclick="wmsDeleteMarker('${key}')">✕</button><span style="font-size:0.8rem;font-weight:700;">${pos.label}</span>`;
+    if (wmsLayoutEdit) {
+      wmsSetupDrag(el, key);
+    }
+    return el;
+  }
+
+  window.wmsDeleteMarker = function(key) {
+    delete wmsLayoutPos[key];
+    wmsLayoutDirty = true;
+    wmsRenderLayout();
+  };
 
   window.wmsBinSearchLive = function(val) {
     wmsBinSearchQuery = val.trim().toLowerCase();
@@ -3820,16 +3993,24 @@
 
     // Filter hanya key milik toko sendiri di floor ini
     const keysOnFloor = Object.keys(wmsLayoutPos).filter(k => {
+      const pos = wmsLayoutPos[k];
       if (!k.endsWith(`|${wmsLayoutFloor}`)) return false;
+      // Marker selalu tampil
+      if (pos?.type === 'marker') return true;
       const [store] = k.split('|');
-      // Admin bisa lihat semua, toko hanya lihat punyanya sendiri
       if (wmsCurrentUser?.role === 'ADMIN') return true;
       return store === myStore;
     });
 
+    // Render bin cards + markers
     canvas.innerHTML = '';
     keysOnFloor.forEach(lk => {
-      const pos      = wmsLayoutPos[lk];
+      const pos = wmsLayoutPos[lk];
+      // Marker type
+      if (pos?.type === 'marker') {
+        canvas.appendChild(wmsRenderMarkerEl(lk, pos));
+        return;
+      }
       const [store, bin] = lk.split('|');
       const group    = groups[`${store}|${bin}`];
       const qty      = group?.qty || 0;
