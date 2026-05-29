@@ -525,19 +525,37 @@
       display: none; position: fixed; inset: 0;
       background: rgba(0,0,0,0.65); z-index: 500;
       align-items: center; justify-content: center;
+      padding: 16px;
     }
     .wms-modal-backdrop.show { display: flex; }
     .wms-modal {
       background: var(--card); border: 1px solid var(--border);
-      border-radius: 14px; padding: 24px; width: 360px; max-width: 92vw;
+      border-radius: 14px; width: 380px; max-width: 94vw;
+      max-height: 88vh;
+      display: flex; flex-direction: column;
+      overflow: hidden;
     }
-    .wms-modal h3 { font-size: 0.9rem; font-weight: 700; margin-bottom: 16px; }
+    .wms-modal-header {
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .wms-modal-header h3 { font-size: 0.9rem; font-weight: 700; margin: 0; }
     .wms-modal-info {
-      background: var(--bg); border-radius: 8px; padding: 10px 12px;
-      margin-bottom: 14px; font-size: 0.72rem; line-height: 1.6;
+      background: var(--bg); border-radius: 8px; padding: 8px 12px;
+      margin-top: 10px; font-size: 0.72rem; line-height: 1.6;
     }
     .wms-modal-info .mi-label { color: var(--muted); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.04em; }
     .wms-modal-info .mi-val { font-weight: 600; color: var(--text); }
+    .wms-modal-body {
+      flex: 1; overflow-y: auto; padding: 14px 20px;
+      overscroll-behavior: contain;
+    }
+    .wms-modal-footer {
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
 
     /* Inbound dari Scan */
     .wms-scan-import {
@@ -1079,11 +1097,13 @@
 <!-- WMS MODAL JUAL/MOVE/DETAIL -->
 <div class="wms-modal-backdrop" id="wmsModalBackdrop" onclick="if(event.target===this)wmsCloseModal()">
   <div class="wms-modal">
-    <h3 id="wmsModalTitle">Detail</h3>
-    <div class="wms-modal-info" id="wmsModalInfo"></div>
-    <div id="wmsModalBody"></div>
-    <div style="display:flex;gap:8px;margin-top:14px;">
-      <button class="wms-btn danger" onclick="wmsCloseModal()" style="flex:1;">Tutup</button>
+    <div class="wms-modal-header">
+      <h3 id="wmsModalTitle">Detail</h3>
+      <div class="wms-modal-info" id="wmsModalInfo"></div>
+    </div>
+    <div class="wms-modal-body" id="wmsModalBody"></div>
+    <div class="wms-modal-footer">
+      <button class="wms-btn danger" onclick="wmsCloseModal()" style="width:100%;padding:9px;font-size:0.72rem;">✕ Tutup</button>
     </div>
   </div>
 </div>
