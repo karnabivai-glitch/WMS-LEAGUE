@@ -3227,20 +3227,33 @@
   }
 
   function wmsPopulateSelects() {
-    const stores = wmsCurrentUser?.role === 'ADMIN'
-      ? wmsStoreList
-      : wmsStoreList.filter(s => s.code === wmsCurrentUser.store_code);
+    // Semua role bisa lihat semua toko di filter (multistore view)
+    const allStores = wmsStoreList.length ? wmsStoreList
+      : [...new Set(wmsAllData.map(r => r.store_code))].map(c => ({
+          code: c, name: wmsAllData.find(r => r.store_code === c)?.store_name || c
+        }));
 
-    const opts = stores.map(s => `<option value="${s.code}">${s.name || s.code}</option>`).join('');
-    const allOpt = wmsCurrentUser?.role === 'ADMIN' ? '<option value="">🏪 Semua Toko</option>' : '';
+    const opts   = allStores.map(s => `<option value="${s.code}">${s.name || s.code}</option>`).join('');
+    const allOpt = '<option value="">🏪 Semua Toko</option>';
 
-    ['wmsFilterStore','wmsFilterStoreBin','wmsInbStore','wmsMoveStore','wmsScanStore'].forEach(id => {
+    // Filter dropdowns — semua toko + option "Semua"
+    ['wmsFilterStore','wmsFilterStoreBin'].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
-      if (id === 'wmsFilterStore' || id === 'wmsFilterStoreBin') el.innerHTML = allOpt + opts;
-      else el.innerHTML = opts;
-      // Auto-select toko jika TOKO role
-      if (wmsCurrentUser?.role === 'TOKO' && stores.length) el.value = stores[0].code;
+      el.innerHTML = allOpt + opts;
+      // Pre-select toko sendiri untuk TOKO role
+      if (wmsCurrentUser?.role !== 'ADMIN') el.value = wmsCurrentUser?.store_code || '';
+    });
+
+    // Action dropdowns (Jual/Move/Import Scan) — hanya toko sendiri
+    const ownStores = wmsCurrentUser?.role === 'ADMIN' ? allStores
+      : allStores.filter(s => s.code === wmsCurrentUser?.store_code);
+    const ownOpts = ownStores.map(s => `<option value="${s.code}">${s.name || s.code}</option>`).join('');
+    ['wmsInbStore','wmsMoveStore','wmsScanStore'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.innerHTML = ownOpts;
+      if (wmsCurrentUser?.role !== 'ADMIN' && ownStores.length) el.value = ownStores[0].code;
     });
   }
 
@@ -3465,51 +3478,112 @@
     showToast(`🏷️ Marker "${label}" ditambahkan`, 'success');
   };
 
-  // Render marker element (dipanggil dari wmsRenderLayout)
+  // Render marker element — drag & resize bersih
   function wmsRenderMarkerEl(key, pos) {
+    const w  = pos.w || 130;
+    const h  = pos.h || 40;
+    const fs = Math.max(10, Math.min(24, h * 0.38));
+
     const el = document.createElement('div');
     el.className = `wms-marker ${wmsLayoutEdit ? 'edit-mode' : ''}`;
-    el.style.cssText = `left:${pos.x}px;top:${pos.y}px;width:${pos.w||130}px;height:${pos.h||36}px;background:${pos.bg};color:${pos.color};font-size:${Math.max(10, Math.min(20, (pos.h||36)*0.4))}px;`;
+    el.style.cssText = [
+      `position:absolute`,`left:${pos.x}px`,`top:${pos.y}px`,
+      `width:${w}px`,`height:${h}px`,
+      `background:${pos.bg}`,`color:${pos.color}`,
+      `font-size:${fs}px`,`font-weight:700`,
+      `display:flex`,`align-items:center`,`justify-content:center`,
+      `border-radius:8px`,`padding:4px 10px`,`box-sizing:border-box`,
+      `overflow:hidden`,`user-select:none`,
+      `cursor:${wmsLayoutEdit ? 'move' : 'pointer'}`,
+      `border:2px solid ${pos.color}44`,
+      `box-shadow:0 2px 8px rgba(0,0,0,0.2)`,
+    ].join(';');
     el.dataset.lk = key;
-    el.innerHTML = `
-      <button class="wms-marker-del" onclick="wmsDeleteMarker('${key}')">✕</button>
-      <span style="font-weight:700;flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;">${pos.label}</span>
-      <div class="wms-lbin-resize" style="${wmsLayoutEdit ? '' : 'display:none'}"></div>`;
-    if (wmsLayoutEdit) {
-      // Drag — skip resize handle and del button
-      el.addEventListener('mousedown', e => {
-        if (e.target.classList.contains('wms-marker-del') || e.target.classList.contains('wms-lbin-resize')) return;
-        e.preventDefault();
-        const canvas = document.getElementById('wmsLayoutCanvas');
-        const rect = canvas.getBoundingClientRect();
-        const offX = e.clientX - rect.left - wmsLayoutPos[key].x;
-        const offY = e.clientY - rect.top  - wmsLayoutPos[key].y;
-        const onMove = ev => {
-          let nx = Math.max(0, Math.round((ev.clientX - rect.left - offX) / 8) * 8);
-          let ny = Math.max(0, Math.round((ev.clientY - rect.top  - offY) / 8) * 8);
-          wmsLayoutPos[key].x = nx; wmsLayoutPos[key].y = ny;
-          el.style.left = nx + 'px'; el.style.top = ny + 'px';
-          wmsLayoutDirty = true;
-        };
-        const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup', onUp);
-      });
-      // Resize
-      const resizeHandle = el.querySelector('.wms-lbin-resize');
-      if (resizeHandle) {
-        wmsSetupResize(resizeHandle, el, key);
-        // Also update font-size on resize
-        const orig = wmsSetupResize.toString();
-        resizeHandle.addEventListener('mousedown', () => {
-          const check = setInterval(() => {
-            const h = wmsLayoutPos[key]?.h || 36;
-            el.style.fontSize = Math.max(10, Math.min(20, h * 0.4)) + 'px';
-          }, 16);
-          document.addEventListener('mouseup', () => clearInterval(check), { once: true });
-        });
-      }
-    }
+
+    // Del button
+    const delBtn = document.createElement('button');
+    delBtn.textContent = '✕';
+    delBtn.style.cssText = `
+      position:absolute;top:2px;left:2px;
+      background:rgba(239,68,68,0.85);color:#fff;border:none;
+      border-radius:3px;width:16px;height:16px;font-size:9px;
+      cursor:pointer;display:${wmsLayoutEdit ? 'flex' : 'none'};
+      align-items:center;justify-content:center;padding:0;z-index:2;`;
+    delBtn.onclick = e => { e.stopPropagation(); wmsDeleteMarker(key); };
+
+    // Label
+    const lbl = document.createElement('span');
+    lbl.textContent = pos.label;
+    lbl.style.cssText = 'flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;';
+
+    // Resize handle — segitiga pojok kanan bawah
+    const rsz = document.createElement('div');
+    rsz.style.cssText = `
+      position:absolute;right:0;bottom:0;width:16px;height:16px;
+      cursor:se-resize;z-index:2;
+      background:linear-gradient(135deg,transparent 50%,${pos.color} 50%);
+      border-radius:0 0 6px 0;
+      display:${wmsLayoutEdit ? 'block' : 'none'};`;
+
+    el.appendChild(delBtn);
+    el.appendChild(lbl);
+    el.appendChild(rsz);
+
+    if (!wmsLayoutEdit) return el;
+
+    const getCanvas = () => document.getElementById('wmsLayoutCanvas');
+
+    // ── DRAG ──
+    el.addEventListener('mousedown', e => {
+      if (e.target === rsz || e.target === delBtn) return;
+      e.preventDefault();
+      const cr = getCanvas().getBoundingClientRect();
+      const ox = e.clientX - cr.left - (wmsLayoutPos[key]?.x || 0);
+      const oy = e.clientY - cr.top  - (wmsLayoutPos[key]?.y || 0);
+      const mv = ev => {
+        if (!wmsLayoutPos[key]) return;
+        const nx = Math.max(0, Math.round((ev.clientX - cr.left - ox) / 8) * 8);
+        const ny = Math.max(0, Math.round((ev.clientY - cr.top  - oy) / 8) * 8);
+        wmsLayoutPos[key].x = nx; wmsLayoutPos[key].y = ny;
+        el.style.left = nx + 'px'; el.style.top = ny + 'px';
+        wmsLayoutDirty = true;
+      };
+      const up = () => {
+        document.removeEventListener('mousemove', mv);
+        document.removeEventListener('mouseup', up);
+        const sb = document.getElementById('wmsSaveLayoutBtn');
+        if (sb) sb.style.opacity = '1';
+      };
+      document.addEventListener('mousemove', mv);
+      document.addEventListener('mouseup', up);
+    });
+
+    // ── RESIZE ──
+    rsz.addEventListener('mousedown', e => {
+      e.preventDefault(); e.stopPropagation();
+      const sx = e.clientX, sy = e.clientY;
+      const sw = wmsLayoutPos[key]?.w || 130;
+      const sh = wmsLayoutPos[key]?.h || 40;
+      const mv = ev => {
+        if (!wmsLayoutPos[key]) return;
+        const nw = Math.max(60,  sw + ev.clientX - sx);
+        const nh = Math.max(28, sh + ev.clientY - sy);
+        wmsLayoutPos[key].w = nw; wmsLayoutPos[key].h = nh;
+        el.style.width  = nw + 'px';
+        el.style.height = nh + 'px';
+        el.style.fontSize = Math.max(10, Math.min(24, nh * 0.38)) + 'px';
+        wmsLayoutDirty = true;
+      };
+      const up = () => {
+        document.removeEventListener('mousemove', mv);
+        document.removeEventListener('mouseup', up);
+        const sb = document.getElementById('wmsSaveLayoutBtn');
+        if (sb) sb.style.opacity = '1';
+      };
+      document.addEventListener('mousemove', mv);
+      document.addEventListener('mouseup', up);
+    });
+
     return el;
   }
 
