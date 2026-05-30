@@ -431,6 +431,37 @@
     .wms-sum-card.cat-card.active .sv { color: var(--accent); font-size: 0.92rem; }
     .wms-sum-card.cat-card .sv { font-size: 0.92rem; }
     .wms-sum-sep { width: 1px; height: 32px; background: var(--border); margin: 0 2px; }
+
+    /* BIN VIEW — panel kiri stat & produk */
+    .bvstat-card {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 6px 4px; text-align: center;
+    }
+    .bvstat-card .bvs-val { font-size: 1rem; font-weight: 700; color: #818cf8; }
+    .bvstat-card .bvs-lbl { font-size: 0.5rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 1px; }
+    .bvcat-chip {
+      padding: 3px 8px; border-radius: 99px; font-size: 0.6rem; font-weight: 700;
+      border: 1px solid; cursor: default;
+    }
+    /* Produk card di panel kiri */
+    .bv-product-card {
+      width: 100%; display: flex; flex-direction: column; gap: 0;
+    }
+    .bv-product-img {
+      width: 100%; aspect-ratio: 1/1; object-fit: contain;
+      background: #fff; border-radius: 10px; border: 1px solid var(--border);
+      display: block;
+    }
+    .bv-product-img-placeholder {
+      width: 100%; aspect-ratio: 1/1; background: var(--bg);
+      border-radius: 10px; border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.5rem;
+    }
+    .bv-product-meta { padding: 10px 2px 0; }
+    .bv-product-name { font-size: 0.85rem; font-weight: 700; color: var(--text); margin-bottom: 4px; line-height: 1.3; }
+    .bv-product-article { font-size: 0.72rem; font-family: monospace; color: #a78bfa; margin-bottom: 2px; }
+    .bv-product-sub { font-size: 0.65rem; color: var(--muted); }
     .wms-table-wrap { flex: 1; overflow: auto; border-radius: 10px; border: 1px solid var(--border); background: var(--card); }
     .wms-table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
     .wms-table thead { position: sticky; top: 0; background: #14161f; z-index: 5; }
@@ -979,9 +1010,9 @@
     </div>
 
     <!-- ── PANEL BIN VIEW ── -->
-    <div class="wms-panel" id="wmsPanel-bin">
-      <div class="wms-filter-bar" style="flex-wrap:wrap;gap:8px;">
-        <!-- Toggle toko untuk BIN VIEW -->
+    <div class="wms-panel" id="wmsPanel-bin" style="padding:0;display:flex;flex-direction:column;overflow:hidden;">
+      <!-- Filter bar -->
+      <div class="wms-filter-bar" style="flex-wrap:wrap;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0;">
         <div id="wmsStoreToggleBin" style="display:none;gap:4px;">
           <button id="btnBinOwn" class="wms-store-toggle active" onclick="wmsSetStoreFilter('bin','own')"></button>
           <button id="btnBinAll" class="wms-store-toggle" onclick="wmsSetStoreFilter('bin','all')">🌐 Semua Toko</button>
@@ -989,7 +1020,7 @@
         <select id="wmsFilterStoreBin" onchange="wmsRenderBinView()" style="display:none;">
           <option value="">🏪 Semua Toko</option>
         </select>
-        <div style="flex:1;min-width:180px;position:relative;">
+        <div style="flex:1;min-width:200px;">
           <input id="wmsBinSearchInput" placeholder="🔍 Cari SKU / BIN / Brand / Description..."
             oninput="wmsBinSearchLive(this.value)"
             style="width:100%;padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.72rem;" />
@@ -997,17 +1028,42 @@
         <input id="wmsBinScanInput" placeholder="📷 Scan Barcode..."
           oninput="wmsBinScanBarcode(this.value)"
           onkeydown="if(event.key==='Enter'){wmsBinScanBarcode(this.value);}"
-          style="width:160px;padding:7px 10px;border-radius:7px;border:1px solid rgba(99,102,241,0.4);background:var(--bg);color:var(--text);font-size:0.72rem;font-family:monospace;"
-          title="Scan barcode untuk langsung cari & highlight BIN yang mengandung article tersebut" />
+          style="width:150px;padding:7px 10px;border-radius:7px;border:1px solid rgba(99,102,241,0.4);background:var(--bg);color:var(--text);font-size:0.72rem;font-family:monospace;" />
         <button onclick="wmsClearBinSearch()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:5px 10px;font-size:0.65rem;cursor:pointer;">✕ Clear</button>
       </div>
-      <!-- Info description hasil pencarian -->
-      <div id="wmsBinSearchInfo" style="display:none;padding:8px 12px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:8px;margin-bottom:10px;font-size:0.7rem;">
-        <span id="wmsBinSearchDesc" style="color:#10b981;font-weight:600;"></span>
-        <span id="wmsBinSearchMeta" style="color:var(--muted);margin-left:8px;"></span>
-      </div>
-      <div class="wms-bin-grid" id="wmsBinGrid">
-        <div style="color:var(--muted);font-size:0.72rem;">Load data dulu...</div>
+
+      <!-- Body: kiri=info produk, kanan=bin grid -->
+      <div style="display:flex;flex:1;overflow:hidden;gap:0;">
+
+        <!-- PANEL KIRI: info produk -->
+        <div id="wmsBinInfoPanel" style="width:280px;min-width:240px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid var(--border);overflow-y:auto;background:var(--card);">
+          <!-- Stats ringkasan -->
+          <div style="padding:12px;border-bottom:1px solid var(--border);">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">
+              <div class="bvstat-card"><div class="bvs-val" id="bvTotalSKU">0</div><div class="bvs-lbl">Total SKU</div></div>
+              <div class="bvstat-card"><div class="bvs-val" id="bvTotalQty">0</div><div class="bvs-lbl">Total Qty</div></div>
+              <div class="bvstat-card"><div class="bvs-val" id="bvTotalBin">0</div><div class="bvs-lbl">Total BIN</div></div>
+            </div>
+            <!-- Per CAT stats -->
+            <div id="bvCatStats" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
+          </div>
+
+          <!-- Info produk yang dicari -->
+          <div id="wmsBinProductInfo" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;text-align:center;">
+            <div style="color:var(--muted);font-size:0.72rem;opacity:0.5;">
+              <div style="font-size:2rem;margin-bottom:8px;">🔍</div>
+              Scan atau ketik untuk<br>melihat info produk
+            </div>
+          </div>
+        </div>
+
+        <!-- PANEL KANAN: bin grid -->
+        <div style="flex:1;overflow-y:auto;padding:12px;">
+          <div class="wms-bin-grid" id="wmsBinGrid">
+            <div style="color:var(--muted);font-size:0.72rem;">Load data dulu...</div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -3367,6 +3423,7 @@
       wmsPopulateSelects();
       wmsApplyFilter();
       wmsRenderBinView();
+      wmsUpdateBinLeftPanel();
       wmsUpdateSummary();
       showToast(`✅ ${wmsAllData.length.toLocaleString()} data stok dimuat`, 'success');
     } catch(e) { showToast('❌ Load gagal: ' + e.message, 'error'); }
@@ -3731,44 +3788,99 @@
   window.wmsBinSearchLive = function(val) {
     wmsBinSearchQuery = val.trim().toLowerCase();
     wmsRenderBinView();
-    // Update info bar
-    const infoEl  = document.getElementById('wmsBinSearchInfo');
-    const descEl  = document.getElementById('wmsBinSearchDesc');
-    const metaEl  = document.getElementById('wmsBinSearchMeta');
-    if (!wmsBinSearchQuery) {
-      if (infoEl) infoEl.style.display = 'none';
+    wmsUpdateBinLeftPanel();
+  };
+
+  function wmsUpdateBinLeftPanel() {
+    const q       = wmsBinSearchQuery;
+    const storeF  = document.getElementById('wmsFilterStoreBin')?.value || '';
+    const data    = wmsAllData.filter(r => !storeF || r.store_code === storeF);
+
+    // Hitung stats dari data yang sedang tampil
+    const filtered = q ? data.filter(r =>
+      `${r.variant||''} ${r.generic||''} ${r.name||''} ${r.brand||''} ${r.bin||''}`.toLowerCase().includes(q)
+    ) : data;
+
+    const totalSKU = filtered.length;
+    const totalQty = filtered.reduce((s,r) => s+(Number(r.qty)||0), 0);
+    const totalBin = new Set(filtered.map(r=>r.bin)).size;
+
+    safeSetText('bvTotalSKU', totalSKU.toLocaleString());
+    safeSetText('bvTotalQty', totalQty.toLocaleString());
+    safeSetText('bvTotalBin', totalBin.toLocaleString());
+
+    // Per CAT
+    const catColors = { 'F':'#818cf8','A':'#34d399','E':'#f472b6','G':'#fb923c','-':'#94a3b8' };
+    const catLabel  = { 'F':'FTW','A':'APP','E':'EQP','G':'GEAR' };
+    const catMap = {};
+    filtered.forEach(r => {
+      const c = r.cat || '-';
+      if (!catMap[c]) catMap[c] = { qty:0, sku:0 };
+      catMap[c].qty += Number(r.qty)||0;
+      catMap[c].sku++;
+    });
+    const catEl = document.getElementById('bvCatStats');
+    if (catEl) {
+      catEl.innerHTML = Object.entries(catMap).sort((a,b)=>b[1].sku-a[1].sku).map(([cat,v]) => {
+        const col = catColors[cat] || '#94a3b8';
+        return `<span class="bvcat-chip" style="color:${col};border-color:${col}44;background:${col}11;">
+          ${catLabel[cat]||cat} ${v.sku} <span style="opacity:0.7;">· ${v.qty}qty</span>
+        </span>`;
+      }).join('');
+    }
+
+    // Info produk — ambil match pertama
+    const prodEl = document.getElementById('wmsBinProductInfo');
+    if (!prodEl) return;
+
+    if (!q || !filtered.length) {
+      prodEl.innerHTML = `<div style="color:var(--muted);font-size:0.72rem;opacity:0.5;text-align:center;">
+        <div style="font-size:2rem;margin-bottom:8px;">🔍</div>
+        Scan atau ketik untuk<br>melihat info produk
+      </div>`;
       return;
     }
-    // Cari match pertama untuk tampilkan description
-    const match = wmsAllData.find(r =>
-      `${r.variant||''} ${r.generic||''} ${r.name||''} ${r.brand||''} ${r.bin||''}`.toLowerCase().includes(wmsBinSearchQuery)
-    );
-    if (match && infoEl) {
-      infoEl.style.display = 'block';
-      if (descEl) descEl.textContent = match.name || match.variant || '-';
-      if (metaEl) {
-        const matchCount = wmsAllData.filter(r =>
-          `${r.variant||''} ${r.generic||''} ${r.name||''} ${r.brand||''} ${r.bin||''}`.toLowerCase().includes(wmsBinSearchQuery)
-        ).length;
-        const binCount = new Set(wmsAllData.filter(r =>
-          `${r.variant||''} ${r.generic||''} ${r.name||''} ${r.brand||''} ${r.bin||''}`.toLowerCase().includes(wmsBinSearchQuery)
-        ).map(r => r.bin)).size;
-        metaEl.textContent = `${matchCount} SKU di ${binCount} BIN`;
+
+    // Ambil data produk dari match pertama
+    const first = filtered[0];
+    const name  = first.name || first.description || first.variant || '-';
+    const article = first.generic || first.variant || '-';
+    const brand = first.brand || '-';
+    const season = first.season || first.season_yr || '-';
+    const matchCount = totalSKU;
+    const binList = [...new Set(filtered.map(r => r.bin))].slice(0, 6);
+
+    // Coba ambil gambar dari MASTER_PRODUK (memProduk) jika ada field image_url
+    const prodRow = memProduk?.get(article) || memProduk?.get(first.generic);
+    const imgUrl  = prodRow?.image_url || prodRow?.img || '';
+
+    prodEl.innerHTML = `<div class="bv-product-card">
+      ${imgUrl
+        ? `<img class="bv-product-img" src="${imgUrl}" alt="${name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+           <div class="bv-product-img-placeholder" style="display:none;">👟</div>`
+        : `<div class="bv-product-img-placeholder">👟</div>`
       }
-    } else if (infoEl) {
-      infoEl.style.display = wmsBinSearchQuery ? 'block' : 'none';
-      if (descEl) descEl.textContent = '⚠️ Tidak ditemukan';
-      if (metaEl) metaEl.textContent = '';
-    }
-  };
+      <div class="bv-product-meta">
+        <div class="bv-product-name">${name}</div>
+        <div class="bv-product-article">${article}</div>
+        <div class="bv-product-sub">${brand} &nbsp;·&nbsp; ${season}</div>
+        <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px;">
+          ${binList.map(b => `<span style="padding:2px 7px;border-radius:5px;background:rgba(99,102,241,0.15);color:#a78bfa;font-size:0.6rem;font-weight:700;font-family:monospace;">${b}</span>`).join('')}
+          ${totalBin > 6 ? `<span style="font-size:0.6rem;color:var(--muted);">+${totalBin-6} lagi</span>` : ''}
+        </div>
+        <div style="margin-top:8px;font-size:0.65rem;color:var(--muted);">
+          Ditemukan di <strong style="color:var(--text);">${totalBin} BIN</strong> &nbsp;·&nbsp; Total <strong style="color:var(--text);">${totalQty} pcs</strong>
+        </div>
+      </div>
+    </div>`;
+  }
 
   window.wmsClearBinSearch = function() {
     const inp = document.getElementById('wmsBinSearchInput');
     if (inp) inp.value = '';
     wmsBinSearchQuery = '';
     wmsRenderBinView();
-    const infoEl = document.getElementById('wmsBinSearchInfo');
-    if (infoEl) infoEl.style.display = 'none';
+    wmsUpdateBinLeftPanel();
   };
 
   // ── BIN VIEW RENDER ──
