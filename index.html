@@ -417,14 +417,20 @@
     }
     .wms-filter-bar select:focus, .wms-filter-bar input:focus { border-color: #6366f1; }
     .wms-summary-bar {
-      display: flex; gap: 10px; flex-wrap: wrap;
+      display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
     }
     .wms-sum-card {
       background: var(--card); border: 1px solid var(--border); border-radius: 8px;
-      padding: 8px 14px; min-width: 100px;
+      padding: 6px 12px; min-width: 70px; text-align: center;
     }
-    .wms-sum-card .sv { font-size: 1.2rem; font-weight: 700; color: #818cf8; }
-    .wms-sum-card .sl { font-size: 0.55rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .wms-sum-card .sv { font-size: 1.1rem; font-weight: 700; color: #818cf8; }
+    .wms-sum-card .sl { font-size: 0.52rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .wms-sum-card.cat-card { cursor: pointer; transition: all 0.15s; min-width: 60px; }
+    .wms-sum-card.cat-card:hover { border-color: var(--accent2); background: rgba(59,130,246,0.07); }
+    .wms-sum-card.cat-card.active { border-color: var(--accent); background: rgba(249,115,22,0.1); }
+    .wms-sum-card.cat-card.active .sv { color: var(--accent); font-size: 0.92rem; }
+    .wms-sum-card.cat-card .sv { font-size: 0.92rem; }
+    .wms-sum-sep { width: 1px; height: 32px; background: var(--border); margin: 0 2px; }
     .wms-table-wrap { flex: 1; overflow: auto; border-radius: 10px; border: 1px solid var(--border); background: var(--card); }
     .wms-table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
     .wms-table thead { position: sticky; top: 0; background: #14161f; z-index: 5; }
@@ -924,25 +930,36 @@
 
     <!-- ── PANEL STOK ── -->
     <div class="wms-panel active" id="wmsPanel-stok">
-      <div class="wms-filter-bar">
-        <!-- Toggle toko: hanya muncul untuk role TOKO, ADMIN tetap pakai dropdown -->
-        <div id="wmsStoreToggleStok" style="display:none;gap:4px;display:none;">
-          <button id="btnStokOwn" class="wms-store-toggle active" onclick="wmsSetStoreFilter('stok','own')"></button>
-          <button id="btnStokAll" class="wms-store-toggle" onclick="wmsSetStoreFilter('stok','all')">🌐 Semua Toko</button>
+      <div class="wms-filter-bar" style="flex-direction:column;gap:8px;align-items:stretch;">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <!-- Toggle toko -->
+          <div id="wmsStoreToggleStok" style="display:none;gap:4px;">
+            <button id="btnStokOwn" class="wms-store-toggle active" onclick="wmsSetStoreFilter('stok','own')"></button>
+            <button id="btnStokAll" class="wms-store-toggle" onclick="wmsSetStoreFilter('stok','all')">🌐 Semua Toko</button>
+          </div>
+          <select id="wmsFilterStore" onchange="wmsApplyFilter()" style="display:none;">
+            <option value="">🏪 Semua Toko</option>
+          </select>
+          <!-- Hidden selects (masih dipakai JS tapi tidak tampil) -->
+          <select id="wmsFilterBin" onchange="wmsApplyFilter()" style="display:none;"></select>
+          <select id="wmsFilterCat" onchange="wmsApplyFilter()" style="display:none;"></select>
         </div>
-        <select id="wmsFilterStore" onchange="wmsApplyFilter()" style="display:none;">
-          <option value="">🏪 Semua Toko</option>
-        </select>
-        <select id="wmsFilterBin" onchange="wmsApplyFilter()">
-          <option value="">📦 Semua BIN</option>
-        </select>
-        <select id="wmsFilterCat" onchange="wmsApplyFilter()">
-          <option value="">🏷 Semua CAT</option>
-        </select>
+        <!-- Statistik ringkasan + per CAT -->
         <div class="wms-summary-bar" id="wmsSummaryBar">
-          <div class="wms-sum-card"><div class="sv" id="wmsTotalSKU">0</div><div class="sl">Total SKU</div></div>
-          <div class="wms-sum-card"><div class="sv" id="wmsTotalQty">0</div><div class="sl">Total Qty</div></div>
-          <div class="wms-sum-card"><div class="sv" id="wmsTotalBin">0</div><div class="sl">Total BIN</div></div>
+          <div class="wms-sum-card">
+            <div class="sv" id="wmsTotalSKU">0</div>
+            <div class="sl">Total SKU</div>
+          </div>
+          <div class="wms-sum-card">
+            <div class="sv" id="wmsTotalQty">0</div>
+            <div class="sl">Total Qty</div>
+          </div>
+          <div class="wms-sum-card">
+            <div class="sv" id="wmsTotalBin">0</div>
+            <div class="sl">Total BIN</div>
+          </div>
+          <!-- Stat per CAT: dirender dinamis oleh wmsUpdateSummary -->
+          <div id="wmsCatStats" style="display:contents;"></div>
         </div>
       </div>
       <div class="wms-table-wrap">
@@ -3388,13 +3405,57 @@
   }
 
   function wmsUpdateSummary() {
-    const data  = wmsFilteredData.length ? wmsFilteredData : wmsAllData;
+    const data     = wmsFilteredData.length || document.getElementById('wmsSearchBar')?.value
+                     ? wmsFilteredData : wmsAllData;
     const totalQty = data.reduce((s, r) => s + (Number(r.qty) || 0), 0);
     const totalBin = new Set(data.map(r => r.bin)).size;
     safeSetText('wmsTotalSKU', data.length.toLocaleString());
     safeSetText('wmsTotalQty', totalQty.toLocaleString());
     safeSetText('wmsTotalBin', totalBin.toLocaleString());
+
+    // Stat per CAT — dihitung dari wmsAllData (bukan filtered) agar angka tetap
+    const activeCat = document.getElementById('wmsFilterCat')?.value || '';
+    const catMap = {};
+    wmsFilteredData.forEach(r => {
+      const cat = r.cat || '-';
+      if (!catMap[cat]) catMap[cat] = { qty: 0, sku: 0 };
+      catMap[cat].qty += Number(r.qty) || 0;
+      catMap[cat].sku++;
+    });
+
+    // Label mapping cat code → nama
+    const catLabel = { 'F':'Footwear','A':'Apparel','E':'Equipment','G':'Gear','-':'Lainnya' };
+    const catColors = { 'F':'#818cf8','A':'#34d399','E':'#f472b6','G':'#fb923c','-':'#94a3b8' };
+
+    const catEl = document.getElementById('wmsCatStats');
+    if (!catEl) return;
+
+    const cats = Object.keys(catMap).sort();
+    if (!cats.length) { catEl.innerHTML = ''; return; }
+
+    catEl.innerHTML = `<div class="wms-sum-sep"></div>` + cats.map(cat => {
+      const { qty, sku } = catMap[cat];
+      const label  = catLabel[cat] || cat;
+      const color  = catColors[cat] || '#818cf8';
+      const isAct  = activeCat === cat;
+      return `<div class="wms-sum-card cat-card ${isAct ? 'active' : ''}"
+          onclick="wmsFilterByCat('${cat}')"
+          style="border-top: 3px solid ${color}40;"
+          title="Filter by CAT ${cat} — klik lagi untuk reset">
+          <div class="sv" style="color:${color};">${sku.toLocaleString()}</div>
+          <div class="sl">${label}</div>
+          <div style="font-size:0.5rem;color:var(--muted);margin-top:1px;">${qty.toLocaleString()} qty</div>
+        </div>`;
+    }).join('');
   }
+
+  window.wmsFilterByCat = function(cat) {
+    const sel = document.getElementById('wmsFilterCat');
+    if (!sel) return;
+    // Toggle: klik lagi = reset filter
+    sel.value = sel.value === cat ? '' : cat;
+    wmsApplyFilter();
+  };
 
   function wmsRenderStokTable() {
     const tbody = document.getElementById('wmsStokBody');
@@ -3727,7 +3788,23 @@
       binMap[key].qty += Number(r.qty) || 0;
     });
 
-    const bins = Object.values(binMap).sort((a, b) => a.bin.localeCompare(b.bin));
+    const bins = Object.values(binMap).sort((a, b) => {
+      // Match pencarian → selalu paling atas
+      const aHL = wmsBinSearchQuery && a.items.some(r =>
+        `${r.variant||''} ${r.generic||''} ${r.name||''} ${r.brand||''} ${a.bin}`.toLowerCase().includes(wmsBinSearchQuery));
+      const bHL = wmsBinSearchQuery && b.items.some(r =>
+        `${r.variant||''} ${r.generic||''} ${r.name||''} ${r.brand||''} ${b.bin}`.toLowerCase().includes(wmsBinSearchQuery));
+      if (aHL && !bHL) return -1;
+      if (!aHL && bHL) return  1;
+      // Sesama match: sort by jumlah match terbanyak dulu
+      if (aHL && bHL) {
+        const ac = a.items.filter(r => `${r.variant||''} ${r.generic||''} ${r.name||''} ${r.brand||''}`.toLowerCase().includes(wmsBinSearchQuery)).length;
+        const bc = b.items.filter(r => `${r.variant||''} ${r.generic||''} ${r.name||''} ${r.brand||''}`.toLowerCase().includes(wmsBinSearchQuery)).length;
+        if (bc !== ac) return bc - ac;
+      }
+      // Default: urut alfabet bin
+      return a.bin.localeCompare(b.bin);
+    });
     if (!bins.length) { grid.innerHTML = '<span style="color:var(--muted);font-size:0.72rem;">Tidak ada data</span>'; return; }
 
     grid.innerHTML = bins.map(b => {
