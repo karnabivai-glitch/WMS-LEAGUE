@@ -477,6 +477,20 @@
       0%,100% { box-shadow: 0 0 0 2px rgba(16,185,129,0.3); }
       50%      { box-shadow: 0 0 0 6px rgba(16,185,129,0.15), 0 0 20px rgba(16,185,129,0.4); }
     }
+    .wms-store-toggle {
+      padding: 5px 12px; border-radius: 7px; font-size: 0.68rem; font-weight: 700;
+      cursor: pointer; transition: all 0.18s;
+      border: 1px solid var(--border); background: var(--bg); color: var(--muted);
+      white-space: nowrap;
+    }
+    .wms-store-toggle.active {
+      background: rgba(249,115,22,0.15); color: var(--accent);
+      border-color: rgba(249,115,22,0.5);
+    }
+    .wms-store-toggle:not(.active):hover {
+      background: rgba(59,130,246,0.1); color: var(--accent2);
+      border-color: rgba(59,130,246,0.4);
+    }
     .wms-bin-card .bc-code { font-size: 1.1rem; font-weight: 900; color: #a78bfa; font-family: monospace; margin-bottom: 2px; letter-spacing: 0.02em; }
     .wms-bin-card .bc-store { font-size: 0.65rem; font-weight: 700; color: var(--accent2); margin-bottom: 5px; letter-spacing: 0.03em; }
     .wms-bin-card .bc-qty { font-size: 1.4rem; font-weight: 700; color: var(--text); line-height: 1; }
@@ -911,7 +925,12 @@
     <!-- ── PANEL STOK ── -->
     <div class="wms-panel active" id="wmsPanel-stok">
       <div class="wms-filter-bar">
-        <select id="wmsFilterStore" onchange="wmsApplyFilter()">
+        <!-- Toggle toko: hanya muncul untuk role TOKO, ADMIN tetap pakai dropdown -->
+        <div id="wmsStoreToggleStok" style="display:none;gap:4px;display:none;">
+          <button id="btnStokOwn" class="wms-store-toggle active" onclick="wmsSetStoreFilter('stok','own')"></button>
+          <button id="btnStokAll" class="wms-store-toggle" onclick="wmsSetStoreFilter('stok','all')">🌐 Semua Toko</button>
+        </div>
+        <select id="wmsFilterStore" onchange="wmsApplyFilter()" style="display:none;">
           <option value="">🏪 Semua Toko</option>
         </select>
         <select id="wmsFilterBin" onchange="wmsApplyFilter()">
@@ -945,7 +964,12 @@
     <!-- ── PANEL BIN VIEW ── -->
     <div class="wms-panel" id="wmsPanel-bin">
       <div class="wms-filter-bar" style="flex-wrap:wrap;gap:8px;">
-        <select id="wmsFilterStoreBin" onchange="wmsRenderBinView()">
+        <!-- Toggle toko untuk BIN VIEW -->
+        <div id="wmsStoreToggleBin" style="display:none;gap:4px;">
+          <button id="btnBinOwn" class="wms-store-toggle active" onclick="wmsSetStoreFilter('bin','own')"></button>
+          <button id="btnBinAll" class="wms-store-toggle" onclick="wmsSetStoreFilter('bin','all')">🌐 Semua Toko</button>
+        </div>
+        <select id="wmsFilterStoreBin" onchange="wmsRenderBinView()" style="display:none;">
           <option value="">🏪 Semua Toko</option>
         </select>
         <div style="flex:1;min-width:180px;position:relative;">
@@ -3194,16 +3218,18 @@
 
       wmsCurrentUser = {
         username:   udata.username,
-        role:       udata.role || 'TOKO',
+        role:       (udata.role || 'TOKO').toUpperCase(),
         store_code: udata.store_code || udata.username.toUpperCase(),
         store_name: udata.store_name || udata.username,
       };
-      document.getElementById('wmsLoginOverlay').classList.remove('show');
-      document.getElementById('wmsStoreBadge').textContent =
-        wmsCurrentUser.role === 'ADMIN' ? '👑 ADMIN' : `🏪 ${wmsCurrentUser.store_name}`;
-      document.getElementById('page-wms').classList.add('show');
-      updateStoreBadge();        // update badge di sidebar scan
-      refreshFirebaseCount();    // hitung ulang berdasarkan toko
+      // Tutup overlay login terpusat
+      document.getElementById('appLoginOverlay')?.classList.remove('show');
+      // Update WMS store badge
+      const wmsBadge = document.getElementById('wmsStoreBadge');
+      if (wmsBadge) wmsBadge.textContent = wmsCurrentUser.role === 'ADMIN' ? '👑 ADMIN' : `🏪 ${wmsCurrentUser.store_name}`;
+      updateStoreBadge();
+      refreshFirebaseCount();
+      applyRoleUI();
       await wmsLoadStores();
       await wmsLoadData();
       wmsPopulateSelects();
@@ -3226,8 +3252,28 @@
     }
   }
 
+  // ── STORE FILTER TOGGLE (untuk role TOKO) ──
+  window.wmsSetStoreFilter = function(panel, mode) {
+    const isOwn = mode === 'own';
+    const storeCode = wmsCurrentUser?.store_code || '';
+    const storeName = wmsCurrentUser?.store_name || storeCode;
+
+    if (panel === 'stok') {
+      document.getElementById('btnStokOwn')?.classList.toggle('active', isOwn);
+      document.getElementById('btnStokAll')?.classList.toggle('active', !isOwn);
+      const sel = document.getElementById('wmsFilterStore');
+      if (sel) { sel.value = isOwn ? storeCode : ''; }
+      wmsApplyFilter();
+    } else {
+      document.getElementById('btnBinOwn')?.classList.toggle('active', isOwn);
+      document.getElementById('btnBinAll')?.classList.toggle('active', !isOwn);
+      const sel = document.getElementById('wmsFilterStoreBin');
+      if (sel) { sel.value = isOwn ? storeCode : ''; }
+      wmsRenderBinView();
+    }
+  };
+
   function wmsPopulateSelects() {
-    // Semua role bisa lihat semua toko di filter (multistore view)
     const allStores = wmsStoreList.length ? wmsStoreList
       : [...new Set(wmsAllData.map(r => r.store_code))].map(c => ({
           code: c, name: wmsAllData.find(r => r.store_code === c)?.store_name || c
@@ -3235,25 +3281,60 @@
 
     const opts   = allStores.map(s => `<option value="${s.code}">${s.name || s.code}</option>`).join('');
     const allOpt = '<option value="">🏪 Semua Toko</option>';
+    const isAdmin = wmsCurrentUser?.role === 'ADMIN';
+    const storeCode = wmsCurrentUser?.store_code || '';
+    const storeName = wmsCurrentUser?.store_name || storeCode;
 
-    // Filter dropdowns — semua toko + option "Semua"
-    ['wmsFilterStore','wmsFilterStoreBin'].forEach(id => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.innerHTML = allOpt + opts;
-      // Pre-select toko sendiri untuk TOKO role
-      if (wmsCurrentUser?.role !== 'ADMIN') el.value = wmsCurrentUser?.store_code || '';
-    });
+    if (isAdmin) {
+      // ADMIN: pakai dropdown biasa semua toko
+      ['wmsFilterStore','wmsFilterStoreBin'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.innerHTML = allOpt + opts;
+        el.value = '';
+        el.style.display = '';
+      });
+      document.getElementById('wmsStoreToggleStok').style.display = 'none';
+      document.getElementById('wmsStoreToggleBin').style.display  = 'none';
+    } else {
+      // TOKO: sembunyikan dropdown, tampilkan toggle button
+      ['wmsFilterStore','wmsFilterStoreBin'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.innerHTML = allOpt + opts;
+        el.value = storeCode; // default toko sendiri
+        el.style.display = 'none';
+      });
+
+      // Setup tombol toko sendiri dengan nama toko
+      ['btnStokOwn','btnBinOwn'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.textContent = `🏪 ${storeName}`;
+      });
+
+      // Tampilkan toggle
+      const tStok = document.getElementById('wmsStoreToggleStok');
+      const tBin  = document.getElementById('wmsStoreToggleBin');
+      if (tStok) { tStok.style.display = 'flex'; }
+      if (tBin)  { tBin.style.display  = 'flex'; }
+
+      // Default: toko sendiri aktif di Stok, Semua Toko aktif di BIN View
+      document.getElementById('btnStokOwn')?.classList.add('active');
+      document.getElementById('btnStokAll')?.classList.remove('active');
+      document.getElementById('btnBinAll')?.classList.add('active');
+      document.getElementById('btnBinOwn')?.classList.remove('active');
+      const binSel = document.getElementById('wmsFilterStoreBin');
+      if (binSel) binSel.value = ''; // BIN View default semua
+    }
 
     // Action dropdowns (Jual/Move/Import Scan) — hanya toko sendiri
-    const ownStores = wmsCurrentUser?.role === 'ADMIN' ? allStores
-      : allStores.filter(s => s.code === wmsCurrentUser?.store_code);
-    const ownOpts = ownStores.map(s => `<option value="${s.code}">${s.name || s.code}</option>`).join('');
+    const ownStores = isAdmin ? allStores : allStores.filter(s => s.code === storeCode);
+    const ownOpts   = ownStores.map(s => `<option value="${s.code}">${s.name || s.code}</option>`).join('');
     ['wmsInbStore','wmsMoveStore','wmsScanStore'].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       el.innerHTML = ownOpts;
-      if (wmsCurrentUser?.role !== 'ADMIN' && ownStores.length) el.value = ownStores[0].code;
+      if (!isAdmin && ownStores.length) el.value = ownStores[0].code;
     });
   }
 
@@ -3267,13 +3348,6 @@
       wmsAllData = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
       if (!wmsStoreList.length) await wmsLoadStores();
       wmsPopulateSelects();
-      // Default filter ke toko sendiri untuk TOKO role
-      if (wmsCurrentUser?.role !== 'ADMIN') {
-        const storeSel = document.getElementById('wmsFilterStore');
-        if (storeSel) storeSel.value = wmsCurrentUser?.store_code || '';
-        const storeBinSel = document.getElementById('wmsFilterStoreBin');
-        if (storeBinSel) storeBinSel.value = wmsCurrentUser?.store_code || '';
-      }
       wmsApplyFilter();
       wmsRenderBinView();
       wmsUpdateSummary();
@@ -3492,8 +3566,8 @@
       `background:${pos.bg}`,`color:${pos.color}`,
       `font-size:${fs}px`,`font-weight:700`,
       `display:flex`,`align-items:center`,`justify-content:center`,
-      `border-radius:8px`,`padding:4px 10px`,`box-sizing:border-box`,
-      `overflow:hidden`,`user-select:none`,
+      `border-radius:8px`,`padding:4px 18px 4px 10px`,`box-sizing:border-box`,
+      `user-select:none`,
       `cursor:${wmsLayoutEdit ? 'move' : 'pointer'}`,
       `border:2px solid ${pos.color}44`,
       `box-shadow:0 2px 8px rgba(0,0,0,0.2)`,
