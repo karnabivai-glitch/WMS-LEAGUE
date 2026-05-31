@@ -953,8 +953,7 @@
       <div class="wms-logo">WMS <span>LEAGUE</span></div>
       <div class="wms-store-badge" id="wmsStoreBadge">-</div>
       <div class="wms-tabs">
-        <button class="wms-tab active" onclick="wmsShowPanel('stok')">📊 Stok</button>
-        <button class="wms-tab" onclick="wmsShowPanel('bin')">📦 BIN View</button>
+        <button class="wms-tab active" onclick="wmsShowPanel('bin')">📦 BIN View</button>
         <button class="wms-tab" onclick="wmsShowPanel('layout')">🗺️ Layout</button>
         <button class="wms-tab" onclick="wmsShowPanel('scan-import')">📱 Dari Scan</button>
         <button class="wms-tab" id="wmsTabAdmin" onclick="wmsShowPanel('admin')" style="display:none;">⚙️ Admin</button>
@@ -974,41 +973,8 @@
   <!-- BODY -->
   <div class="wms-body">
 
-    <!-- ── PANEL STOK ── -->
-    <div class="wms-panel active" id="wmsPanel-stok">
-      <div class="wms-filter-bar">
-        <div id="wmsStoreToggleStok" style="display:none;gap:4px;">
-          <button id="btnStokOwn" class="wms-store-toggle active" onclick="wmsSetStoreFilter('stok','own')"></button>
-          <button id="btnStokAll" class="wms-store-toggle" onclick="wmsSetStoreFilter('stok','all')">🌐 Semua Toko</button>
-        </div>
-        <select id="wmsFilterStore" onchange="wmsApplyFilter()" style="display:none;"><option value="">🏪 Semua Toko</option></select>
-        <select id="wmsFilterBin"  onchange="wmsApplyFilter()" style="display:none;"></select>
-        <select id="wmsFilterCat"  onchange="wmsApplyFilter()" style="display:none;"></select>
-        <div class="wms-summary-bar" id="wmsSummaryBar" style="margin-left:auto;">
-          <div class="wms-sum-card"><div class="sv" id="wmsTotalSKU">0</div><div class="sl">SKU</div></div>
-          <div class="wms-sum-card"><div class="sv" id="wmsTotalQty">0</div><div class="sl">Qty</div></div>
-          <div class="wms-sum-card"><div class="sv" id="wmsTotalBin">0</div><div class="sl">BIN</div></div>
-          <div id="wmsCatStats" style="display:contents;"></div>
-        </div>
-      </div>
-      <div class="wms-table-wrap">
-        <table class="wms-table">
-          <thead>
-            <tr>
-              <th>#</th><th>Toko</th><th>Generic</th><th>SKU/Variant</th>
-              <th>Nama</th><th>Cat</th><th>Size US</th><th>Size UK</th>
-              <th>BIN</th><th>Qty</th><th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="wmsStokBody">
-            <tr><td colspan="11" style="text-align:center;padding:40px;color:var(--muted);">Loading data...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
     <!-- ── PANEL BIN VIEW ── -->
-    <div class="wms-panel" id="wmsPanel-bin">
+    <div class="wms-panel active" id="wmsPanel-bin">
       <!-- Filter bar -->
       <div class="wms-filter-bar" style="flex-wrap:wrap;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0;">
         <div id="wmsStoreToggleBin" style="display:none;gap:4px;">
@@ -1041,7 +1007,8 @@
               <div class="bvstat-card"><div class="bvs-val" id="bvTotalQty">0</div><div class="bvs-lbl">Qty</div></div>
               <div class="bvstat-card"><div class="bvs-val" id="bvTotalBin">0</div><div class="bvs-lbl">BIN</div></div>
             </div>
-            <div id="bvCatStats" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
+            <!-- Cat chips: center, qty only -->
+            <div id="bvCatStats" style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;"></div>
           </div>
           <!-- Foto + detail produk langsung di bawah stats -->
           <div id="wmsBinProductInfo" style="flex:1;">
@@ -3327,20 +3294,20 @@
   window.wmsSetStoreFilter = function(panel, mode) {
     const isOwn = mode === 'own';
     const storeCode = wmsCurrentUser?.store_code || '';
-    const storeName = wmsCurrentUser?.store_name || storeCode;
 
     if (panel === 'stok') {
       document.getElementById('btnStokOwn')?.classList.toggle('active', isOwn);
       document.getElementById('btnStokAll')?.classList.toggle('active', !isOwn);
       const sel = document.getElementById('wmsFilterStore');
-      if (sel) { sel.value = isOwn ? storeCode : ''; }
+      if (sel) sel.value = isOwn ? storeCode : '';
       wmsApplyFilter();
     } else {
       document.getElementById('btnBinOwn')?.classList.toggle('active', isOwn);
       document.getElementById('btnBinAll')?.classList.toggle('active', !isOwn);
       const sel = document.getElementById('wmsFilterStoreBin');
-      if (sel) { sel.value = isOwn ? storeCode : ''; }
+      if (sel) sel.value = isOwn ? storeCode : '';
       wmsRenderBinView();
+      wmsUpdateBinLeftPanel();  // realtime stats update
     }
   };
 
@@ -3419,10 +3386,8 @@
       wmsAllData = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
       if (!wmsStoreList.length) await wmsLoadStores();
       wmsPopulateSelects();
-      wmsApplyFilter();
       wmsRenderBinView();
       wmsUpdateBinLeftPanel();
-      wmsUpdateSummary();
       showToast(`✅ ${wmsAllData.length.toLocaleString()} data stok dimuat`, 'success');
     } catch(e) { showToast('❌ Load gagal: ' + e.message, 'error'); }
   };
@@ -3808,7 +3773,7 @@
     if (catEl) {
       catEl.innerHTML = Object.entries(catMap).sort((a,b)=>b[1].sku-a[1].sku).map(([cat,v]) => {
         const col = catColors[cat] || '#94a3b8';
-        return `<span class="bvcat-chip" style="color:${col};border-color:${col}44;background:${col}11;">${catLabel[cat]||cat} ${v.sku}<span style="opacity:0.6;font-size:0.55rem;"> · ${v.qty}q</span></span>`;
+        return `<span class="bvcat-chip" style="color:${col};border-color:${col}44;background:${col}11;text-align:center;display:flex;flex-direction:column;align-items:center;min-width:38px;padding:3px 8px;"><span style="font-size:0.82rem;font-weight:800;">${v.qty}</span><span style="font-size:0.52rem;letter-spacing:0.05em;">${catLabel[cat]||cat}</span></span>`;
       }).join('');
     }
 
@@ -3825,7 +3790,9 @@
     const article = first.generic || first.variant || '-';
     const brand   = first.brand || '-';
     const season  = first.season || first.season_yr || '-';
-    const binList = [...new Set(filtered.map(r=>r.bin))].slice(0,8);
+    const binList    = [...new Set(filtered.map(r=>r.bin))].slice(0,8);
+    const sizeList   = [...new Set(filtered.map(r=>r.size_us||r.SIZE_US||'').filter(Boolean))].sort();
+    const sizeUKList = [...new Set(filtered.map(r=>r.size_uk||r.SIZE_UK||'').filter(Boolean))].sort();
     const prodRow = memProduk?.get(article) || memProduk?.get(first.generic);
     const imgUrl  = prodRow?.image_url || prodRow?.img || '';
 
@@ -3837,6 +3804,8 @@
         <div class="bv-product-name">${name}</div>
         <div class="bv-product-row"><span class="bv-product-lbl">Article</span><span class="bv-product-val mono">${article}</span></div>
         <div class="bv-product-row"><span class="bv-product-lbl">Brand</span><span class="bv-product-val">${brand}</span></div>
+        <div class="bv-product-row"><span class="bv-product-lbl">Size US</span><span class="bv-product-val mono">${sizeList.join(', ')||'-'}</span></div>
+        <div class="bv-product-row"><span class="bv-product-lbl">Size UK</span><span class="bv-product-val mono">${sizeUKList.join(', ')||'-'}</span></div>
         <div class="bv-product-row"><span class="bv-product-lbl">Season</span><span class="bv-product-val">${season}</span></div>
         <div class="bv-product-row"><span class="bv-product-lbl">BIN</span><span class="bv-product-val" style="display:flex;flex-wrap:wrap;gap:3px;">${binList.map(b=>`<span class="bv-bin-tag">${b}</span>`).join('')}${totalBin>8?`<span style="font-size:0.58rem;color:var(--muted);">+${totalBin-8}</span>`:''}</span></div>
         <div class="bv-product-row"><span class="bv-product-lbl">Total</span><span class="bv-product-val"><strong style="color:#34d399;">${totalQty} pcs</strong> &nbsp;·&nbsp; ${totalBin} BIN</span></div>
@@ -4278,6 +4247,7 @@
     const clickedTab = event?.target;
     if (clickedTab) clickedTab.classList.add('active');
     if (name === 'bin') { wmsRenderBinView(); wmsUpdateBinLeftPanel(); }
+    if (name === 'stok') { /* panel removed - noop */ }
     if (name === 'scan-import') wmsPreviewScan();
     if (name === 'layout') wmsRenderLayout();
     if (name === 'admin') wmsAdmInit();
