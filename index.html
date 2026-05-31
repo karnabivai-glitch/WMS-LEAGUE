@@ -1034,6 +1034,7 @@
       <div style="display:flex;flex:1;min-height:0;overflow:hidden;">
         <!-- PANEL KIRI: info produk -->
         <div id="wmsBinInfoPanel" style="width:260px;min-width:220px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid var(--border);overflow-y:auto;background:var(--card);">
+          <!-- Stats selalu tampil di atas -->
           <div style="padding:10px;border-bottom:1px solid var(--border);flex-shrink:0;">
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:8px;">
               <div class="bvstat-card"><div class="bvs-val" id="bvTotalSKU">0</div><div class="bvs-lbl">SKU</div></div>
@@ -1042,8 +1043,9 @@
             </div>
             <div id="bvCatStats" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
           </div>
-          <div id="wmsBinProductInfo" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;text-align:center;">
-            <div style="color:var(--muted);font-size:0.72rem;opacity:0.5;">
+          <!-- Foto + detail produk langsung di bawah stats -->
+          <div id="wmsBinProductInfo" style="flex:1;">
+            <div style="padding:24px;text-align:center;color:var(--muted);font-size:0.72rem;opacity:0.5;">
               <div style="font-size:2rem;margin-bottom:8px;">🔍</div>
               Scan atau ketik untuk<br>melihat info produk
             </div>
@@ -3778,11 +3780,9 @@
   };
 
   function wmsUpdateBinLeftPanel() {
-    const q       = wmsBinSearchQuery;
-    const storeF  = document.getElementById('wmsFilterStoreBin')?.value || '';
-    const data    = wmsAllData.filter(r => !storeF || r.store_code === storeF);
-
-    // Hitung stats dari data yang sedang tampil
+    const q      = wmsBinSearchQuery;
+    const storeF = document.getElementById('wmsFilterStoreBin')?.value || '';
+    const data   = wmsAllData.filter(r => !storeF || r.store_code === storeF);
     const filtered = q ? data.filter(r =>
       `${r.variant||''} ${r.generic||''} ${r.name||''} ${r.brand||''} ${r.bin||''}`.toLowerCase().includes(q)
     ) : data;
@@ -3795,7 +3795,6 @@
     safeSetText('bvTotalQty', totalQty.toLocaleString());
     safeSetText('bvTotalBin', totalBin.toLocaleString());
 
-    // Per CAT
     const catColors = { 'F':'#818cf8','A':'#34d399','E':'#f472b6','G':'#fb923c','-':'#94a3b8' };
     const catLabel  = { 'F':'FTW','A':'APP','E':'EQP','G':'GEAR' };
     const catMap = {};
@@ -3809,69 +3808,38 @@
     if (catEl) {
       catEl.innerHTML = Object.entries(catMap).sort((a,b)=>b[1].sku-a[1].sku).map(([cat,v]) => {
         const col = catColors[cat] || '#94a3b8';
-        return `<span class="bvcat-chip" style="color:${col};border-color:${col}44;background:${col}11;">
-          ${catLabel[cat]||cat} ${v.sku} <span style="opacity:0.7;">· ${v.qty}qty</span>
-        </span>`;
+        return `<span class="bvcat-chip" style="color:${col};border-color:${col}44;background:${col}11;">${catLabel[cat]||cat} ${v.sku}<span style="opacity:0.6;font-size:0.55rem;"> · ${v.qty}q</span></span>`;
       }).join('');
     }
 
-    // Info produk — ambil match pertama
     const prodEl = document.getElementById('wmsBinProductInfo');
     if (!prodEl) return;
 
     if (!q || !filtered.length) {
-      prodEl.innerHTML = `<div style="color:var(--muted);font-size:0.72rem;opacity:0.5;text-align:center;">
-        <div style="font-size:2rem;margin-bottom:8px;">🔍</div>
-        Scan atau ketik untuk<br>melihat info produk
-      </div>`;
+      prodEl.innerHTML = `<div style="padding:24px;text-align:center;color:var(--muted);font-size:0.72rem;opacity:0.5;"><div style="font-size:2rem;margin-bottom:8px;">🔍</div>Scan atau ketik untuk<br>melihat info produk</div>`;
       return;
     }
 
-    // Ambil data produk dari match pertama
-    const first = filtered[0];
-    const name  = first.name || first.description || first.variant || '-';
+    const first   = filtered[0];
+    const name    = first.name || first.description || first.variant || '-';
     const article = first.generic || first.variant || '-';
-    const brand = first.brand || '-';
-    const season = first.season || first.season_yr || '-';
-    const matchCount = totalSKU;
-    const binList = [...new Set(filtered.map(r => r.bin))].slice(0, 6);
-
-    // Coba ambil gambar dari MASTER_PRODUK (memProduk) jika ada field image_url
+    const brand   = first.brand || '-';
+    const season  = first.season || first.season_yr || '-';
+    const binList = [...new Set(filtered.map(r=>r.bin))].slice(0,8);
     const prodRow = memProduk?.get(article) || memProduk?.get(first.generic);
     const imgUrl  = prodRow?.image_url || prodRow?.img || '';
 
     prodEl.innerHTML = `<div class="bv-product-card">
       ${imgUrl
-        ? `<img class="bv-product-img" src="${imgUrl}" alt="${name}"
-             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-           <div class="bv-product-img-placeholder" style="display:none;">👟</div>`
-        : `<div class="bv-product-img-placeholder">👟</div>`
-      }
+        ? `<img class="bv-product-img" src="${imgUrl}" alt="${name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div class="bv-product-img-placeholder" style="display:none;">👟</div>`
+        : `<div class="bv-product-img-placeholder">👟</div>`}
       <div class="bv-product-detail">
         <div class="bv-product-name">${name}</div>
-        <div class="bv-product-row">
-          <span class="bv-product-lbl">Article</span>
-          <span class="bv-product-val mono">${article}</span>
-        </div>
-        <div class="bv-product-row">
-          <span class="bv-product-lbl">Brand</span>
-          <span class="bv-product-val">${brand}</span>
-        </div>
-        <div class="bv-product-row">
-          <span class="bv-product-lbl">Season</span>
-          <span class="bv-product-val">${season}</span>
-        </div>
-        <div class="bv-product-row">
-          <span class="bv-product-lbl">BIN</span>
-          <span class="bv-product-val" style="display:flex;flex-wrap:wrap;gap:3px;">
-            ${binList.map(b=>`<span class="bv-bin-tag">${b}</span>`).join('')}
-            ${totalBin > 6 ? `<span style="font-size:0.58rem;color:var(--muted);">+${totalBin-6}</span>` : ''}
-          </span>
-        </div>
-        <div class="bv-product-row">
-          <span class="bv-product-lbl">Total</span>
-          <span class="bv-product-val"><strong style="color:#34d399;">${totalQty} pcs</strong> di ${totalBin} BIN</span>
-        </div>
+        <div class="bv-product-row"><span class="bv-product-lbl">Article</span><span class="bv-product-val mono">${article}</span></div>
+        <div class="bv-product-row"><span class="bv-product-lbl">Brand</span><span class="bv-product-val">${brand}</span></div>
+        <div class="bv-product-row"><span class="bv-product-lbl">Season</span><span class="bv-product-val">${season}</span></div>
+        <div class="bv-product-row"><span class="bv-product-lbl">BIN</span><span class="bv-product-val" style="display:flex;flex-wrap:wrap;gap:3px;">${binList.map(b=>`<span class="bv-bin-tag">${b}</span>`).join('')}${totalBin>8?`<span style="font-size:0.58rem;color:var(--muted);">+${totalBin-8}</span>`:''}</span></div>
+        <div class="bv-product-row"><span class="bv-product-lbl">Total</span><span class="bv-product-val"><strong style="color:#34d399;">${totalQty} pcs</strong> &nbsp;·&nbsp; ${totalBin} BIN</span></div>
       </div>
     </div>`;
   }
@@ -4309,7 +4277,7 @@
     if (panel) panel.classList.add('active');
     const clickedTab = event?.target;
     if (clickedTab) clickedTab.classList.add('active');
-    if (name === 'bin') wmsRenderBinView();
+    if (name === 'bin') { wmsRenderBinView(); wmsUpdateBinLeftPanel(); }
     if (name === 'scan-import') wmsPreviewScan();
     if (name === 'layout') wmsRenderLayout();
     if (name === 'admin') wmsAdmInit();
