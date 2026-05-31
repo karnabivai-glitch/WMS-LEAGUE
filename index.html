@@ -956,6 +956,7 @@
         <button class="wms-tab active" onclick="wmsShowPanel('bin')">📦 BIN View</button>
         <button class="wms-tab" onclick="wmsShowPanel('layout')">🗺️ Layout</button>
         <button class="wms-tab" onclick="wmsShowPanel('scan-import')">📱 Dari Scan</button>
+        <button class="wms-tab" onclick="wmsShowPanel('log')">📋 Log</button>
         <button class="wms-tab" id="wmsTabAdmin" onclick="wmsShowPanel('admin')" style="display:none;">⚙️ Admin</button>
       </div>
     </div>
@@ -1093,7 +1094,44 @@
       </div>
     </div>
 
-    <!-- ── PANEL ADMIN ── -->
+    <!-- ── PANEL LOG ── -->
+    <div class="wms-panel" id="wmsPanel-log">
+      <div class="wms-filter-bar" style="gap:8px;">
+        <span style="font-size:0.72rem;font-weight:700;color:var(--muted);">📋 LOG TRANSAKSI</span>
+        <select id="wmsLogFilterStore" onchange="wmsLoadLog()" style="font-size:0.7rem;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);">
+          <option value="">🏪 Semua Toko</option>
+        </select>
+        <select id="wmsLogFilterType" onchange="wmsLoadLog()" style="font-size:0.7rem;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);">
+          <option value="">📂 Semua Tipe</option>
+          <option value="JUAL">💰 Jual</option>
+          <option value="MOVE">🔀 Move</option>
+          <option value="IMPORT">📱 Import Scan</option>
+          <option value="INBOUND">➕ Inbound</option>
+          <option value="UPLOAD">🔄 Upload</option>
+          <option value="CYCLE">🔁 Cycle Count</option>
+        </select>
+        <button onclick="wmsLoadLog()" style="padding:4px 12px;border-radius:6px;background:var(--accent2);color:#fff;border:none;font-size:0.65rem;cursor:pointer;">🔄 Refresh</button>
+        <span id="wmsLogCount" style="font-size:0.62rem;color:var(--muted);margin-left:auto;"></span>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:0;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.7rem;">
+          <thead style="position:sticky;top:0;background:#14161f;z-index:5;">
+            <tr style="border-bottom:2px solid var(--border);">
+              <th style="padding:8px 12px;text-align:left;color:var(--muted);font-size:0.6rem;font-weight:700;text-transform:uppercase;width:140px;">Waktu</th>
+              <th style="padding:8px 12px;text-align:left;color:var(--muted);font-size:0.6rem;font-weight:700;text-transform:uppercase;width:80px;">Tipe</th>
+              <th style="padding:8px 12px;text-align:left;color:var(--muted);font-size:0.6rem;font-weight:700;text-transform:uppercase;width:80px;">Toko</th>
+              <th style="padding:8px 12px;text-align:left;color:var(--muted);font-size:0.6rem;font-weight:700;text-transform:uppercase;">SKU / Keterangan</th>
+              <th style="padding:8px 12px;text-align:left;color:var(--muted);font-size:0.6rem;font-weight:700;text-transform:uppercase;width:60px;">BIN</th>
+              <th style="padding:8px 12px;text-align:center;color:var(--muted);font-size:0.6rem;font-weight:700;text-transform:uppercase;width:50px;">Qty</th>
+              <th style="padding:8px 12px;text-align:left;color:var(--muted);font-size:0.6rem;font-weight:700;text-transform:uppercase;width:70px;">User</th>
+            </tr>
+          </thead>
+          <tbody id="wmsLogBody">
+            <tr><td colspan="7" style="padding:40px;text-align:center;color:var(--muted);">Buka tab Log untuk memuat data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
     <div class="wms-panel" id="wmsPanel-admin">
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">
 
@@ -3208,7 +3246,8 @@
   let wmsFilteredData = [];
   let wmsScanMode     = 'upload';
   let wmsStoreList    = [];
-  let wmsBinSearchQuery    = '';   // state pencarian BIN VIEW
+  let wmsBinSearchQuery     = '';    // state pencarian BIN VIEW
+  let wmsBinShowAllCards    = false; // toggle tampilkan semua bin card
   let wmsBinScanDebounce   = null;
   let wmsLayoutScanDebounce = null;
 
@@ -3857,7 +3896,13 @@
     });
     if (!bins.length) { grid.innerHTML = '<span style="color:var(--muted);font-size:0.72rem;">Tidak ada data</span>'; return; }
 
-    grid.innerHTML = bins.map(b => {
+    const MAX_BIN_CARDS = 35;
+    const showAll  = wmsBinSearchQuery || wmsBinShowAllCards;
+    const binsShow = showAll ? bins : bins.slice(0, MAX_BIN_CARDS);
+    const hasMore  = !showAll && bins.length > MAX_BIN_CARDS;
+    if (wmsBinSearchQuery) wmsBinShowAllCards = false; // reset saat cari
+
+    grid.innerHTML = binsShow.map(b => {
       const skuCount  = b.items.length;
       const highlight = wmsBinSearchQuery && b.items.some(r =>
         `${r.variant||''} ${r.generic||''} ${r.name||''} ${r.brand||''} ${b.bin}`.toLowerCase().includes(wmsBinSearchQuery)
@@ -3875,13 +3920,28 @@
       </div>`;
     }).join('');
 
-    // Auto-scroll ke bin pertama yang highlighted
+    // Tombol tampilkan lebih banyak jika ada yang tersembunyi
+    if (hasMore) {
+      grid.innerHTML += `<div style="grid-column:1/-1;text-align:center;padding:12px;">
+        <button onclick="wmsBinShowAll()" style="padding:7px 20px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--muted);font-size:0.68rem;cursor:pointer;">
+          + Tampilkan ${bins.length - MAX_BIN_CARDS} BIN lainnya
+        </button>
+        <div style="font-size:0.58rem;color:var(--muted);margin-top:4px;">Gunakan pencarian untuk menemukan BIN tertentu</div>
+      </div>`;
+    }
+
+    // Scroll ke match pertama jika ada pencarian
     if (wmsBinSearchQuery) {
       setTimeout(() => {
         const first = grid.querySelector('.wms-bin-card.highlighted');
-        if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (first) first.scrollIntoView({ behavior:'smooth', block:'center' });
       }, 100);
     }
+  };
+
+  window.wmsBinShowAll = function() {
+    wmsBinShowAllCards = true;
+    wmsRenderBinView();
   };
 
   // Helper: highlight text dalam string
@@ -4246,14 +4306,100 @@
     if (panel) panel.classList.add('active');
     const clickedTab = event?.target;
     if (clickedTab) clickedTab.classList.add('active');
-    if (name === 'bin') { wmsRenderBinView(); wmsUpdateBinLeftPanel(); }
-    if (name === 'stok') { /* panel removed - noop */ }
+    if (name === 'bin')  { wmsRenderBinView(); wmsUpdateBinLeftPanel(); }
+    if (name === 'log')  { wmsLoadLog(); }
+    if (name === 'stok') { /* removed */ }
     if (name === 'scan-import') wmsPreviewScan();
     if (name === 'layout') wmsRenderLayout();
     if (name === 'admin') wmsAdmInit();
   };
 
-  // ═══════════════ WMS BIN LAYOUT ═══════════════
+  // ═══════════════ TRANSACTION LOG ═══════════════
+  const LOG_TYPE_STYLE = {
+    'JUAL':    { color:'#34d399', icon:'💰', bg:'rgba(52,211,153,0.1)'  },
+    'MOVE':    { color:'#fbbf24', icon:'🔀', bg:'rgba(251,191,36,0.1)'  },
+    'IMPORT':  { color:'#818cf8', icon:'📱', bg:'rgba(129,140,248,0.1)' },
+    'INBOUND': { color:'#60a5fa', icon:'➕', bg:'rgba(96,165,250,0.1)'  },
+    'UPLOAD':  { color:'#f472b6', icon:'🔄', bg:'rgba(244,114,182,0.1)' },
+    'CYCLE':   { color:'#fb923c', icon:'🔁', bg:'rgba(251,146,60,0.1)'  },
+  };
+
+  async function wmsWriteLog(type, data) {
+    if (!db) return;
+    try {
+      const { addDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+      await addDoc(collection(db, 'TRANSACTIONS'), {
+        type,
+        store_code:  data.store_code  || wmsCurrentUser?.store_code || '',
+        store_name:  data.store_name  || wmsCurrentUser?.store_name || '',
+        sku:         data.sku         || data.variant || '',
+        bin:         data.bin         || '',
+        bin_to:      data.bin_to      || '',
+        qty:         data.qty         || 0,
+        note:        data.note        || '',
+        user:        wmsCurrentUser?.username || 'UNKNOWN',
+        created_at:  new Date().toISOString(),
+      });
+    } catch(e) { console.warn('Log write failed:', e); }
+  }
+
+  window.wmsLoadLog = async function() {
+    if (!db) { showToast('❌ Firebase offline', 'error'); return; }
+    const tbody    = document.getElementById('wmsLogBody');
+    const countEl  = document.getElementById('wmsLogCount');
+    const storeF   = document.getElementById('wmsLogFilterStore')?.value || '';
+    const typeF    = document.getElementById('wmsLogFilterType')?.value  || '';
+    if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--muted);">⏳ Memuat log...</td></tr>`;
+    try {
+      const { orderBy, limit } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+      let q = collection(db, 'TRANSACTIONS');
+      const constraints = [orderBy('created_at','desc'), limit(200)];
+      if (storeF) constraints.unshift(where('store_code','==', storeF));
+      if (typeF)  constraints.unshift(where('type','==', typeF));
+      const snap = await getDocs(query(q, ...constraints));
+
+      if (countEl) countEl.textContent = `${snap.size} transaksi`;
+      if (snap.empty) {
+        if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--muted);">Belum ada transaksi</td></tr>`;
+        return;
+      }
+
+      if (tbody) tbody.innerHTML = snap.docs.map(d => {
+        const r   = d.data();
+        const ts  = r.created_at ? new Date(r.created_at).toLocaleString('id-ID',{dateStyle:'short',timeStyle:'short'}) : '-';
+        const st  = LOG_TYPE_STYLE[r.type] || { color:'#94a3b8', icon:'📝', bg:'transparent' };
+        const bin = r.bin_to ? `${r.bin} → ${r.bin_to}` : (r.bin || '-');
+        return `<tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:7px 12px;color:var(--muted);font-size:0.65rem;">${ts}</td>
+          <td style="padding:7px 12px;">
+            <span style="background:${st.bg};color:${st.color};border-radius:5px;padding:2px 8px;font-size:0.62rem;font-weight:700;white-space:nowrap;">
+              ${st.icon} ${r.type}
+            </span>
+          </td>
+          <td style="padding:7px 12px;font-size:0.65rem;color:var(--accent2);">${r.store_code||'-'}</td>
+          <td style="padding:7px 12px;font-family:monospace;font-size:0.67rem;">${r.sku||r.note||'-'}</td>
+          <td style="padding:7px 12px;font-size:0.65rem;color:#a78bfa;font-family:monospace;">${bin}</td>
+          <td style="padding:7px 12px;text-align:center;font-weight:700;color:${st.color};">${r.qty||'-'}</td>
+          <td style="padding:7px 12px;font-size:0.62rem;color:var(--muted);">${r.user||'-'}</td>
+        </tr>`;
+      }).join('');
+
+      // Populate store filter
+      const logStoreSel = document.getElementById('wmsLogFilterStore');
+      if (logStoreSel && logStoreSel.options.length <= 1) {
+        const stores = [...new Set(snap.docs.map(d => d.data().store_code).filter(Boolean))];
+        stores.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s; opt.textContent = s;
+          logStoreSel.appendChild(opt);
+        });
+        if (storeF) logStoreSel.value = storeF;
+      }
+    } catch(e) {
+      if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--red);">❌ ${e.message}</td></tr>`;
+    }
+  };
+  window.wmsLoadLog = wmsLoadLog;
   let wmsLayoutPos    = {};   // key "store|bin|floor" → {x,y,w,h,label,floor}
   let wmsLayoutDirty  = false;
   let wmsLayoutEdit   = false;
