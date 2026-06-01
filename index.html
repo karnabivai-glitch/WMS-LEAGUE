@@ -1019,9 +1019,9 @@
             </div>
           </div>
         </div>
-        <!-- PANEL KANAN: bin grid -->
-        <div style="flex:1;overflow-y:auto;padding:12px;min-height:0;">
-          <div class="wms-bin-grid" id="wmsBinGrid">
+        <!-- PANEL KANAN: bin grid tanpa scroll -->
+        <div style="flex:1;overflow:hidden;padding:12px;min-height:0;">
+          <div class="wms-bin-grid" id="wmsBinGrid" style="overflow:hidden;">
             <div style="color:var(--muted);font-size:0.72rem;">Load data dulu...</div>
           </div>
         </div>
@@ -3896,18 +3896,13 @@
     });
     if (!bins.length) { grid.innerHTML = '<span style="color:var(--muted);font-size:0.72rem;">Tidak ada data</span>'; return; }
 
-    const MAX_BIN_CARDS = 35;
-    const showAll  = wmsBinSearchQuery || wmsBinShowAllCards;
-    const binsShow = showAll ? bins : bins.slice(0, MAX_BIN_CARDS);
-    const hasMore  = !showAll && bins.length > MAX_BIN_CARDS;
-    if (wmsBinSearchQuery) wmsBinShowAllCards = false; // reset saat cari
+    const LIMIT    = 35;
+    const binsShow = wmsBinSearchQuery ? bins : bins.slice(0, LIMIT);
 
     grid.innerHTML = binsShow.map(b => {
-      const skuCount  = b.items.length;
-      const highlight = wmsBinSearchQuery && b.items.some(r =>
-        `${r.variant||''} ${r.generic||''} ${r.name||''} ${r.brand||''} ${b.bin}`.toLowerCase().includes(wmsBinSearchQuery)
-      );
-      // Hitung berapa item match
+      const skuCount   = b.items.length;
+      const highlight  = wmsBinSearchQuery && b.items.some(r =>
+        `${r.variant||''} ${r.generic||''} ${r.name||''} ${r.brand||''} ${b.bin}`.toLowerCase().includes(wmsBinSearchQuery));
       const matchCount = wmsBinSearchQuery ? b.items.filter(r =>
         `${r.variant||''} ${r.generic||''} ${r.name||''} ${r.brand||''} ${b.bin}`.toLowerCase().includes(wmsBinSearchQuery)
       ).length : 0;
@@ -3920,28 +3915,12 @@
       </div>`;
     }).join('');
 
-    // Tombol tampilkan lebih banyak jika ada yang tersembunyi
-    if (hasMore) {
-      grid.innerHTML += `<div style="grid-column:1/-1;text-align:center;padding:12px;">
-        <button onclick="wmsBinShowAll()" style="padding:7px 20px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--muted);font-size:0.68rem;cursor:pointer;">
-          + Tampilkan ${bins.length - MAX_BIN_CARDS} BIN lainnya
-        </button>
-        <div style="font-size:0.58rem;color:var(--muted);margin-top:4px;">Gunakan pencarian untuk menemukan BIN tertentu</div>
-      </div>`;
-    }
-
-    // Scroll ke match pertama jika ada pencarian
     if (wmsBinSearchQuery) {
       setTimeout(() => {
         const first = grid.querySelector('.wms-bin-card.highlighted');
         if (first) first.scrollIntoView({ behavior:'smooth', block:'center' });
       }, 100);
     }
-  };
-
-  window.wmsBinShowAll = function() {
-    wmsBinShowAllCards = true;
-    wmsRenderBinView();
   };
 
   // Helper: highlight text dalam string
@@ -4042,7 +4021,8 @@
         const found = wmsAllData.find(r => r._id === docId);
         if (found) found.qty = newQty;
       }
-      wmsCloseModal(); wmsApplyFilter(); wmsRenderBinView();
+      wmsCloseModal(); wmsRenderBinView(); wmsUpdateBinLeftPanel();
+      wmsWriteLog('JUAL', { store_code: item.store_code, store_name: item.store_name, sku: item.variant||item.sku||'', bin: item.bin, qty });
       showToast(`✅ Terjual ${qty} pcs. Sisa: ${newQty}`, 'success');
     } catch(e) { document.getElementById('wmsJualMsg').textContent = '❌ ' + e.message; }
   };
@@ -4097,7 +4077,8 @@
         await sd(doc(db, 'STOCK', newId), newDoc);
         wmsAllData.push({ _id: newId, ...newDoc });
       }
-      wmsCloseModal(); wmsApplyFilter(); wmsRenderBinView();
+      wmsCloseModal(); wmsRenderBinView(); wmsUpdateBinLeftPanel();
+      wmsWriteLog('MOVE', { store_code: item.store_code, store_name: item.store_name, sku: item.variant||item.sku||'', bin: item.bin, bin_to: toBin, qty });
       showToast(`✅ ${qty} pcs dipindah ke BIN ${toBin}`, 'success');
     } catch(e) { msgEl.textContent = '❌ ' + e.message; }
   };
@@ -4286,10 +4267,18 @@
         }
       }
 
-      wmsApplyFilter(); wmsRenderBinView();
-      const modeLabel = { upload:'Upload', inbound:'Inbound', cycle:'Cycle Count' }[wmsScanMode];
-      msgEl.textContent = `✅ ${modeLabel} selesai: ${addedCount} baru, ${updatedCount} update`;
-      showToast(`✅ WMS ${modeLabel} selesai!`, 'success');
+      wmsRenderBinView(); wmsUpdateBinLeftPanel();
+      const modeLabel = { upload:'UPLOAD', inbound:'INBOUND', cycle:'CYCLE' }[wmsScanMode];
+      const totalItems = Object.keys(pivot).length;
+      wmsWriteLog(modeLabel, {
+        store_code: store, store_name: storeObj?.name || store,
+        sku: `${totalItems} SKU`, bin: [...new Set(Object.values(pivot).map(p=>p.bin))].join(',').slice(0,100),
+        qty: Object.values(pivot).reduce((s,p)=>s+p.qty,0),
+        note: `${modeLabel}: ${addedCount} baru, ${updatedCount} update`
+      });
+      const modeLabelUI = { upload:'Upload', inbound:'Inbound', cycle:'Cycle Count' }[wmsScanMode];
+      msgEl.textContent = `✅ ${modeLabelUI} selesai: ${addedCount} baru, ${updatedCount} update`;
+      showToast(`✅ WMS ${modeLabelUI} selesai!`, 'success');
     } catch(e) {
       msgEl.textContent = '❌ ' + e.message;
       showToast('❌ Import gagal: ' + e.message, 'error');
@@ -4343,58 +4332,77 @@
     } catch(e) { console.warn('Log write failed:', e); }
   }
 
+  let wmsLogUnsubscribe = null; // realtime listener cleanup
+
   window.wmsLoadLog = async function() {
     if (!db) { showToast('❌ Firebase offline', 'error'); return; }
-    const tbody    = document.getElementById('wmsLogBody');
-    const countEl  = document.getElementById('wmsLogCount');
-    const storeF   = document.getElementById('wmsLogFilterStore')?.value || '';
-    const typeF    = document.getElementById('wmsLogFilterType')?.value  || '';
+    if (wmsLogUnsubscribe) { wmsLogUnsubscribe(); wmsLogUnsubscribe = null; }
+
+    const tbody   = document.getElementById('wmsLogBody');
+    const countEl = document.getElementById('wmsLogCount');
+    const typeF   = document.getElementById('wmsLogFilterType')?.value || '';
+    const storeSelF = document.getElementById('wmsLogFilterStore')?.value || '';
     if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--muted);">⏳ Memuat log...</td></tr>`;
+
     try {
-      const { orderBy, limit } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-      let q = collection(db, 'TRANSACTIONS');
-      const constraints = [orderBy('created_at','desc'), limit(200)];
-      if (storeF) constraints.unshift(where('store_code','==', storeF));
-      if (typeF)  constraints.unshift(where('type','==', typeF));
-      const snap = await getDocs(query(q, ...constraints));
+      const { orderBy, limit, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+      const isAdmin    = wmsCurrentUser?.role === 'ADMIN';
+      const myStore    = wmsCurrentUser?.store_code || '';
 
-      if (countEl) countEl.textContent = `${snap.size} transaksi`;
-      if (snap.empty) {
-        if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--muted);">Belum ada transaksi</td></tr>`;
-        return;
-      }
+      // Pakai query sederhana — hanya orderBy + limit (tidak butuh composite index)
+      // Filter toko & tipe dilakukan di client side
+      const q = query(collection(db, 'TRANSACTIONS'), orderBy('created_at','desc'), limit(500));
 
-      if (tbody) tbody.innerHTML = snap.docs.map(d => {
-        const r   = d.data();
-        const ts  = r.created_at ? new Date(r.created_at).toLocaleString('id-ID',{dateStyle:'short',timeStyle:'short'}) : '-';
-        const st  = LOG_TYPE_STYLE[r.type] || { color:'#94a3b8', icon:'📝', bg:'transparent' };
-        const bin = r.bin_to ? `${r.bin} → ${r.bin_to}` : (r.bin || '-');
-        return `<tr style="border-bottom:1px solid var(--border);">
-          <td style="padding:7px 12px;color:var(--muted);font-size:0.65rem;">${ts}</td>
-          <td style="padding:7px 12px;">
-            <span style="background:${st.bg};color:${st.color};border-radius:5px;padding:2px 8px;font-size:0.62rem;font-weight:700;white-space:nowrap;">
-              ${st.icon} ${r.type}
-            </span>
-          </td>
-          <td style="padding:7px 12px;font-size:0.65rem;color:var(--accent2);">${r.store_code||'-'}</td>
-          <td style="padding:7px 12px;font-family:monospace;font-size:0.67rem;">${r.sku||r.note||'-'}</td>
-          <td style="padding:7px 12px;font-size:0.65rem;color:#a78bfa;font-family:monospace;">${bin}</td>
-          <td style="padding:7px 12px;text-align:center;font-weight:700;color:${st.color};">${r.qty||'-'}</td>
-          <td style="padding:7px 12px;font-size:0.62rem;color:var(--muted);">${r.user||'-'}</td>
-        </tr>`;
-      }).join('');
+      wmsLogUnsubscribe = onSnapshot(q, (snap) => {
+        // Client-side filter
+        let docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (!isAdmin)  docs = docs.filter(r => r.store_code === myStore);
+        if (storeSelF) docs = docs.filter(r => r.store_code === storeSelF);
+        if (typeF)     docs = docs.filter(r => r.type === typeF);
+        docs = docs.slice(0, 200);
 
-      // Populate store filter
-      const logStoreSel = document.getElementById('wmsLogFilterStore');
-      if (logStoreSel && logStoreSel.options.length <= 1) {
-        const stores = [...new Set(snap.docs.map(d => d.data().store_code).filter(Boolean))];
-        stores.forEach(s => {
-          const opt = document.createElement('option');
-          opt.value = s; opt.textContent = s;
-          logStoreSel.appendChild(opt);
-        });
-        if (storeF) logStoreSel.value = storeF;
-      }
+        if (countEl) countEl.textContent = `${docs.length} transaksi`;
+
+        if (!docs.length) {
+          if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--muted);">Belum ada transaksi</td></tr>`;
+          return;
+        }
+
+        if (tbody) tbody.innerHTML = docs.map(r => {
+          const ts  = r.created_at ? new Date(r.created_at).toLocaleString('id-ID',{dateStyle:'short',timeStyle:'short'}) : '-';
+          const st  = LOG_TYPE_STYLE[r.type] || { color:'#94a3b8', icon:'📝', bg:'transparent' };
+          const bin = r.bin_to ? `${r.bin} → ${r.bin_to}` : (r.bin || '-');
+          return `<tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:6px 12px;color:var(--muted);font-size:0.63rem;white-space:nowrap;">${ts}</td>
+            <td style="padding:6px 12px;">
+              <span style="background:${st.bg};color:${st.color};border-radius:5px;padding:2px 7px;font-size:0.6rem;font-weight:700;white-space:nowrap;">${st.icon} ${r.type}</span>
+            </td>
+            <td style="padding:6px 12px;font-size:0.63rem;color:var(--accent2);white-space:nowrap;">${r.store_code||'-'}</td>
+            <td style="padding:6px 12px;font-family:monospace;font-size:0.65rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;">${r.sku||r.note||'-'}</td>
+            <td style="padding:6px 12px;font-size:0.63rem;color:#a78bfa;font-family:monospace;">${bin}</td>
+            <td style="padding:6px 12px;text-align:center;font-weight:700;color:${st.color};">${r.qty||'-'}</td>
+            <td style="padding:6px 12px;font-size:0.62rem;color:var(--muted);">${r.user||'-'}</td>
+          </tr>`;
+        }).join('');
+
+        // Populate store filter (admin only)
+        if (isAdmin) {
+          const logStoreSel = document.getElementById('wmsLogFilterStore');
+          if (logStoreSel) {
+            const existing = [...logStoreSel.options].map(o => o.value);
+            const stores   = [...new Set(snap.docs.map(d => d.data().store_code).filter(Boolean))];
+            stores.forEach(s => {
+              if (!existing.includes(s)) {
+                const opt = document.createElement('option');
+                opt.value = s; opt.textContent = s; logStoreSel.appendChild(opt);
+              }
+            });
+          }
+        }
+      }, (err) => {
+        console.error('Log listener error:', err);
+        if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--red);">❌ ${err.message}</td></tr>`;
+      });
     } catch(e) {
       if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--red);">❌ ${e.message}</td></tr>`;
     }
