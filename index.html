@@ -548,6 +548,10 @@
     .wms-bin-card .bc-qty { font-size: 1.4rem; font-weight: 700; color: var(--text); line-height: 1; }
     .wms-bin-card .bc-sku { font-size: 0.55rem; color: var(--muted); margin-top: 3px; }
 
+    /* Photo upload */
+    #photoDropZone.drag-over { border-color: var(--accent2); background: rgba(59,130,246,0.06); }
+    #photoDropZone:hover { border-color: var(--accent2); background: rgba(59,130,246,0.04); }
+
     /* Marker label di layout */
     .wms-marker {
       position: absolute; cursor: move; user-select: none;
@@ -920,6 +924,74 @@
       <div id="progressWrap"></div>
       <div id="logBox" style="max-height:200px;overflow-y:auto;font-size:0.7rem;margin-top:10px;"></div>
     </div>
+
+    <!-- UPLOAD FOTO PRODUK -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-top:16px;">
+      <h3>🖼️ Upload Foto Produk</h3>
+      <p style="font-size:0.68rem;color:var(--muted);margin:6px 0 14px;">Upload foto ke Firebase Storage. Foto akan ditampilkan di BIN View saat artikel dicari.</p>
+
+      <!-- Search artikel -->
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <input id="photoSearchInput" placeholder="🔍 Ketik Article / SKU..." style="flex:1;padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.75rem;"
+          oninput="photoSearchArticle(this.value)" />
+        <button onclick="photoSearchArticle(document.getElementById('photoSearchInput').value)" class="btn btn-upload" style="width:auto;padding:8px 14px;">Cari</button>
+      </div>
+
+      <!-- Hasil search artikel -->
+      <div id="photoArticleResults" style="display:none;max-height:180px;overflow-y:auto;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:12px;"></div>
+
+      <!-- Artikel terpilih + drop zone foto -->
+      <div id="photoUploadArea" style="display:none;">
+        <!-- Info artikel terpilih -->
+        <div id="photoSelectedArticle" style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:12px;">
+          <div id="photoCurrentThumb" style="width:60px;height:60px;border-radius:6px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:1.5rem;overflow:hidden;flex-shrink:0;">👟</div>
+          <div style="flex:1;min-width:0;">
+            <div id="photoArticleName" style="font-size:0.78rem;font-weight:700;color:var(--text);margin-bottom:2px;"></div>
+            <div id="photoArticleId" style="font-size:0.65rem;font-family:monospace;color:#a78bfa;"></div>
+            <div id="photoArticleBrand" style="font-size:0.62rem;color:var(--muted);margin-top:2px;"></div>
+          </div>
+          <button onclick="photoClearSelected()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:4px;">✕</button>
+        </div>
+
+        <!-- Drop zone foto -->
+        <div id="photoDropZone"
+          onclick="document.getElementById('photoFileInput').click()"
+          ondragover="event.preventDefault();this.classList.add('drag-over')"
+          ondragleave="this.classList.remove('drag-over')"
+          ondrop="event.preventDefault();this.classList.remove('drag-over');photoHandleFile(event.dataTransfer.files[0])"
+          style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:all 0.2s;margin-bottom:12px;">
+          <div style="font-size:2rem;margin-bottom:6px;">📸</div>
+          <div style="font-size:0.72rem;color:var(--muted);">Klik atau drag foto ke sini</div>
+          <div style="font-size:0.6rem;color:var(--muted);margin-top:4px;">JPG, PNG, WEBP · Maks 2MB</div>
+        </div>
+        <input type="file" id="photoFileInput" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="photoHandleFile(this.files[0])" />
+
+        <!-- Preview foto yang dipilih -->
+        <div id="photoPreviewArea" style="display:none;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <img id="photoPreviewImg" style="width:100px;height:100px;object-fit:contain;border-radius:8px;border:1px solid var(--border);background:#fff;" />
+            <div>
+              <div id="photoPreviewName" style="font-size:0.68rem;color:var(--muted);margin-bottom:4px;"></div>
+              <div id="photoPreviewSize" style="font-size:0.62rem;color:var(--muted);margin-bottom:8px;"></div>
+              <button onclick="photoUploadNow()" class="btn btn-upload" style="width:auto;padding:7px 16px;" id="photoUploadBtn">☁️ Upload ke Firebase</button>
+              <button onclick="photoCancelPreview()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:6px 10px;font-size:0.62rem;cursor:pointer;margin-left:6px;">Batal</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Progress upload -->
+        <div id="photoProgressArea" style="display:none;">
+          <div style="height:4px;background:var(--border);border-radius:99px;overflow:hidden;margin-bottom:6px;">
+            <div id="photoProgressBar" style="height:100%;background:linear-gradient(90deg,var(--accent2),var(--green));border-radius:99px;transition:width 0.3s;width:0%;"></div>
+          </div>
+          <div id="photoProgressLabel" style="font-size:0.65rem;color:var(--muted);text-align:center;"></div>
+        </div>
+      </div>
+
+      <!-- Status terakhir upload -->
+      <div id="photoStatusMsg" style="font-size:0.7rem;min-height:20px;margin-top:4px;"></div>
+    </div>
+
   </div>
 </div>
 
@@ -4848,6 +4920,173 @@
     wmsStopAutoRefresh(); _origWmsLogout();
   };
   // Already assigned above: window.cacheAllMasterData, window.clearMasterCache, window.refreshCacheUI
+
+  // ═══════════════ PHOTO UPLOAD — FIREBASE STORAGE ═══════════════
+  let photoSelectedDoc  = null;
+  let photoSelectedFile = null;
+  let photoSearchDebounce = null;
+
+  window.photoSearchArticle = function(val) {
+    clearTimeout(photoSearchDebounce);
+    photoSearchDebounce = setTimeout(async () => {
+      const q = val.trim();
+      const resultsEl = document.getElementById('photoArticleResults');
+      if (!resultsEl) return;
+      if (q.length < 2) { resultsEl.style.display = 'none'; return; }
+
+      // Cari dari memProduk (RAM) — cepat, tidak butuh Firebase
+      const matches = [];
+      memProduk.forEach((row, key) => {
+        if (matches.length >= 12) return;
+        const hay = `${key} ${row.Article||''} ${row.Description||''} ${row.Brand_Name||row.Brand||''}`.toLowerCase();
+        if (hay.includes(q.toLowerCase())) matches.push({ _id: key, ...row });
+      });
+
+      // Fallback Firebase
+      if (!matches.length && db) {
+        try {
+          const snap = await getDocs(query(collection(db, 'MASTER_PRODUK'), where('Article','>=', q.toUpperCase()), limit(12)));
+          snap.docs.forEach(d => matches.push({ _id: d.id, ...d.data() }));
+        } catch(e) {}
+      }
+
+      resultsEl.style.display = 'block';
+      if (!matches.length) {
+        resultsEl.innerHTML = `<div style="padding:12px;font-size:0.7rem;color:var(--muted);">Tidak ditemukan</div>`;
+        return;
+      }
+      resultsEl.innerHTML = matches.map(r => {
+        const art   = r.Article || r.article || r._id;
+        const name  = r.Description || r.description || r.Name || '-';
+        const brand = r.Brand_Name || r.Brand || r.brand || '';
+        return `<div onclick='photoSelectArticle(${JSON.stringify(JSON.stringify(r))})'
+          style="padding:9px 12px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);font-size:0.72rem;"
+          onmouseover="this.style.background='rgba(99,102,241,0.08)'" onmouseout="this.style.background=''">
+          <span style="font-size:1.1rem;">${r.image_url?'🖼️':'👟'}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-family:monospace;color:#a78bfa;">${art}</div>
+            <div style="color:var(--muted);font-size:0.62rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name} · ${brand}</div>
+          </div>
+          ${r.image_url?`<img src="${r.image_url}" style="width:36px;height:36px;object-fit:contain;border-radius:4px;background:#fff;flex-shrink:0;" onerror="this.style.display='none'" />`:''}
+        </div>`;
+      }).join('');
+    }, 250);
+  };
+
+  window.photoSelectArticle = function(jsonStr) {
+    const r = JSON.parse(jsonStr);
+    photoSelectedDoc  = r;
+    photoSelectedFile = null;
+    const art   = r.Article || r.article || r._id;
+    const name  = r.Description || r.description || r.Name || art;
+    const brand = r.Brand_Name || r.Brand || r.brand || '';
+    safeSetText('photoArticleName',  name);
+    safeSetText('photoArticleId',    art);
+    safeSetText('photoArticleBrand', brand);
+    const thumb = document.getElementById('photoCurrentThumb');
+    if (thumb) thumb.innerHTML = r.image_url
+      ? `<img src="${r.image_url}" style="width:100%;height:100%;object-fit:contain;border-radius:6px;" onerror="this.parentElement.innerHTML='👟'" />`
+      : '👟';
+    document.getElementById('photoArticleResults').style.display  = 'none';
+    document.getElementById('photoUploadArea').style.display      = 'block';
+    document.getElementById('photoPreviewArea').style.display     = 'none';
+    document.getElementById('photoProgressArea').style.display    = 'none';
+    document.getElementById('photoStatusMsg').textContent         = '';
+  };
+
+  window.photoClearSelected = function() {
+    photoSelectedDoc = null; photoSelectedFile = null;
+    document.getElementById('photoUploadArea').style.display    = 'none';
+    document.getElementById('photoSearchInput').value           = '';
+    document.getElementById('photoArticleResults').style.display= 'none';
+    document.getElementById('photoStatusMsg').textContent       = '';
+  };
+
+  window.photoHandleFile = function(file) {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { showToast('❌ Hanya JPG/PNG/WEBP', 'error'); return; }
+    if (file.size > 2*1024*1024)        { showToast('❌ Maks 2MB', 'error'); return; }
+    photoSelectedFile = file;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = document.getElementById('photoPreviewImg');
+      if (img) img.src = e.target.result;
+      safeSetText('photoPreviewName', file.name);
+      safeSetText('photoPreviewSize', `${(file.size/1024).toFixed(1)} KB · ${file.type.split('/')[1].toUpperCase()}`);
+      document.getElementById('photoPreviewArea').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  };
+
+  window.photoCancelPreview = function() {
+    photoSelectedFile = null;
+    document.getElementById('photoPreviewArea').style.display = 'none';
+    document.getElementById('photoFileInput').value = '';
+  };
+
+  window.photoUploadNow = async function() {
+    if (!photoSelectedDoc || !photoSelectedFile) { showToast('⚠️ Pilih artikel dan foto', 'error'); return; }
+    if (!db) { showToast('❌ Firebase belum terhubung', 'error'); return; }
+
+    const btn  = document.getElementById('photoUploadBtn');
+    const prog = document.getElementById('photoProgressArea');
+    const bar  = document.getElementById('photoProgressBar');
+    const lbl  = document.getElementById('photoProgressLabel');
+    const msg  = document.getElementById('photoStatusMsg');
+    if (btn)  btn.disabled = true;
+    if (prog) prog.style.display = 'block';
+    if (bar)  bar.style.width = '5%';
+    if (msg)  msg.textContent = '';
+
+    try {
+      const { getStorage, ref, uploadBytesResumable, getDownloadURL } =
+        await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js');
+      const { updateDoc, doc: fsDoc } =
+        await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+
+      const storage = getStorage();
+      const art     = photoSelectedDoc.Article || photoSelectedDoc.article || photoSelectedDoc._id;
+      const ext     = photoSelectedFile.type.split('/')[1].replace('jpeg','jpg');
+      const storRef = ref(storage, `products/${art}.${ext}`);
+      if (lbl) lbl.textContent = 'Mengupload...';
+
+      const task = uploadBytesResumable(storRef, photoSelectedFile, { contentType: photoSelectedFile.type });
+      task.on('state_changed',
+        s => {
+          const pct = Math.round(s.bytesTransferred / s.totalBytes * 100);
+          if (bar) bar.style.width = pct + '%';
+          if (lbl) lbl.textContent = `Mengupload... ${pct}%`;
+        },
+        err => {
+          if (msg) { msg.textContent = '❌ ' + err.message; msg.style.color = 'var(--red)'; }
+          if (prog) prog.style.display = 'none';
+          if (btn) btn.disabled = false;
+        },
+        async () => {
+          const url = await getDownloadURL(task.snapshot.ref);
+          if (lbl) lbl.textContent = 'Menyimpan URL...';
+          // Update Firestore
+          await updateDoc(fsDoc(db, 'MASTER_PRODUK', photoSelectedDoc._id), { image_url: url });
+          // Update RAM agar BIN View langsung tampil foto
+          const cached = memProduk.get(photoSelectedDoc._id) || memProduk.get(art);
+          if (cached) cached.image_url = url;
+          photoSelectedDoc.image_url = url;
+          // Update thumbnail
+          const thumb = document.getElementById('photoCurrentThumb');
+          if (thumb) thumb.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:contain;border-radius:6px;" />`;
+          if (prog) prog.style.display = 'none';
+          if (msg)  { msg.textContent = `✅ Foto berhasil diupload!`; msg.style.color = 'var(--green)'; }
+          photoCancelPreview();
+          showToast(`✅ Foto ${art} tersimpan!`, 'success');
+          if (btn) btn.disabled = false;
+        }
+      );
+    } catch(e) {
+      if (msg) { msg.textContent = '❌ ' + e.message; msg.style.color = 'var(--red)'; }
+      if (prog) prog.style.display = 'none';
+      if (btn) btn.disabled = false;
+    }
+  };
 
   renderScanTable(); updateScanStats(); renderBinCardsInPopup(); updateFirestoreStatus(); updateSyncStatusUI();
   setInterval(()=>{ updateScanStats(); updateFirestoreStatus(); updateSyncStatusUI(); },30000);
