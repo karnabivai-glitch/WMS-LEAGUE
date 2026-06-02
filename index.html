@@ -2349,7 +2349,7 @@
       const apiKey = apiKeyInput?.value.trim().replace(/[",\s]/g,'') || localStorage.getItem('fb_api_key');
       if (!apiKey) { errEl.textContent = '⚠️ Masukkan Firebase API Key dulu'; return; }
       try {
-        const app = initializeApp({ apiKey, authDomain:`${PROJECT_ID}.firebaseapp.com`, projectId:PROJECT_ID, storageBucket:`${PROJECT_ID}.appspot.com` });
+        const app = initializeApp({ apiKey, authDomain:`${PROJECT_ID}.firebaseapp.com`, projectId:PROJECT_ID, storageBucket:`${PROJECT_ID}.firebasestorage.app` });
         db = getFirestore(app);
         localStorage.setItem('fb_api_key', apiKey);
         if (apiKeyInput) apiKeyInput.closest('.app-login-firebase')?.classList.remove('show');
@@ -2911,7 +2911,7 @@
     if (!apiKey) { safeSetText('configStatus', '❌ API Key wajib diisi!'); return; }
     
     try {
-      const app = initializeApp({ apiKey, authDomain: `${PROJECT_ID}.firebaseapp.com`, projectId: PROJECT_ID, storageBucket: `${PROJECT_ID}.appspot.com` });
+      const app = initializeApp({ apiKey, authDomain: `${PROJECT_ID}.firebaseapp.com`, projectId: PROJECT_ID, storageBucket: `${PROJECT_ID}.firebasestorage.app` });
       db = getFirestore(app);
       
       const tb = writeBatch(db);
@@ -2995,7 +2995,7 @@
   const savedKey = localStorage.getItem('fb_api_key');
   if (savedKey) {
     try {
-      const app = initializeApp({ apiKey: savedKey, authDomain:`${PROJECT_ID}.firebaseapp.com`, projectId:PROJECT_ID, storageBucket:`${PROJECT_ID}.appspot.com` });
+      const app = initializeApp({ apiKey: savedKey, authDomain:`${PROJECT_ID}.firebaseapp.com`, projectId:PROJECT_ID, storageBucket:`${PROJECT_ID}.firebasestorage.app` });
       db = getFirestore(app);
       // Sembunyikan input API key di login overlay karena sudah tersimpan
       const fbStep = document.getElementById('loginFirebaseStep');
@@ -3026,7 +3026,7 @@
     const savedApiKey = localStorage.getItem('fb_api_key');
     if (!savedApiKey) return;
     try {
-      const app = initializeApp({ apiKey: savedApiKey, authDomain: `${PROJECT_ID}.firebaseapp.com`, projectId: PROJECT_ID, storageBucket: `${PROJECT_ID}.appspot.com` });
+      const app = initializeApp({ apiKey: savedApiKey, authDomain: `${PROJECT_ID}.firebaseapp.com`, projectId: PROJECT_ID, storageBucket: `${PROJECT_ID}.firebasestorage.app` });
       db = getFirestore(app);
       updateFirestoreStatus();
       autoSyncQueue();
