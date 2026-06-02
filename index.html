@@ -5041,26 +5041,48 @@
     try {
       const { getStorage, ref, uploadBytesResumable, getDownloadURL } =
         await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js');
+      const { getApp } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
       const { updateDoc, doc: fsDoc } =
         await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
 
-      const storage = getStorage(undefined, `gs://${PROJECT_ID}.appspot.com`);
+      // Pakai app instance yang sudah ada (sama dengan yang dipakai Firestore)
+      let fbApp;
+      try { fbApp = getApp(); } catch(e) { throw new Error('Firebase belum terhubung, sambungkan dulu'); }
+      const storage = getStorage(fbApp);
       const art     = photoSelectedDoc.Article || photoSelectedDoc.article || photoSelectedDoc._id;
       const ext     = photoSelectedFile.type.split('/')[1].replace('jpeg','jpg');
       const storRef = ref(storage, `products/${art}.${ext}`);
-      if (lbl) lbl.textContent = 'Mengupload...';
+      if (lbl) lbl.textContent = 'Menghubungi Storage...';
+
+      // Timeout: jika 10 detik masih 0% → kemungkinan rules blocking
+      let started = false;
+      const timeoutId = setTimeout(() => {
+        if (!started) {
+          if (msg) { msg.textContent = '❌ Upload tidak bisa dimulai. Pastikan Firebase Storage Rules sudah diset ke allow write: if true;'; msg.style.color = 'var(--red)'; }
+          if (prog) prog.style.display = 'none';
+          if (btn)  btn.disabled = false;
+        }
+      }, 10000);
 
       const task = uploadBytesResumable(storRef, photoSelectedFile, { contentType: photoSelectedFile.type });
       task.on('state_changed',
         s => {
+          started = true;
+          clearTimeout(timeoutId);
           const pct = Math.round(s.bytesTransferred / s.totalBytes * 100);
           if (bar) bar.style.width = pct + '%';
           if (lbl) lbl.textContent = `Mengupload... ${pct}%`;
         },
         err => {
-          if (msg) { msg.textContent = '❌ ' + err.message; msg.style.color = 'var(--red)'; }
+          clearTimeout(timeoutId);
+          const errMsg = err.code === 'storage/unauthorized'
+            ? '❌ Akses ditolak — set Storage Rules: allow write: if true'
+            : err.code === 'storage/unknown'
+            ? '❌ Storage error — cek CORS & bucket name di Firebase Console'
+            : '❌ ' + err.message;
+          if (msg) { msg.textContent = errMsg; msg.style.color = 'var(--red)'; }
           if (prog) prog.style.display = 'none';
-          if (btn) btn.disabled = false;
+          if (btn)  btn.disabled = false;
         },
         async () => {
           const url = await getDownloadURL(task.snapshot.ref);
