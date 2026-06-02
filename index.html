@@ -1034,7 +1034,8 @@
     </div>
     <div class="wms-topbar-right">
       <button class="wms-btn" onclick="switchPage('scan')" style="padding:6px 12px;font-size:0.65rem;background:rgba(249,115,22,0.15);color:var(--accent);border:1px solid rgba(249,115,22,0.3);" title="Kembali ke Scan">📱 SCAN</button>
-      <input class="wms-search-bar" id="wmsSearchBar" placeholder="🔍 Cari SKU / BIN / Brand..." oninput="wmsApplyFilter()" />
+      <input class="wms-search-bar" id="wmsSearchBar" placeholder="🔍 Cari SKU / BIN / Brand..."
+        oninput="const v=this.value;wmsBinSearchLive(v);const bi=document.getElementById('wmsBinSearchInput');if(bi)bi.value=v;" />
       <button class="wms-btn primary" onclick="wmsDownloadExcel()" style="padding:6px 10px;font-size:0.65rem;" title="Download Excel">📥</button>
       <button class="wms-btn primary" onclick="wmsLoadData()" style="padding:6px 10px;font-size:0.65rem;" title="Refresh data">🔄</button>
       <div style="display:flex;align-items:center;gap:4px;font-size:0.6rem;color:var(--green);font-weight:700;background:rgba(34,197,94,0.1);padding:4px 8px;border-radius:6px;" title="Auto-refresh 30 detik">
@@ -3443,15 +3444,15 @@
         el.value = '';
         el.style.display = '';
       });
-      document.getElementById('wmsStoreToggleStok').style.display = 'none';
-      document.getElementById('wmsStoreToggleBin').style.display  = 'none';
+      document.getElementById('wmsStoreToggleStok')?.style && (document.getElementById('wmsStoreToggleStok').style.display = 'none');
+      document.getElementById('wmsStoreToggleBin')?.style  && (document.getElementById('wmsStoreToggleBin').style.display  = 'none');
     } else {
       // TOKO: sembunyikan dropdown, tampilkan toggle button
       ['wmsFilterStore','wmsFilterStoreBin'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
         el.innerHTML = allOpt + opts;
-        el.value = storeCode; // default toko sendiri
+        el.value = storeCode;
         el.style.display = 'none';
       });
 
@@ -3461,19 +3462,18 @@
         if (btn) btn.textContent = `🏪 ${storeName}`;
       });
 
-      // Tampilkan toggle
-      const tStok = document.getElementById('wmsStoreToggleStok');
-      const tBin  = document.getElementById('wmsStoreToggleBin');
-      if (tStok) { tStok.style.display = 'flex'; }
-      if (tBin)  { tBin.style.display  = 'flex'; }
+      // Tampilkan/sembunyikan toggle buttons
+      document.getElementById('wmsStoreToggleStok')?.style && (document.getElementById('wmsStoreToggleStok').style.display = 'flex');
+      const tBin = document.getElementById('wmsStoreToggleBin');
+      if (tBin) tBin.style.display = 'flex';
 
-      // Default: toko sendiri aktif di Stok, Semua Toko aktif di BIN View
+      // Default: Semua Toko aktif di BIN View
       document.getElementById('btnStokOwn')?.classList.add('active');
       document.getElementById('btnStokAll')?.classList.remove('active');
       document.getElementById('btnBinAll')?.classList.add('active');
       document.getElementById('btnBinOwn')?.classList.remove('active');
       const binSel = document.getElementById('wmsFilterStoreBin');
-      if (binSel) binSel.value = ''; // BIN View default semua
+      if (binSel) binSel.value = '';
     }
 
     // Action dropdowns (Jual/Move/Import Scan) — hanya toko sendiri
@@ -3505,14 +3505,11 @@
 
   // ── FILTER & RENDER STOK TABLE ──
   window.wmsApplyFilter = function() {
-    const search   = (document.getElementById('wmsSearchBar')?.value || '').toLowerCase();
-    const store    = document.getElementById('wmsFilterStore')?.value || '';
-    const bin      = document.getElementById('wmsFilterBin')?.value  || '';
-    const cat      = document.getElementById('wmsFilterCat')?.value  || '';
-
+    const search = (document.getElementById('wmsSearchBar')?.value || '').toLowerCase();
+    const store  = document.getElementById('wmsFilterStore')?.value || '';
+    const cat    = document.getElementById('wmsFilterCat')?.value   || '';
     wmsFilteredData = wmsAllData.filter(r => {
       if (store && r.store_code !== store) return false;
-      if (bin   && r.bin        !== bin)   return false;
       if (cat   && r.cat        !== cat)   return false;
       if (search) {
         const hay = `${r.variant||''} ${r.generic||''} ${r.name||''} ${r.bin||''} ${r.brand||''}`.toLowerCase();
@@ -3520,10 +3517,7 @@
       }
       return true;
     });
-
-    wmsRenderStokTable();
-    wmsUpdateSummary();
-    wmsUpdateFilterOptions();
+    // Tidak perlu render stok table (panel sudah dihapus)
   };
 
   function wmsUpdateFilterOptions() {
