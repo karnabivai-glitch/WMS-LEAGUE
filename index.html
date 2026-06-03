@@ -3320,7 +3320,6 @@
   let wmsScanMode     = 'upload';
   let wmsStoreList    = [];
   let wmsBinSearchQuery     = '';    // state pencarian BIN VIEW
-  let wmsBinShowAllCards    = false; // toggle tampilkan semua bin card
   let wmsBinScanDebounce   = null;
   let wmsLayoutScanDebounce = null;
 
@@ -3891,10 +3890,13 @@
     }
 
     const first   = filtered[0];
-    const name    = first.name || first.description || first.variant || '-';
-    const article = first.generic || first.variant || '-';
-    const brand   = first.brand || '-';
-    const season  = first.season || first.season_yr || '-';
+    const name    = first.name || first.description || first.Description || first.variant || '-';
+    const article = first.generic || first.Generic || first.variant || '-';
+    const brand   = first.brand || first.Brand || first.brand_name || first.Brand_Name || '-';
+    // Season — cek semua kemungkinan field name dari STOCK dan MASTER_PRODUK
+    const prodMem = memProduk?.get(article) || memProduk?.get(first.generic) || memProduk?.get(first._id);
+    const season  = first.season || first.Season || first.season_yr || first.Season_Yr_
+                  || prodMem?.Season_Yr_ || prodMem?.SeasonYr || prodMem?.Season || '-';
     const binList    = [...new Set(filtered.map(r=>r.bin))].slice(0,8);
     const sizeList   = [...new Set(filtered.map(r=>r.size_us||r.SIZE_US||'').filter(Boolean))].sort();
     const sizeUKList = [...new Set(filtered.map(r=>r.size_uk||r.SIZE_UK||'').filter(Boolean))].sort();
@@ -3991,7 +3993,7 @@
     if (!bins.length) { grid.innerHTML = '<span style="color:var(--muted);font-size:0.72rem;">Tidak ada data</span>'; return; }
 
     const LIMIT    = 35;
-    const binsShow = wmsBinSearchQuery ? bins : bins.slice(0, LIMIT);
+    const binsShow = bins.slice(0, LIMIT); // selalu 35, tidak ada auto-expand
 
     grid.innerHTML = binsShow.map(b => {
       const skuCount   = b.items.length;
@@ -4336,7 +4338,8 @@
           store_code: store, store_name: storeObj?.name || store,
           generic: item.generic, cat: item.cat, variant: item.sku, sku: item.sku,
           name: item.desc, brand: item.brand, size_us: item.size_us, size_uk: item.size_uk,
-          bin: item.bin, updated_at: new Date().toISOString(),
+          bin: item.bin, season: item.season || '',
+          updated_at: new Date().toISOString(),
         };
 
         if (wmsScanMode === 'inbound') {
