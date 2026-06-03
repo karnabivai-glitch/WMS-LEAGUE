@@ -3899,7 +3899,35 @@
     const sizeList   = [...new Set(filtered.map(r=>r.size_us||r.SIZE_US||'').filter(Boolean))].sort();
     const sizeUKList = [...new Set(filtered.map(r=>r.size_uk||r.SIZE_UK||'').filter(Boolean))].sort();
     const prodRow = memProduk?.get(article) || memProduk?.get(first.generic);
-    const imgUrl  = prodRow?.image_url || prodRow?.img || '';
+    let imgUrl    = prodRow?.image_url || prodRow?.img || '';
+
+    // Jika tidak ada di RAM, coba fetch dari Firestore (async, update UI saat dapat)
+    if (!imgUrl && db && (prodRow || first.generic)) {
+      const docId = prodRow?._id || first.generic || article;
+      getDoc(doc(db, 'MASTER_PRODUK', docId)).then(snap => {
+        if (snap.exists() && snap.data().image_url) {
+          const url = snap.data().image_url;
+          // Update RAM agar tidak fetch lagi
+          if (prodRow) prodRow.image_url = url;
+          // Update UI langsung
+          const imgEl = document.querySelector('#wmsBinProductInfo .bv-product-img');
+          const phEl  = document.querySelector('#wmsBinProductInfo .bv-product-img-placeholder');
+          if (imgEl) { imgEl.src = url; imgEl.style.display = ''; if (phEl) phEl.style.display = 'none'; }
+          else {
+            const ph = document.querySelector('#wmsBinProductInfo .bv-product-img-placeholder');
+            if (ph) {
+              const img = document.createElement('img');
+              img.className = 'bv-product-img';
+              img.src = url;
+              img.alt = name;
+              img.onerror = () => { img.style.display = 'none'; ph.style.display = 'flex'; };
+              ph.parentElement.insertBefore(img, ph);
+              ph.style.display = 'none';
+            }
+          }
+        }
+      }).catch(() => {});
+    }
 
     prodEl.innerHTML = `<div class="bv-product-card">
       ${imgUrl
@@ -5082,7 +5110,9 @@
           const url = await getDownloadURL(task.snapshot.ref);
           if (lbl) lbl.textContent = 'Menyimpan URL...';
           // Update Firestore
-          await updateDoc(fsDoc(db, 'MASTER_PRODUK', photoSelectedDoc._id), { image_url: url });
+          await updateDoc(fsDoc(db, 'MASTER_PRODUK', photoSelectedDoc._id), { image_url: url, updatedAt: new Date().toISOString() });
+          // Invalidate IDB cache timestamp agar next "Cek & Update Cache" re-download MASTER_PRODUK
+          if (idb) await idbPut(STORE_META, { key: `cache_time_MASTER_PRODUK`, value: null }).catch(()=>{});
           // Update RAM agar BIN View langsung tampil foto
           const cached = memProduk.get(photoSelectedDoc._id) || memProduk.get(art);
           if (cached) cached.image_url = url;
