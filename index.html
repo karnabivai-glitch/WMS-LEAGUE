@@ -20,19 +20,20 @@
     
     .sidebar {
       width: var(--sidebar-width); min-width: var(--sidebar-width);
-      height: 100vh; background: var(--card);
-      border-right: 2px solid var(--border);
+      height: 100vh; background: #1E3A5F;
+      border-right: 2px solid rgba(255,255,255,0.08);
       display: flex; flex-direction: column;
       overflow: hidden;
       padding: 10px 10px 8px; gap: 6px; z-index: 10;
+      box-shadow: 4px 0 15px rgba(0,0,0,0.15);
     }
-    .sidebar-header { text-align: center; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
-    .sidebar-header h1 { font-size: 0.88rem; font-weight: 700; }
-    .sidebar-header h1 span { color: var(--accent); }
-    .sidebar-header .subtitle { font-size: 0.54rem; color: var(--muted); margin-top: 1px; }
+    .sidebar-header { text-align: center; padding-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .sidebar-header h1 { font-size: 0.88rem; font-weight: 700; color: #F1F5F9; }
+    .sidebar-header h1 span { color: #60A5FA; }
+    .sidebar-header .subtitle { font-size: 0.54rem; color: rgba(255,255,255,0.5); margin-top: 1px; }
     
     .sidebar-section {
-      background: var(--bg); border: 1px solid var(--border);
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
       border-radius: 10px; padding: 9px 10px;
     }
     .sidebar-section h3 {
@@ -82,7 +83,7 @@
       padding: 1px 5px; border-radius: 3px; font-size: 0.55rem; font-family: monospace; color: #a78bfa;
     }
     
-    .main-content { flex: 1; height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding: 14px; }
+    .main-content { flex: 1; height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding: 14px; background: linear-gradient(135deg, #0C2340 0%, #1A3A5C 50%, #0C2340 100%); }
     
     .main-header {
       display: flex; justify-content: space-between; align-items: center;
@@ -369,21 +370,22 @@
     /* WMS Page Layout */
     #page-wms {
       display: none; position: fixed; inset: 0;
-      background: var(--bg); z-index: 100; overflow: hidden;
+      background: linear-gradient(135deg, #0C2340 0%, #1A3A5C 50%, #0C2340 100%);
+      z-index: 100; overflow: hidden;
       flex-direction: column;
     }
     #page-wms.show { display: flex; }
     .wms-topbar {
       display: flex; align-items: center; gap: 10px;
-      padding: 8px 16px; background: var(--card);
-      border-bottom: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap;
+      padding: 8px 16px; background: #1E3A5F;
+      border-bottom: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; flex-wrap: wrap;
     }
     .wms-topbar-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
-    .wms-logo { font-size: 0.85rem; font-weight: 800; letter-spacing: 1px; color: var(--text); }
-    .wms-logo span { color: #818cf8; }
+    .wms-logo { font-size: 0.85rem; font-weight: 800; letter-spacing: 1px; color: #F1F5F9; }
+    .wms-logo span { color: #60A5FA; }
     .wms-store-badge {
-      background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3);
-      color: #818cf8; font-size: 0.62rem; font-weight: 700;
+      background: rgba(96,165,250,0.15); border: 1px solid rgba(96,165,250,0.25);
+      color: #93C5FD; font-size: 0.62rem; font-weight: 700;
       padding: 3px 8px; border-radius: 99px; letter-spacing: 0.5px;
     }
     .wms-tabs { display: flex; gap: 4px; }
@@ -391,14 +393,14 @@
       padding: 6px 12px; border-radius: 6px; font-size: 0.68rem; font-weight: 600;
       border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; transition: 0.15s;
     }
-    .wms-tab.active { background: #6366f1; color: #fff; border-color: #6366f1; }
-    .wms-tab:hover:not(.active) { background: rgba(99,102,241,0.1); color: var(--text); }
+    .wms-tab.active { background: #1A56DB; color: #fff; border-color: #1A56DB; }
+    .wms-tab:hover:not(.active) { background: rgba(255,255,255,0.06); color: #F1F5F9; }
     .wms-topbar-right { display: flex; align-items: center; gap: 6px; }
     .wms-search-bar {
       padding: 6px 12px; border-radius: 7px; border: 1px solid var(--border);
       background: var(--bg); color: var(--text); font-size: 0.78rem; width: 200px; outline: none;
     }
-    .wms-search-bar:focus { border-color: #6366f1; }
+    .wms-search-bar:focus { border-color: #93C5FD; box-shadow: 0 0 0 3px rgba(96,165,250,0.15); }
 
     /* WMS Content Area */
     .wms-body { flex: 1; overflow: hidden; display: flex; min-height: 0; }
@@ -411,7 +413,9 @@
     /* Stok Panel */
     .wms-filter-bar {
       display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
-      background: var(--card); border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
       padding: 8px 14px; flex-shrink: 0;
     }
     .wms-filter-bar select, .wms-filter-bar input {
@@ -423,17 +427,19 @@
       display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
     }
     .wms-sum-card {
-      background: var(--card); border: 1px solid var(--border); border-radius: 8px;
-      padding: 6px 12px; min-width: 70px; text-align: center;
+      background: linear-gradient(145deg, #2C3E6B 0%, #3A5085 50%, #2C3E6B 100%);
+      border: 1px solid rgba(148,163,184,0.2); border-radius: 8px;
+      padding: 8px 14px; min-width: 70px; text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
-    .wms-sum-card .sv { font-size: 1.1rem; font-weight: 700; color: #818cf8; }
-    .wms-sum-card .sl { font-size: 0.52rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .wms-sum-card .sv { font-size: 1.15rem; font-weight: 700; color: #93C5FD; }
+    .wms-sum-card .sl { font-size: 0.52rem; color: rgba(148,163,184,0.7); text-transform: uppercase; letter-spacing: 0.05em; }
     .wms-sum-card.cat-card { cursor: pointer; transition: all 0.15s; min-width: 60px; }
-    .wms-sum-card.cat-card:hover { border-color: var(--accent2); background: rgba(59,130,246,0.07); }
-    .wms-sum-card.cat-card.active { border-color: var(--accent); background: rgba(249,115,22,0.1); }
-    .wms-sum-card.cat-card.active .sv { color: var(--accent); font-size: 0.92rem; }
+    .wms-sum-card.cat-card:hover { border-color: rgba(96,165,250,0.4); background: linear-gradient(145deg, #3A5085 0%, #4A6A9A 50%, #3A5085 100%); }
+    .wms-sum-card.cat-card.active { border-color: #F59E0B; background: linear-gradient(145deg, #3A5085 0%, #5C4A2A 50%, #3A5085 100%); }
+    .wms-sum-card.cat-card.active .sv { color: #FBBF24; font-size: 0.92rem; }
     .wms-sum-card.cat-card .sv { font-size: 0.92rem; }
-    .wms-sum-sep { width: 1px; height: 32px; background: var(--border); margin: 0 2px; }
+    .wms-sum-sep { width: 1px; height: 32px; background: rgba(148,163,184,0.2); margin: 0 2px; }
 
     /* BIN VIEW — panel kiri stat & produk */
     .bvstat-card {
@@ -450,31 +456,32 @@
     .bv-product-card { width: 100%; display: flex; flex-direction: column; }
     .bv-product-img {
       width: 100%; aspect-ratio: 4/3; object-fit: contain;
-      background: #fff; display: block;
+      background: #0C2340; display: block;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
     }
     .bv-product-img-placeholder {
-      width: 100%; aspect-ratio: 4/3; background: var(--bg);
-      border-bottom: 1px solid var(--border);
+      width: 100%; aspect-ratio: 4/3; background: #0C2340;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
       display: flex; align-items: center; justify-content: center;
       font-size: 3rem;
     }
     .bv-product-detail {
       padding: 10px 12px;
-      background: var(--bg);
-      border-top: 1px solid var(--border);
+      background: #1A3A5C;
+      border-top: 1px solid rgba(255,255,255,0.08);
     }
     .bv-product-name {
-      font-size: 0.82rem; font-weight: 700; color: var(--text);
+      font-size: 0.82rem; font-weight: 700; color: #F1F5F9;
       margin-bottom: 8px; line-height: 1.3;
     }
     .bv-product-row {
       display: flex; gap: 8px; align-items: flex-start;
-      padding: 4px 0; border-bottom: 1px solid var(--border);
+      padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
       font-size: 0.67rem;
     }
     .bv-product-row:last-child { border-bottom: none; }
-    .bv-product-lbl { color: var(--muted); width: 48px; flex-shrink: 0; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.04em; padding-top: 1px; }
-    .bv-product-val { color: var(--text); flex: 1; font-size: 0.67rem; }
+    .bv-product-lbl { color: rgba(255,255,255,0.4); width: 48px; flex-shrink: 0; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.04em; padding-top: 1px; }
+    .bv-product-val { color: #E2E8F0; flex: 1; font-size: 0.67rem; }
     .bv-product-val.mono { font-family: monospace; color: #a78bfa; font-weight: 700; }
     .bv-bin-tag { padding: 1px 6px; border-radius: 4px; background: rgba(99,102,241,0.15); color: #a78bfa; font-size: 0.58rem; font-weight: 700; font-family: monospace; }
     .wms-table-wrap { flex: 1; overflow: auto; min-height: 0; }
@@ -492,29 +499,32 @@
       min-width: 28px; height: 20px; border-radius: 5px; font-size: 0.72rem; font-weight: 700;
       background: rgba(99,102,241,0.15); color: #818cf8; padding: 0 6px;
     }
-    .wms-qty-badge.low { background: rgba(239,68,68,0.15); color: var(--red); }
+    .wms-qty-badge.low { background: linear-gradient(145deg,#3E1A1A,#5C2A2A,#3E1A1A); color: #F87171; border-color: rgba(248,113,113,0.2); }
     .wms-bin-tag {
       display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 4px;
       background: rgba(167,139,250,0.15); color: #a78bfa; font-size: 0.68rem; font-weight: 700; font-family: monospace;
     }
     .wms-action-btn {
-      padding: 3px 8px; border-radius: 4px; border: none; cursor: pointer;
+      padding: 4px 10px; border-radius: 5px; border: none; cursor: pointer;
       font-size: 0.62rem; font-weight: 600; transition: 0.15s;
     }
-    .wms-action-btn.jual { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
-    .wms-action-btn.move { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
-    .wms-action-btn.jual:hover { background: var(--green); color: #fff; }
-    .wms-action-btn.move:hover { background: #fbbf24; color: #000; }
+    .wms-action-btn.jual { background: linear-gradient(145deg,#1E3A5F,#2D5A8A,#1E3A5F); color: #34D399; border: 1px solid rgba(52,211,153,0.2); }
+    .wms-action-btn.move { background: linear-gradient(145deg,#1E3A5F,#2D5A8A,#1E3A5F); color: #FBBF24; border: 1px solid rgba(251,191,36,0.2); }
+    .wms-action-btn.jual:hover { background: linear-gradient(145deg,#059669,#047857,#059669); color: #fff; border-color: rgba(52,211,153,0.4); }
+    .wms-action-btn.move:hover { background: linear-gradient(145deg,#D97706,#B45309,#D97706); color: #fff; border-color: rgba(251,191,36,0.4); }
 
     /* BIN Layout Panel */
     .wms-bin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
     .wms-bin-card {
-      background: var(--card); border: 2px solid var(--border); border-radius: 10px;
+      background: linear-gradient(145deg, #2C3E6B 0%, #3A5085 50%, #2C3E6B 100%);
+      border: 2px solid rgba(148,163,184,0.2);
+      border-radius: 10px;
       padding: 12px; cursor: pointer; transition: all 0.2s; position: relative;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
-    .wms-bin-card:hover { border-color: #6366f1; transform: translateY(-2px); }
-    .wms-bin-card.has-item { border-color: rgba(99,102,241,0.4); }
-    .wms-bin-card.highlighted { border-color: #10b981; background: rgba(16,185,129,0.08); animation: wmsGlow 1.2s ease-in-out infinite; }
+    .wms-bin-card:hover { border-color: rgba(148,163,184,0.5); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.25); }
+    .wms-bin-card.has-item { border-color: rgba(96,165,250,0.4); background: linear-gradient(145deg, #2C3E6B 0%, #4A6A9A 50%, #2C3E6B 100%); }
+    .wms-bin-card.highlighted { border-color: #34D399; background: #D1FAE5; animation: wmsGlow 1.2s ease-in-out infinite; }
     .wms-modal-item.search-match {
       border: 2px solid #fbbf24 !important;
       background: rgba(251,191,36,0.08) !important;
@@ -532,16 +542,16 @@
     .wms-store-toggle {
       padding: 5px 12px; border-radius: 7px; font-size: 0.68rem; font-weight: 700;
       cursor: pointer; transition: all 0.18s;
-      border: 1px solid var(--border); background: var(--bg); color: var(--muted);
+      border: 1px solid rgba(148,163,184,0.2); background: linear-gradient(145deg,#2C3E6B,#3A5085,#2C3E6B); color: rgba(148,163,184,0.8);
       white-space: nowrap;
     }
     .wms-store-toggle.active {
-      background: rgba(249,115,22,0.15); color: var(--accent);
-      border-color: rgba(249,115,22,0.5);
+      background: linear-gradient(145deg,#3A5085,#4A6A9A,#3A5085); color: #93C5FD;
+      border-color: rgba(96,165,250,0.4);
     }
     .wms-store-toggle:not(.active):hover {
-      background: rgba(59,130,246,0.1); color: var(--accent2);
-      border-color: rgba(59,130,246,0.4);
+      background: linear-gradient(145deg,#3A5085,#4A6A9A,#3A5085); color: #93C5FD;
+      border-color: rgba(96,165,250,0.3);
     }
     .wms-src-card {
       background: var(--bg); border: 2px solid var(--border);
@@ -551,10 +561,10 @@
     .wms-src-card:hover { border-color: var(--accent2); background: rgba(59,130,246,0.06); }
     .wms-src-card.active { border-color: var(--accent); background: rgba(249,115,22,0.08); }
     .wms-src-card.active div:nth-child(2) { color: var(--accent); }
-    .wms-bin-card .bc-code { font-size: 1.1rem; font-weight: 900; color: #a78bfa; font-family: monospace; margin-bottom: 2px; letter-spacing: 0.02em; }
-    .wms-bin-card .bc-store { font-size: 0.65rem; font-weight: 700; color: var(--accent2); margin-bottom: 5px; letter-spacing: 0.03em; }
-    .wms-bin-card .bc-qty { font-size: 1.4rem; font-weight: 700; color: var(--text); line-height: 1; }
-    .wms-bin-card .bc-sku { font-size: 0.55rem; color: var(--muted); margin-top: 3px; }
+    .wms-bin-card .bc-code { font-size: 1.1rem; font-weight: 900; color: #93C5FD; font-family: monospace; margin-bottom: 2px; letter-spacing: 0.02em; }
+    .wms-bin-card .bc-store { font-size: 0.65rem; font-weight: 700; color: rgba(148,163,184,0.8); margin-bottom: 5px; letter-spacing: 0.03em; }
+    .wms-bin-card .bc-qty { font-size: 1.4rem; font-weight: 700; color: #F1F5F9; line-height: 1; }
+    .wms-bin-card .bc-sku { font-size: 0.55rem; color: rgba(148,163,184,0.6); margin-top: 3px; }
 
     /* Photo upload */
     #photoDropZone.drag-over { border-color: var(--accent2); background: rgba(59,130,246,0.06); }
@@ -615,7 +625,7 @@
     }
     .wms-field input:focus, .wms-field select:focus { border-color: #6366f1; }
     .wms-btn { padding: 9px 16px; border-radius: 7px; border: none; cursor: pointer; font-weight: 700; font-size: 0.72rem; transition: 0.2s; }
-    .wms-btn.primary { background: #6366f1; color: #fff; }
+    .wms-btn.primary { background: #1A56DB; color: #fff; }
     .wms-btn.success { background: var(--green); color: #fff; }
     .wms-btn.danger  { background: var(--red);   color: #fff; }
     .wms-btn.warning { background: #f59e0b; color: #000; }
@@ -642,13 +652,13 @@
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
     }
-    .wms-modal-header h3 { font-size: 0.9rem; font-weight: 700; margin: 0; }
+    .wms-modal-header h3 { font-size: 0.9rem; font-weight: 700; margin: 0; color: #F1F5F9; }
     .wms-modal-info {
-      background: var(--bg); border-radius: 8px; padding: 8px 12px;
+      background: rgba(255,255,255,0.06); border-radius: 8px; padding: 8px 12px;
       margin-top: 10px; font-size: 0.72rem; line-height: 1.6;
     }
-    .wms-modal-info .mi-label { color: var(--muted); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.04em; }
-    .wms-modal-info .mi-val { font-weight: 600; color: var(--text); }
+    .wms-modal-info .mi-label { color: rgba(255,255,255,0.4); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .wms-modal-info .mi-val { font-weight: 600; color: #F1F5F9; }
     .wms-modal-body {
       flex: 1; overflow-y: auto; padding: 14px 20px;
       overscroll-behavior: contain;
@@ -676,11 +686,496 @@
     }
     .wms-mode-tab.active { background: #6366f1; color: #fff; border-color: #6366f1; }
 
-    /* Responsive */
+        /* ===== RESPONSIVE MOBILE ===== */
     @media (max-width: 768px) {
-      .wms-topbar { padding: 6px 10px; }
-      .wms-search-bar { width: 130px; }
-      .wms-bin-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+      /* Sembunyikan sidebar di mobile - WMS fullscreen */
+      .sidebar { display: none !important; }
+      .main-content { display: none !important; }
+
+      /* WMS fullscreen */
+      #page-wms {
+        display: flex !important;
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 100 !important;
+        flex-direction: column !important;
+      }
+      #page-wms.show { display: flex !important; }
+
+      /* Topbar minimal */
+      .wms-topbar {
+        padding: 4px 8px !important;
+        gap: 3px !important;
+        flex-wrap: nowrap !important;
+      }
+      .wms-topbar-left { gap: 3px !important; }
+      .wms-logo { font-size: 0.6rem !important; display: none !important; }
+      .wms-store-badge { font-size: 0.5rem !important; padding: 2px 5px !important; }
+      .wms-tabs { overflow-x: auto !important; gap: 2px !important; flex: 1; }
+      .wms-tab { font-size: 0.5rem !important; padding: 3px 6px !important; white-space: nowrap !important; }
+      .wms-tab:not([onclick*="bin"]) { display: none !important; }
+      .wms-topbar-right { gap: 3px !important; }
+      .wms-topbar-right .wms-btn { padding: 3px 6px !important; font-size: 0.5rem !important; }
+      .wms-topbar-right .wms-btn.primary { display: none !important; }
+      .wms-topbar-right div[title="Auto-refresh"] { display: none !important; }
+      .wms-search-bar { width: 80px !important; font-size: 0.55rem !important; padding: 3px 6px !important; }
+
+      /* Filter bar minimal */
+      .wms-filter-bar {
+        padding: 4px 6px !important;
+        gap: 3px !important;
+        flex-wrap: nowrap !important;
+      }
+      .wms-filter-bar select { display: none !important; }
+      .wms-store-toggle { font-size: 0.48rem !important; padding: 2px 5px !important; }
+      #wmsBinSearchInput { font-size: 0.55rem !important; padding: 3px 6px !important; }
+      #wmsBinScanInput { width: 70px !important; font-size: 0.55rem !important; padding: 3px 6px !important; }
+
+      /* Body - layout horizontal: foto kiri, bincard kanan */
+      .wms-body {
+        flex-direction: row !important;
+        flex: 1 !important;
+        overflow: hidden !important;
+      }
+
+      /* Panel kiri - foto produk */
+      #wmsBinInfoPanel {
+        width: 40% !important;
+        min-width: 120px !important;
+        max-width: 40% !important;
+        max-height: 100% !important;
+        border-right: 1px solid rgba(255,255,255,0.08) !important;
+        border-bottom: none !important;
+        overflow-y: auto !important;
+        flex-shrink: 0 !important;
+      }
+      #wmsBinInfoPanel .bvstat-card { padding: 3px 2px !important; }
+      #wmsBinInfoPanel .bvs-val { font-size: 0.6rem !important; }
+      #wmsBinInfoPanel .bvs-lbl { font-size: 0.4rem !important; }
+      .bv-product-img { aspect-ratio: 1/1 !important; }
+      .bv-product-name { font-size: 0.6rem !important; }
+      .bv-product-row { font-size: 0.5rem !important; padding: 2px 0 !important; }
+      .bv-product-lbl { width: 30px !important; font-size: 0.45rem !important; }
+      .bv-product-val { font-size: 0.5rem !important; }
+      .bv-product-detail { padding: 4px 6px !important; }
+      #wmsBinProductInfo > div[style*="padding:24px"] { padding: 10px !important; font-size: 0.55rem !important; }
+
+      /* Panel kanan - bincard grid */
+      #wmsBinGrid {
+        flex: 1 !important;
+        overflow-y: auto !important;
+        padding: 6px !important;
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)) !important;
+        gap: 4px !important;
+        align-content: start !important;
+      }
+      .wms-bin-card {
+        padding: 4px 6px !important;
+        border-radius: 6px !important;
+      }
+      .wms-bin-card .bc-code { font-size: 0.65rem !important; }
+      .wms-bin-card .bc-qty { font-size: 0.75rem !important; }
+      .wms-bin-card .bc-store { font-size: 0.4rem !important; margin-bottom: 2px !important; }
+      .wms-bin-card .bc-sku { font-size: 0.38rem !important; margin-top: 1px !important; }
+
+      /* Summary bar */
+      .wms-summary-bar {
+        gap: 2px !important;
+      }
+      .wms-sum-card {
+        padding: 2px 5px !important;
+        min-width: 35px !important;
+      }
+      .wms-sum-card .sv { font-size: 0.6rem !important; }
+      .wms-sum-card .sl { display: none !important; }
+      .wms-sum-sep { display: none !important; }
+
+      /* Sembunyikan panel lain */
+      .wms-panel:not(#wmsPanel-bin) { display: none !important; }
+
+      /* Modal di mobile */
+      .wms-modal { width: 94vw !important; max-height: 80vh !important; }
+      .wms-modal-header { padding: 10px 12px 8px !important; }
+      .wms-modal-header h3 { font-size: 0.7rem !important; }
+      .wms-modal-body { padding: 8px 12px !important; }
+      .wms-modal-footer { padding: 8px 12px !important; }
+      .wms-modal-item { padding: 6px !important; font-size: 0.55rem !important; }
+
+      /* Cat stats di dalam info panel */
+      .bvcat-chip { min-width: 25px !important; padding: 1px 3px !important; }
+      .bvcat-chip span:first-child { font-size: 0.55rem !important; }
+      .bvcat-chip span:last-child { font-size: 0.38rem !important; }
+    }
+
+    /* HP kecil (480px) */
+    @media (max-width: 480px) {
+      #wmsBinInfoPanel { width: 35% !important; min-width: 100px !important; max-width: 35% !important; }
+      #wmsBinGrid { grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)) !important; gap: 3px !important; }
+      .wms-bin-card .bc-code { font-size: 0.55rem !important; }
+      .wms-bin-card .bc-qty { font-size: 0.65rem !important; }
+      .wms-search-bar { width: 60px !important; font-size: 0.5rem !important; }
+      #wmsBinScanInput { width: 50px !important; font-size: 0.5rem !important; }
+      .wms-tab { font-size: 0.45rem !important; padding: 2px 4px !important; }
+    }
+    @media (max-width: 768px) {
+      /* Sidebar jadi bottom bar */
+      .sidebar {
+        width: 100% !important;
+        min-width: 100% !important;
+        height: auto !important;
+        min-height: auto !important;
+        flex-direction: row !important;
+        padding: 6px 8px !important;
+        gap: 4px !important;
+        border-right: none !important;
+        border-top: 2px solid rgba(255,255,255,0.08) !important;
+        order: 99 !important;
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 50 !important;
+        overflow-x: auto !important;
+        box-shadow: 0 -4px 12px rgba(0,0,0,0.2) !important;
+      }
+      .sidebar .nav-tabs {
+        flex: 1;
+        flex-direction: row !important;
+        gap: 3px;
+        background: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+      }
+      .sidebar .nav-tab {
+        flex: 1;
+        font-size: 0.55rem !important;
+        padding: 6px 4px !important;
+        white-space: nowrap;
+        border-radius: 6px !important;
+      }
+      .sidebar .sidebar-header,
+      .sidebar .sidebar-section {
+        display: none !important;
+      }
+
+      /* Main content */
+      .main-content {
+        padding: 10px !important;
+        padding-bottom: 60px !important;
+      }
+      .main-header h2 {
+        font-size: 0.85rem !important;
+      }
+      .master-cache-card {
+        padding: 10px !important;
+      }
+      .table-container {
+        overflow-x: auto !important;
+      }
+
+      /* WMS Page */
+      #page-wms {
+        padding-bottom: 0 !important;
+      }
+      .wms-topbar {
+        flex-wrap: wrap !important;
+        padding: 6px 8px !important;
+        gap: 4px !important;
+      }
+      .wms-topbar-left {
+        flex-wrap: wrap !important;
+        gap: 4px !important;
+        width: 100% !important;
+      }
+      .wms-logo {
+        font-size: 0.7rem !important;
+      }
+      .wms-tabs {
+        flex: 1;
+        overflow-x: auto !important;
+        gap: 3px !important;
+      }
+      .wms-tab {
+        font-size: 0.55rem !important;
+        padding: 4px 8px !important;
+        white-space: nowrap !important;
+      }
+      .wms-topbar-right {
+        width: 100% !important;
+        gap: 4px !important;
+      }
+      .wms-search-bar {
+        width: 100px !important;
+        font-size: 0.65rem !important;
+        padding: 4px 8px !important;
+      }
+      .wms-topbar-right .wms-btn {
+        padding: 4px 8px !important;
+        font-size: 0.55rem !important;
+      }
+      .wms-topbar-right div[title="Auto-refresh"] {
+        font-size: 0.5rem !important;
+        padding: 2px 5px !important;
+      }
+
+      /* WMS Filter bar */
+      .wms-filter-bar {
+        flex-wrap: wrap !important;
+        padding: 6px 8px !important;
+        gap: 4px !important;
+      }
+      .wms-filter-bar select,
+      .wms-filter-bar input {
+        font-size: 0.62rem !important;
+        padding: 4px 6px !important;
+      }
+      #wmsBinSearchInput {
+        font-size: 0.62rem !important;
+        padding: 5px 8px !important;
+      }
+      #wmsBinScanInput {
+        width: 100px !important;
+        font-size: 0.62rem !important;
+        padding: 5px 8px !important;
+      }
+
+      /* WMS Body - stack vertikal */
+      .wms-body {
+        flex-direction: column !important;
+      }
+      #wmsBinInfoPanel {
+        width: 100% !important;
+        min-width: 100% !important;
+        border-right: none !important;
+        border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+        max-height: 35vh !important;
+      }
+      .wms-bin-grid {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)) !important;
+        gap: 5px !important;
+      }
+      .wms-bin-card {
+        padding: 8px !important;
+      }
+      .wms-bin-card .bc-code {
+        font-size: 0.85rem !important;
+      }
+      .wms-bin-card .bc-qty {
+        font-size: 1rem !important;
+      }
+      .wms-bin-card .bc-store {
+        font-size: 0.5rem !important;
+      }
+      .wms-bin-card .bc-sku {
+        font-size: 0.45rem !important;
+      }
+
+      /* Summary cards */
+      .wms-summary-bar {
+        gap: 3px !important;
+        flex-wrap: wrap !important;
+      }
+      .wms-sum-card {
+        padding: 4px 8px !important;
+        min-width: 50px !important;
+      }
+      .wms-sum-card .sv {
+        font-size: 0.85rem !important;
+      }
+      .wms-sum-card .sl {
+        font-size: 0.42rem !important;
+      }
+
+      /* Stat di panel kiri */
+      .bvstat-card {
+        padding: 4px 3px !important;
+      }
+      .bvstat-card .bvs-val {
+        font-size: 0.75rem !important;
+      }
+      .bvstat-card .bvs-lbl {
+        font-size: 0.45rem !important;
+      }
+
+      /* Product detail panel */
+      .bv-product-img {
+        aspect-ratio: 3/2 !important;
+      }
+      .bv-product-name {
+        font-size: 0.7rem !important;
+      }
+      .bv-product-row {
+        font-size: 0.55rem !important;
+      }
+      .bv-product-lbl {
+        width: 40px !important;
+        font-size: 0.5rem !important;
+      }
+
+      /* Modal */
+      .wms-modal {
+        width: 94vw !important;
+        max-height: 85vh !important;
+      }
+      .wms-modal-header {
+        padding: 12px 14px 10px !important;
+      }
+      .wms-modal-header h3 {
+        font-size: 0.75rem !important;
+      }
+      .wms-modal-body {
+        padding: 10px 14px !important;
+      }
+      .wms-modal-footer {
+        padding: 10px 14px !important;
+      }
+      .wms-modal-item {
+        padding: 8px !important;
+        font-size: 0.62rem !important;
+      }
+
+      /* Inbound card */
+      .wms-inbound-card {
+        padding: 14px !important;
+      }
+      .wms-inbound-card h3 {
+        font-size: 0.75rem !important;
+      }
+      .wms-field input, .wms-field select {
+        font-size: 0.7rem !important;
+        padding: 6px 8px !important;
+      }
+
+      /* Export modal */
+      .export-modal {
+        padding: 14px !important;
+      }
+
+      /* Bin cards popup */
+      .bin-cards-popup {
+        min-width: 220px !important;
+        max-width: 90vw !important;
+      }
+
+      /* Layout canvas */
+      #wmsLayoutCanvas {
+        min-width: 600px !important;
+      }
+
+      /* Store toggle */
+      .wms-store-toggle {
+        font-size: 0.55rem !important;
+        padding: 3px 8px !important;
+      }
+
+      /* WMS table */
+      .wms-table {
+        font-size: 0.6rem !important;
+      }
+      .wms-table th {
+        padding: 5px 4px !important;
+        font-size: 0.5rem !important;
+      }
+      .wms-table td {
+        padding: 4px 4px !important;
+      }
+      .wms-qty-badge {
+        min-width: 22px !important;
+        height: 18px !important;
+        font-size: 0.6rem !important;
+      }
+      .wms-bin-tag {
+        font-size: 0.55rem !important;
+        padding: 1px 5px !important;
+      }
+      .wms-action-btn {
+        font-size: 0.5rem !important;
+        padding: 2px 6px !important;
+      }
+
+      /* Detail card BV */
+      .bv-product-detail {
+        padding: 6px 8px !important;
+      }
+      .bvcat-chip {
+        min-width: 30px !important;
+        padding: 2px 5px !important;
+      }
+      .bvcat-chip span:first-child {
+        font-size: 0.65rem !important;
+      }
+      .bvcat-chip span:last-child {
+        font-size: 0.42rem !important;
+      }
+
+      /* Tabel scan */
+      .scan-table {
+        font-size: 0.6rem !important;
+      }
+      .scan-table th {
+        padding: 5px 4px !important;
+        font-size: 0.5rem !important;
+      }
+      .scan-table td {
+        padding: 4px 4px !important;
+      }
+
+      /* Master data */
+      #page-master {
+        padding: 10px !important;
+        padding-bottom: 60px !important;
+      }
+      #page-master > div:first-child {
+        flex-direction: column !important;
+        gap: 8px !important;
+      }
+
+      /* WMS scan import */
+      .wms-scan-import {
+        padding: 14px !important;
+      }
+      .wms-scan-import h3 {
+        font-size: 0.75rem !important;
+      }
+
+      /* Mode tabs */
+      .wms-mode-tab {
+        font-size: 0.55rem !important;
+        padding: 3px 7px !important;
+      }
+
+      /* Source cards */
+      .wms-src-card {
+        padding: 8px !important;
+      }
+      .wms-src-card div:first-child {
+        font-size: 1rem !important;
+      }
+      .wms-src-card div:nth-child(2) {
+        font-size: 0.62rem !important;
+      }
+
+      /* Scan table wrap */
+      .table-container {
+        border-radius: 6px !important;
+      }
+    }
+
+    /* HP kecil */
+    @media (max-width: 480px) {
+      .wms-search-bar { width: 80px !important; font-size: 0.55rem !important; }
+      #wmsBinScanInput { width: 80px !important; }
+      .wms-tab { font-size: 0.5rem !important; padding: 3px 6px !important; }
+      .wms-bin-grid { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)) !important; gap: 4px !important; }
+      .wms-bin-card { padding: 6px !important; }
+      .wms-bin-card .bc-code { font-size: 0.75rem !important; }
+      .wms-bin-card .bc-qty { font-size: 0.85rem !important; }
+      .wms-sum-card { min-width: 40px !important; padding: 3px 6px !important; }
+      .wms-sum-card .sv { font-size: 0.7rem !important; }
+      .sidebar .nav-tab { font-size: 0.48rem !important; padding: 4px 3px !important; }
+      #wmsBinInfoPanel { max-height: 30vh !important; }
     }
   </style>
 </head>
@@ -719,7 +1214,7 @@
       <span id="idbStatus" class="idb-status">💾 IDB...</span>
       <span id="syncStatus" class="sync-status pending">⏳</span>
       <span id="offlineMiniStatus" class="offline-mini not-ready" title="Master Cache">📦 ...</span>
-      <span id="scanStoreBadge" style="display:none;font-size:0.55rem;padding:2px 6px;border-radius:4px;background:rgba(249,115,22,0.15);color:var(--accent);border:1px solid rgba(249,115,22,0.3);font-weight:700;"></span>
+      <span id="scanStoreBadge" style="display:none;font-size:0.55rem;padding:2px 6px;border-radius:4px;background:rgba(249,115,22,0.15);color:#93C5FD;border:1px solid rgba(249,115,22,0.3);font-weight:700;"></span>
     </div>
     
     <!-- STATS -->
@@ -1041,7 +1536,7 @@
       </div>
     </div>
     <div class="wms-topbar-right">
-      <button class="wms-btn" onclick="switchPage('scan')" style="padding:6px 12px;font-size:0.65rem;background:rgba(249,115,22,0.15);color:var(--accent);border:1px solid rgba(249,115,22,0.3);" title="Kembali ke Scan">📱 SCAN</button>
+      <button class="wms-btn" onclick="switchPage('scan')" style="padding:6px 12px;font-size:0.65rem;background:rgba(255,255,255,0.08);color:#F1F5F9;border:1px solid rgba(255,255,255,0.12);" title="Kembali ke Scan">📱 SCAN</button>
       <input class="wms-search-bar" id="wmsSearchBar" placeholder="🔍 Cari SKU / BIN / Brand..."
         oninput="const v=this.value;wmsBinSearchLive(v);const bi=document.getElementById('wmsBinSearchInput');if(bi)bi.value=v;" />
       <button class="wms-btn primary" onclick="wmsDownloadExcel()" style="padding:6px 10px;font-size:0.65rem;" title="Download Excel">📥</button>
@@ -1081,9 +1576,9 @@
       <!-- Body: kiri=info produk, kanan=bin grid -->
       <div style="display:flex;flex:1;min-height:0;overflow:hidden;">
         <!-- PANEL KIRI: info produk -->
-        <div id="wmsBinInfoPanel" style="width:260px;min-width:220px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid var(--border);overflow-y:auto;background:var(--card);">
+        <div id="wmsBinInfoPanel" style="width:260px;min-width:220px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid rgba(255,255,255,0.08);overflow-y:auto;background:#1E3A5F;">
           <!-- Stats selalu tampil di atas -->
-          <div style="padding:10px;border-bottom:1px solid var(--border);flex-shrink:0;">
+          <div style="padding:10px;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0;">
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:8px;">
               <div class="bvstat-card"><div class="bvs-val" id="bvTotalSKU">0</div><div class="bvs-lbl">SKU</div></div>
               <div class="bvstat-card"><div class="bvs-val" id="bvTotalQty">0</div><div class="bvs-lbl">Qty</div></div>
@@ -3634,7 +4129,7 @@
         <td style="color:var(--muted);font-size:0.62rem;">${i+1}</td>
         <td style="font-size:0.68rem;color:#818cf8;font-weight:600;">${r.store_code||'-'}</td>
         <td style="font-family:monospace;font-size:0.68rem;">${r.generic||'-'}</td>
-        <td style="font-family:monospace;font-weight:600;color:var(--accent);">${r.variant||r.sku||'-'}</td>
+        <td style="font-family:monospace;font-weight:600;color:#93C5FD;">${r.variant||r.sku||'-'}</td>
         <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;" title="${r.name||''}">${r.name||'-'}</td>
         <td style="color:#f59e0b;font-weight:700;">${r.cat||'-'}</td>
         <td>${r.size_us||'-'}</td>
@@ -4026,7 +4521,7 @@
     });
     if (!bins.length) { grid.innerHTML = '<span style="color:var(--muted);font-size:0.72rem;">Tidak ada data</span>'; return; }
 
-    const LIMIT    = 35;
+    const LIMIT    = window.innerWidth <= 768 ? 10 : 999;
     const binsShow = bins.slice(0, LIMIT); // selalu 35, tidak ada auto-expand
 
     grid.innerHTML = binsShow.map(b => {
@@ -4087,8 +4582,8 @@
       const brandHtml   = wmsHighlightText(r.brand || '', q);
       return `
       <div class="wms-modal-item ${isMatch ? 'search-match' : ''}"
-        style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;font-size:0.72rem;position:relative;">
-        <div style="font-family:monospace;font-weight:700;color:var(--accent);margin-bottom:3px;">${variantHtml}</div>
+        style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;margin-bottom:8px;font-size:0.72rem;position:relative;">
+        <div style="font-family:monospace;font-weight:700;color:#93C5FD;margin-bottom:3px;">${variantHtml}</div>
         <div style="color:var(--muted);margin-bottom:3px;">${nameHtml}</div>
         <div style="color:var(--muted);font-size:0.62rem;margin-bottom:5px;">${brandHtml} | Size US ${r.size_us||'-'} / UK ${r.size_uk||'-'}</div>
         <div style="display:flex;gap:6px;align-items:center;">
