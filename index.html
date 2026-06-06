@@ -543,6 +543,14 @@
       background: rgba(59,130,246,0.1); color: var(--accent2);
       border-color: rgba(59,130,246,0.4);
     }
+    .wms-src-card {
+      background: var(--bg); border: 2px solid var(--border);
+      border-radius: 10px; padding: 12px; text-align: center;
+      cursor: pointer; transition: all 0.18s;
+    }
+    .wms-src-card:hover { border-color: var(--accent2); background: rgba(59,130,246,0.06); }
+    .wms-src-card.active { border-color: var(--accent); background: rgba(249,115,22,0.08); }
+    .wms-src-card.active div:nth-child(2) { color: var(--accent); }
     .wms-bin-card .bc-code { font-size: 1.1rem; font-weight: 900; color: #a78bfa; font-family: monospace; margin-bottom: 2px; letter-spacing: 0.02em; }
     .wms-bin-card .bc-store { font-size: 0.65rem; font-weight: 700; color: var(--accent2); margin-bottom: 5px; letter-spacing: 0.03em; }
     .wms-bin-card .bc-qty { font-size: 1.4rem; font-weight: 700; color: var(--text); line-height: 1; }
@@ -1103,25 +1111,50 @@
 
     <!-- ── PANEL DARI SCAN ── -->
     <div class="wms-panel" id="wmsPanel-scan-import" style="overflow-y:auto;">
-      <div class="wms-scan-import" style="max-width:600px;margin:0 auto;padding:20px;">
+      <div class="wms-scan-import" style="max-width:640px;margin:0 auto;padding:20px;">
         <h3 style="font-size:0.9rem;font-weight:700;margin-bottom:4px;">📱 Import dari Data Scan</h3>
-        <p class="sub" style="font-size:0.68rem;color:var(--muted);margin-bottom:16px;">Ambil data scan yang sudah ada lalu proses ke WMS. Qty dihitung otomatis per SKU+BIN.</p>
+        <p style="font-size:0.68rem;color:var(--muted);margin-bottom:16px;">Proses data scan ke stok WMS. Qty dihitung otomatis per SKU+BIN.</p>
+
         <div class="wms-field">
           <label>Toko Tujuan</label>
           <select id="wmsScanStore"></select>
         </div>
+
+        <!-- Sumber Data -->
+        <div style="margin-bottom:14px;">
+          <div style="font-size:0.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Sumber Data Scan</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div id="srcLocal" class="wms-src-card active" onclick="wmsSetScanSource('local')">
+              <div style="font-size:1.2rem;margin-bottom:4px;">💾</div>
+              <div style="font-weight:700;font-size:0.75rem;">Lokal</div>
+              <div style="font-size:0.6rem;color:var(--muted);margin-top:2px;">Data scan di device ini</div>
+              <div id="srcLocalCount" style="font-size:0.7rem;font-weight:700;color:var(--accent2);margin-top:4px;">0 data</div>
+            </div>
+            <div id="srcFirebase" class="wms-src-card" onclick="wmsSetScanSource('firebase')">
+              <div style="font-size:1.2rem;margin-bottom:4px;">☁️</div>
+              <div style="font-weight:700;font-size:0.75rem;">Firebase</div>
+              <div style="font-size:0.6rem;color:var(--muted);margin-top:2px;">Semua data scan toko ini</div>
+              <div id="srcFirebaseCount" style="font-size:0.7rem;font-weight:700;color:#818cf8;margin-top:4px;">— data</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mode -->
         <div class="wms-mode-tabs">
           <button class="wms-mode-tab active" data-mode="upload" onclick="wmsScanSetMode(this)">🔄 Upload (Replace)</button>
           <button class="wms-mode-tab" data-mode="inbound" onclick="wmsScanSetMode(this)">➕ Inbound (Tambah)</button>
           <button class="wms-mode-tab" data-mode="cycle" onclick="wmsScanSetMode(this)">🔁 Cycle Count (Per BIN)</button>
         </div>
         <div id="wmsScanModeDesc" style="font-size:0.65rem;color:var(--muted);margin-bottom:10px;">Replace: hapus stok lama toko ini, isi ulang dari data scan.</div>
+
+        <!-- Preview -->
         <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:10px;">
-          <div style="font-size:0.68rem;color:var(--muted);margin-bottom:6px;">Preview data scan yang akan diproses:</div>
+          <div style="font-size:0.68rem;color:var(--muted);margin-bottom:6px;">Preview data yang akan diproses:</div>
           <div class="wms-scan-preview" id="wmsScanPreview">
-            <span style="color:var(--muted);">Belum ada data scan di sesi ini</span>
+            <span style="color:var(--muted);">Klik Preview untuk melihat data</span>
           </div>
         </div>
+
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <button class="wms-btn primary" onclick="wmsPreviewScan()">👁 Preview</button>
           <button class="wms-btn success" onclick="wmsDoScanImport()" id="wmsScanImportBtn" disabled>✅ Proses ke WMS</button>
@@ -3318,6 +3351,7 @@
   let wmsAllData      = [];
   let wmsFilteredData = [];
   let wmsScanMode     = 'upload';
+  let wmsScanSource   = 'local'; // 'local' | 'firebase'
   let wmsStoreList    = [];
   let wmsBinSearchQuery     = '';    // state pencarian BIN VIEW
   let wmsBinScanDebounce   = null;
@@ -4270,55 +4304,151 @@
     safeSetText('wmsScanModeDesc', descs[wmsScanMode] || '');
   };
 
-  window.wmsPreviewScan = function() {
-    const prevEl  = document.getElementById('wmsScanPreview');
-    const importBtn = document.getElementById('wmsScanImportBtn');
-    if (!scanDataArray.length) {
-      prevEl.innerHTML = '<span style="color:var(--muted);">Tidak ada data scan</span>';
-      importBtn.disabled = true;
-      return;
-    }
-    // Pivot: SKU+BIN → count
+  window.wmsSetScanSource = function(src) {
+    wmsScanSource = src;
+    document.getElementById('srcLocal')?.classList.toggle('active', src === 'local');
+    document.getElementById('srcFirebase')?.classList.toggle('active', src === 'firebase');
+    wmsPreviewScan();
+  };
+
+  // Ambil scan data dari Firebase untuk toko tertentu
+  async function fetchFirebaseScanData(storeCode) {
+    if (!db) throw new Error('Firebase offline');
+    const scanCol = collection(db, 'STORES', storeCode, 'SCAN_DATA');
+    const snap = await getDocs(scanCol);
+    return snap.docs.map(d => {
+      const r = d.data();
+      return {
+        ARTICLE:     r.ARTICLE || r.article || '',
+        BIN:         r.BIN     || r.bin     || '',
+        DESCRIPTION: r.DESCRIPTION || r.description || '',
+        SIZE_US:     r.SIZE_US || r.size_us || '',
+        SIZE_UK:     r.SIZE_UK || r.size_uk || '',
+        GENERIC:     r.GENERIC || r.generic || '',
+        CAT:         r.CAT     || r.cat     || '',
+        BRAND:       r.BRAND   || r.brand   || '',
+        SEASON:      r.SEASON  || r.season  || '',
+        USER:        r.USER    || r.user    || '',
+      };
+    }).filter(r => r.ARTICLE && r.BIN);
+  }
+
+  // Build pivot dari array scan rows
+  function buildPivot(rows) {
     const pivot = {};
-    scanDataArray.forEach(r => {
+    rows.forEach(r => {
       const key = `${r.ARTICLE}|${r.BIN}`;
-      if (!pivot[key]) pivot[key] = { sku: r.ARTICLE, bin: r.BIN, qty: 0, desc: r.DESCRIPTION||'', size_us: r.SIZE_US||'', size_uk: r.SIZE_UK||'', generic: r.GENERIC||'', cat: r.CAT||'', brand: r.BRAND||'' };
+      if (!pivot[key]) pivot[key] = {
+        sku: r.ARTICLE, bin: r.BIN, qty: 0,
+        desc: r.DESCRIPTION||'', size_us: r.SIZE_US||'', size_uk: r.SIZE_UK||'',
+        generic: r.GENERIC||'', cat: r.CAT||'', brand: r.BRAND||'', season: r.SEASON||''
+      };
       pivot[key].qty++;
     });
-    const rows = Object.values(pivot);
+    return pivot;
+  }
+
+  window.wmsPreviewScan = async function() {
+    const prevEl    = document.getElementById('wmsScanPreview');
+    const importBtn = document.getElementById('wmsScanImportBtn');
+    const msgEl     = document.getElementById('wmsScanImportMsg');
+    const store     = document.getElementById('wmsScanStore')?.value;
+
+    // Update count lokal
+    safeSetText('srcLocalCount', `${scanDataArray.length} data`);
+
+    if (wmsScanSource === 'firebase') {
+      if (!db) {
+        prevEl.innerHTML = '<span style="color:var(--red);">❌ Firebase offline</span>';
+        importBtn.disabled = true; return;
+      }
+      if (!store) {
+        prevEl.innerHTML = '<span style="color:var(--muted);">Pilih toko dulu</span>';
+        importBtn.disabled = true; return;
+      }
+      prevEl.innerHTML = '<span style="color:var(--muted);">⏳ Mengambil data dari Firebase...</span>';
+      importBtn.disabled = true;
+      try {
+        const rows = await fetchFirebaseScanData(store);
+        safeSetText('srcFirebaseCount', `${rows.length} data`);
+        if (!rows.length) {
+          prevEl.innerHTML = `<span style="color:var(--muted);">Tidak ada data scan di Firebase untuk toko ${store}</span>`;
+          return;
+        }
+        const pivot = buildPivot(rows);
+        const pivotRows = Object.values(pivot);
+        prevEl.innerHTML = `<table>
+          <tr><th>SKU/Article</th><th>BIN</th><th>Qty</th><th>Deskripsi</th></tr>
+          ${pivotRows.map(r => `<tr>
+            <td style="font-family:monospace;">${r.sku}</td>
+            <td><span class="wms-bin-tag">${r.bin}</span></td>
+            <td><b>${r.qty}</b></td>
+            <td style="color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;">${r.desc}</td>
+          </tr>`).join('')}
+        </table>`;
+        importBtn.disabled = false;
+        if (msgEl) msgEl.textContent = `${pivotRows.length} SKU+BIN unik dari ${rows.length} scan (Firebase)`;
+      } catch(e) {
+        prevEl.innerHTML = `<span style="color:var(--red);">❌ ${e.message}</span>`;
+      }
+      return;
+    }
+
+    // Sumber lokal
+    if (!scanDataArray.length) {
+      prevEl.innerHTML = '<span style="color:var(--muted);">Tidak ada data scan lokal</span>';
+      importBtn.disabled = true; return;
+    }
+    const pivot = buildPivot(scanDataArray);
+    const rows  = Object.values(pivot);
     prevEl.innerHTML = `<table>
       <tr><th>SKU/Article</th><th>BIN</th><th>Qty</th><th>Deskripsi</th></tr>
-      ${rows.map(r => `<tr><td style="font-family:monospace;">${r.sku}</td><td><span class="wms-bin-tag">${r.bin}</span></td><td><b>${r.qty}</b></td><td style="color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;">${r.desc}</td></tr>`).join('')}
+      ${rows.map(r => `<tr>
+        <td style="font-family:monospace;">${r.sku}</td>
+        <td><span class="wms-bin-tag">${r.bin}</span></td>
+        <td><b>${r.qty}</b></td>
+        <td style="color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;">${r.desc}</td>
+      </tr>`).join('')}
     </table>`;
     importBtn.disabled = false;
-    safeSetText('wmsScanImportMsg', `${rows.length} SKU+BIN unik dari ${scanDataArray.length} scan`);
+    if (msgEl) msgEl.textContent = `${rows.length} SKU+BIN dari ${scanDataArray.length} scan (Lokal)`;
   };
 
   window.wmsDoScanImport = async function() {
-    if (!db || !scanDataArray.length) return;
+    if (!db) { showToast('❌ Firebase offline', 'error'); return; }
     const store  = document.getElementById('wmsScanStore')?.value;
     const msgEl  = document.getElementById('wmsScanImportMsg');
-    if (!store) { msgEl.textContent = '❌ Pilih toko dulu'; return; }
+    if (!store) { if(msgEl) msgEl.textContent = '❌ Pilih toko dulu'; return; }
 
     document.getElementById('wmsScanImportBtn').disabled = true;
-    msgEl.textContent = '⏳ Memproses...';
-
-    // Build pivot dari scanDataArray
-    const pivot = {};
-    scanDataArray.forEach(r => {
-      const key = `${r.ARTICLE}|${r.BIN}`;
-      if (!pivot[key]) pivot[key] = { sku: r.ARTICLE, bin: r.BIN, qty: 0,
-        desc: r.DESCRIPTION||'', size_us: r.SIZE_US||'', size_uk: r.SIZE_UK||'',
-        generic: r.GENERIC||'', cat: r.CAT||'', brand: r.BRAND||'', season: r.SEASON||'' };
-      pivot[key].qty++;
-    });
-
-    const storeObj = wmsStoreList.find(s => s.code === store);
-    const { updateDoc, setDoc: sd } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+    if (msgEl) msgEl.textContent = '⏳ Memproses...';
 
     try {
+      // Ambil sumber data sesuai pilihan
+      let sourceRows;
+      if (wmsScanSource === 'firebase') {
+        if (msgEl) msgEl.textContent = '⏳ Mengambil data dari Firebase...';
+        sourceRows = await fetchFirebaseScanData(store);
+        if (!sourceRows.length) {
+          if (msgEl) msgEl.textContent = '❌ Tidak ada data scan di Firebase untuk toko ini';
+          document.getElementById('wmsScanImportBtn').disabled = false;
+          return;
+        }
+      } else {
+        sourceRows = scanDataArray;
+        if (!sourceRows.length) {
+          if (msgEl) msgEl.textContent = '❌ Tidak ada data scan lokal';
+          document.getElementById('wmsScanImportBtn').disabled = false;
+          return;
+        }
+      }
+
+      if (msgEl) msgEl.textContent = `⏳ Memproses ${sourceRows.length} data...`;
+      const pivot    = buildPivot(sourceRows);
+      const storeObj = wmsStoreList.find(s => s.code === store);
+      const { updateDoc, setDoc: sd } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+
       if (wmsScanMode === 'upload') {
-        // Hapus semua stok toko ini dulu
         const existing = wmsAllData.filter(r => r.store_code === store);
         for (let i = 0; i < existing.length; i += BATCH_SIZE) {
           const batch = writeBatch(db);
@@ -4332,8 +4462,8 @@
       const binsUpdated = new Set();
 
       for (const key in pivot) {
-        const item   = pivot[key];
-        const docId  = `${store}_${item.sku}_${item.bin}`;
+        const item  = pivot[key];
+        const docId = `${store}_${item.sku}_${item.bin}`;
         const payload = {
           store_code: store, store_name: storeObj?.name || store,
           generic: item.generic, cat: item.cat, variant: item.sku, sku: item.sku,
@@ -4343,41 +4473,36 @@
         };
 
         if (wmsScanMode === 'inbound') {
-          const existing = wmsAllData.find(r => r._id === docId);
-          if (existing) {
-            await updateDoc(doc(db, 'STOCK', docId), { qty: existing.qty + item.qty, updated_at: payload.updated_at });
-            existing.qty += item.qty; updatedCount++;
-          } else {
-            await sd(doc(db, 'STOCK', docId), { ...payload, qty: item.qty });
-            wmsAllData.push({ _id: docId, ...payload, qty: item.qty }); addedCount++;
-          }
+          const ex = wmsAllData.find(r => r._id === docId);
+          if (ex) { await updateDoc(doc(db,'STOCK',docId),{qty:ex.qty+item.qty,updated_at:payload.updated_at}); ex.qty+=item.qty; updatedCount++; }
+          else    { await sd(doc(db,'STOCK',docId),{...payload,qty:item.qty}); wmsAllData.push({_id:docId,...payload,qty:item.qty}); addedCount++; }
         } else if (wmsScanMode === 'cycle') {
           binsUpdated.add(item.bin);
-          await sd(doc(db, 'STOCK', docId), { ...payload, qty: item.qty });
-          const idx = wmsAllData.findIndex(r => r._id === docId);
-          if (idx >= 0) wmsAllData[idx] = { _id: docId, ...payload, qty: item.qty };
-          else wmsAllData.push({ _id: docId, ...payload, qty: item.qty });
+          await sd(doc(db,'STOCK',docId),{...payload,qty:item.qty});
+          const idx = wmsAllData.findIndex(r=>r._id===docId);
+          if (idx>=0) wmsAllData[idx]={_id:docId,...payload,qty:item.qty}; else wmsAllData.push({_id:docId,...payload,qty:item.qty});
           addedCount++;
-        } else { // upload — all deleted, just insert
-          await sd(doc(db, 'STOCK', docId), { ...payload, qty: item.qty });
-          wmsAllData.push({ _id: docId, ...payload, qty: item.qty }); addedCount++;
+        } else {
+          await sd(doc(db,'STOCK',docId),{...payload,qty:item.qty});
+          wmsAllData.push({_id:docId,...payload,qty:item.qty}); addedCount++;
         }
       }
 
       wmsRenderBinView(); wmsUpdateBinLeftPanel();
-      const modeLabel = { upload:'UPLOAD', inbound:'INBOUND', cycle:'CYCLE' }[wmsScanMode];
-      const totalItems = Object.keys(pivot).length;
+      const modeLabel   = {upload:'UPLOAD',inbound:'INBOUND',cycle:'CYCLE'}[wmsScanMode];
+      const modeLabelUI = {upload:'Upload',inbound:'Inbound',cycle:'Cycle Count'}[wmsScanMode];
+      const totalItems  = Object.keys(pivot).length;
+      const srcLabel    = wmsScanSource === 'firebase' ? 'Firebase' : 'Lokal';
       wmsWriteLog(modeLabel, {
         store_code: store, store_name: storeObj?.name || store,
         sku: `${totalItems} SKU`, bin: [...new Set(Object.values(pivot).map(p=>p.bin))].join(',').slice(0,100),
         qty: Object.values(pivot).reduce((s,p)=>s+p.qty,0),
-        note: `${modeLabel}: ${addedCount} baru, ${updatedCount} update`
+        note: `${modeLabel} dari ${srcLabel}: ${addedCount} baru, ${updatedCount} update`
       });
-      const modeLabelUI = { upload:'Upload', inbound:'Inbound', cycle:'Cycle Count' }[wmsScanMode];
-      msgEl.textContent = `✅ ${modeLabelUI} selesai: ${addedCount} baru, ${updatedCount} update`;
+      if (msgEl) msgEl.textContent = `✅ ${modeLabelUI} selesai (${srcLabel}): ${addedCount} baru, ${updatedCount} update`;
       showToast(`✅ WMS ${modeLabelUI} selesai!`, 'success');
     } catch(e) {
-      msgEl.textContent = '❌ ' + e.message;
+      if (msgEl) msgEl.textContent = '❌ ' + e.message;
       showToast('❌ Import gagal: ' + e.message, 'error');
     } finally {
       document.getElementById('wmsScanImportBtn').disabled = false;
