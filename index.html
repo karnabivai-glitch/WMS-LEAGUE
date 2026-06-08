@@ -676,11 +676,165 @@
     }
     .wms-mode-tab.active { background: #6366f1; color: #fff; border-color: #6366f1; }
 
-    /* Responsive */
+
+    /* ═══ MOBILE RESPONSIVE — WMS ═══ */
     @media (max-width: 768px) {
-      .wms-topbar { padding: 6px 10px; }
-      .wms-search-bar { width: 130px; }
-      .wms-bin-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+
+      /* WMS full screen */
+      #page-wms {
+        position: fixed; inset: 0; z-index: 100;
+        display: flex; flex-direction: column; overflow: hidden;
+      }
+      #page-wms.show { display: flex; }
+
+      /* ── TOPBAR ── */
+      .wms-topbar { padding: 6px 10px; min-height: 42px; flex-wrap: nowrap; }
+      .wms-topbar-left { gap: 4px; }
+      .wms-logo { font-size: 0.72rem; }
+      .wms-store-badge { font-size: 0.58rem; padding: 2px 6px; max-width: 120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .wms-tabs { display: none; }
+      .wms-topbar-right .wms-btn:not([onclick*="switchPage"]) { display: none; }
+      .wms-search-bar { display: none; }
+
+      /* ── BOTTOM NAV ── */
+      .wms-mobile-nav {
+        display: flex !important;
+        position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+        background: var(--card); border-top: 1px solid var(--border);
+        padding: 4px 0 max(4px, env(safe-area-inset-bottom));
+      }
+      .wms-mobile-nav button {
+        flex: 1; background: none; border: none; color: var(--muted);
+        font-size: 0.58rem; padding: 4px 2px; cursor: pointer;
+        display: flex; flex-direction: column; align-items: center; gap: 2px;
+      }
+      .wms-mobile-nav button .mn-icon { font-size: 1rem; line-height: 1; }
+      .wms-mobile-nav button.active { color: var(--accent); }
+
+      .wms-body { flex-direction: column; overflow: hidden; padding-bottom: 52px; }
+
+      /* ── PANEL BIN VIEW ── */
+      #wmsPanel-bin { flex-direction: column !important; overflow: hidden; display: flex; }
+
+      /* Filter bar: store toggle + search + scan */
+      #wmsPanel-bin .wms-filter-bar {
+        padding: 5px 8px; gap: 5px; flex-wrap: nowrap;
+        flex-shrink: 0; align-items: center;
+      }
+      #wmsBinSearchInput { font-size: 0.7rem !important; padding: 6px 8px !important; }
+      #wmsBinScanInput { width: 80px !important; font-size: 0.7rem !important; }
+      #wmsPanel-bin .wms-filter-bar > button { padding: 4px 8px; font-size: 0.6rem; }
+
+      /* Body: vertikal (info atas, grid bawah) */
+      #wmsPanel-bin > div:last-child {
+        flex-direction: column !important; flex: 1; overflow: hidden; min-height: 0;
+      }
+
+      /* ── PANEL KIRI MOBILE: foto kiri + info kanan ── */
+      #wmsBinInfoPanel {
+        width: 100% !important; min-width: 0 !important;
+        border-right: none !important; border-bottom: 1px solid var(--border);
+        flex-shrink: 0; flex-direction: column !important;
+        max-height: 210px; overflow: hidden;
+      }
+
+      /* Stats row: 3 angka + cat chips */
+      #wmsBinInfoPanel > div:first-child {
+        padding: 5px 8px !important; border-bottom: 1px solid var(--border) !important;
+        border-right: none !important; width: 100% !important;
+        display: flex !important; flex-direction: row !important;
+        align-items: center; gap: 6px;
+      }
+      #wmsBinInfoPanel > div:first-child > div:first-child {
+        grid-template-columns: repeat(3,1fr); gap: 3px; margin-bottom: 0 !important; flex-shrink: 0;
+      }
+      .bvstat-card { padding: 2px 4px !important; min-width: 34px; }
+      .bvstat-card .bvs-val { font-size: 0.76rem !important; }
+      .bvstat-card .bvs-lbl { font-size: 0.42rem !important; }
+      #bvCatStats { gap: 3px !important; flex-wrap: nowrap !important; flex: 1; overflow: hidden; }
+      .bvcat-chip { padding: 2px 4px !important; min-width: 24px !important; font-size: 0.48rem !important; }
+      .bvcat-chip span:first-child { font-size: 0.65rem !important; }
+
+      /* Product info: foto kiri + detail kanan */
+      #wmsBinProductInfo { flex: 1 !important; overflow: hidden; min-height: 0; }
+      .bv-product-card {
+        flex-direction: row !important; height: 100%; align-items: stretch;
+      }
+      .bv-product-img {
+        width: 130px !important; height: 100% !important; max-height: 160px;
+        aspect-ratio: auto !important; flex-shrink: 0;
+        border-radius: 0 !important; background: #fff; object-fit: contain;
+      }
+      .bv-product-img-placeholder {
+        width: 130px !important; height: auto !important; min-height: 100px; max-height: 160px;
+        aspect-ratio: auto !important; flex-shrink: 0;
+        border-radius: 0 !important; font-size: 2.5rem !important;
+      }
+      .bv-product-detail {
+        flex: 1; min-width: 0; padding: 7px 10px !important;
+        border-top: none !important; border-left: 1px solid var(--border);
+        overflow-y: auto; -webkit-overflow-scrolling: touch;
+      }
+      .bv-product-name { font-size: 0.75rem !important; margin-bottom: 4px !important; line-height: 1.2 !important; font-weight: 700 !important; }
+      .bv-product-row { padding: 3px 0 !important; font-size: 0.6rem !important; }
+      .bv-product-lbl { width: 38px !important; font-size: 0.52rem !important; }
+      .bv-product-val { font-size: 0.6rem !important; }
+      .bv-bin-tag { font-size: 0.52rem !important; padding: 1px 4px !important; }
+
+      /* Placeholder */
+      #wmsBinProductInfo > div { padding: 10px 8px !important; }
+
+      /* ── BIN GRID: 4 kolom, scrollable ── */
+      #wmsPanel-bin > div:last-child > div:last-child {
+        flex: 1; overflow-y: auto; padding: 5px 6px !important; min-height: 0;
+        -webkit-overflow-scrolling: touch;
+      }
+      .wms-bin-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 5px !important; overflow: visible !important;
+      }
+      .wms-bin-card {
+        padding: 6px 4px !important; border-radius: 8px !important;
+        min-height: 70px;
+      }
+      .wms-bin-card .bc-code { font-size: 0.88rem !important; margin-bottom: 1px !important; }
+      .wms-bin-card .bc-store {
+        font-size: 0.48rem !important; margin-bottom: 2px !important;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .wms-bin-card .bc-qty { font-size: 1.05rem !important; line-height: 1; }
+      .wms-bin-card .bc-sku { font-size: 0.45rem !important; margin-top: 2px; }
+
+      /* Store toggle buttons */
+      .wms-store-toggle { padding: 4px 10px !important; font-size: 0.62rem !important; }
+
+      /* Modal */
+      .wms-modal { width: 96vw !important; max-height: 88vh !important; border-radius: 12px !important; }
+      .wms-modal-body { -webkit-overflow-scrolling: touch; }
+
+      /* Login */
+      .app-login-card { padding: 20px !important; margin: 16px !important; }
+      .app-login-card h2 { font-size: 1.1rem !important; }
+
+      /* Layout panel mobile */
+      #wmsPanel-layout > div:first-child { flex-wrap: wrap; gap: 5px; padding: 6px 8px; }
+      #wmsLayoutCanvas { min-width: 100%; }
+
+      /* Log panel mobile */
+      #wmsPanel-log .wms-filter-bar { flex-wrap: wrap; gap: 5px; }
+      #wmsPanel-log table th, #wmsPanel-log table td { font-size: 0.6rem !important; padding: 4px 6px !important; }
+
+      /* Dari Scan mobile */
+      #wmsPanel-scan-import .wms-scan-import { padding: 12px !important; }
+    }
+
+    /* Landscape */
+    @media (max-width: 900px) and (orientation: landscape) {
+      .bv-product-img,
+      .bv-product-img-placeholder { width: 90px !important; max-height: 110px !important; }
+      .wms-bin-grid { grid-template-columns: repeat(6, 1fr) !important; }
+      #wmsBinInfoPanel { max-height: 140px; }
+      .wms-body { padding-bottom: 44px; }
     }
   </style>
 </head>
@@ -1282,6 +1436,25 @@
     </div>
 
   </div><!-- end wms-body -->
+  <!-- MOBILE BOTTOM NAV — hanya tampil di mobile -->
+  <nav class="wms-mobile-nav" id="wmsMobileNav" style="display:none;">
+    <button onclick="wmsShowPanel('bin')" id="mnavBin" class="active">
+      <span class="mn-icon">📦</span>BIN
+    </button>
+    <button onclick="wmsShowPanel('layout')" id="mnavLayout">
+      <span class="mn-icon">🗺️</span>Layout
+    </button>
+    <button onclick="wmsShowPanel('scan-import')" id="mnavScan">
+      <span class="mn-icon">📱</span>Import
+    </button>
+    <button onclick="wmsShowPanel('log')" id="mnavLog">
+      <span class="mn-icon">📋</span>Log
+    </button>
+    <button onclick="switchPage('scan')" id="mnavScanPage">
+      <span class="mn-icon">🔍</span>Scan
+    </button>
+  </nav>
+
 </div><!-- end page-wms -->
 
 <!-- WMS MODAL JUAL/MOVE/DETAIL -->
@@ -2459,16 +2632,14 @@
   window.appLogout = function() {
     if (!confirm('Keluar dari aplikasi?')) return;
     wmsCurrentUser = null; wmsAllData = []; wmsFilteredData = [];
-    // Reset UI
     const tabMaster = document.getElementById('tabMaster');
     if (tabMaster) tabMaster.style.display = 'none';
     updateStoreBadge();
-    // Tampilkan login overlay kembali
+    document.getElementById('wmsMobileNav')?.style && (document.getElementById('wmsMobileNav').style.display = 'none');
     document.getElementById('appLoginOverlay').classList.add('show');
     document.getElementById('loginUsername').value = '';
     document.getElementById('loginPassword').value = '';
     document.getElementById('appLoginErr').textContent = '';
-    // Kembali ke scan page
     switchPage('scan');
   };
   window.switchPage = function(page) {
@@ -4517,12 +4688,20 @@
     if (panel) panel.classList.add('active');
     const clickedTab = event?.target;
     if (clickedTab) clickedTab.classList.add('active');
+    // Sync mobile bottom nav
+    const navMap = { 'bin':'mnavBin','layout':'mnavLayout','scan-import':'mnavScan','log':'mnavLog' };
+    document.querySelectorAll('.wms-mobile-nav button').forEach(b => b.classList.remove('active'));
+    if (navMap[name]) document.getElementById(navMap[name])?.classList.add('active');
     if (name === 'bin')  { wmsRenderBinView(); wmsUpdateBinLeftPanel(); }
     if (name === 'log')  { wmsLoadLog(); }
     if (name === 'stok') { /* removed */ }
     if (name === 'scan-import') wmsPreviewScan();
     if (name === 'layout') wmsRenderLayout();
     if (name === 'admin') wmsAdmInit();
+
+    // Tampilkan bottom nav di mobile
+    const mNav = document.getElementById('wmsMobileNav');
+    if (mNav) mNav.style.display = '';
   };
 
   // ═══════════════ TRANSACTION LOG ═══════════════
