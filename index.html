@@ -697,30 +697,20 @@
       .wms-topbar-right .wms-btn[onclick*="switchPage('scan')"] { display: flex !important; padding: 7px 12px; font-size: 0.72rem; }
       .wms-search-bar { display: none; }
 
-      /* ── BOTTOM NAV: hanya BIN View saja ── */
-      .wms-mobile-nav {
-        display: flex !important;
-        position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
-        background: var(--card); border-top: 2px solid var(--border);
-        padding: 6px 0 max(6px, env(safe-area-inset-bottom));
-      }
-      /* Sembunyikan semua tab kecuali BIN */
-      #mnavLayout, #mnavScan, #mnavLog { display: none !important; }
-      #mnavBin, #mnavScanPage {
-        flex: 1; background: none; border: none;
-        font-size: 0.72rem; font-weight: 600; padding: 6px 4px; cursor: pointer;
-        display: flex !important; flex-direction: column; align-items: center; gap: 3px;
-        color: var(--muted);
-      }
-      .wms-mobile-nav button .mn-icon { font-size: 1.4rem; line-height: 1; }
-      .wms-mobile-nav button.active { color: var(--accent); }
+      /* ── BOTTOM NAV: sembunyikan semua ── */
+      .wms-mobile-nav { display: none !important; }
 
-      .wms-body { flex-direction: column; overflow: hidden; padding-bottom: 64px; }
+      .wms-body { flex-direction: column; overflow: hidden; padding-bottom: 0; }
+
+      /* Sembunyikan tombol SCAN di topbar */
+      .wms-topbar-right .wms-btn[onclick*="switchPage('scan')"] { display: none !important; }
+
+      /* ── PANEL BIN VIEW ── */
 
       /* ── PANEL BIN VIEW ── */
       #wmsPanel-bin { flex-direction: column !important; overflow: hidden; display: flex; }
 
-      /* ── FILTER BAR: lebih besar ── */
+      /* ── FILTER BAR: hanya search, lebih besar ── */
       #wmsPanel-bin .wms-filter-bar {
         padding: 10px 12px; gap: 8px; flex-wrap: nowrap;
         flex-shrink: 0; align-items: center;
@@ -729,25 +719,19 @@
       /* Store toggle: lebih besar */
       #wmsStoreToggleBin { gap: 6px !important; flex-shrink: 0; }
       .wms-store-toggle {
-        padding: 9px 14px !important; font-size: 0.78rem !important;
-        font-weight: 700 !important; border-radius: 8px !important;
+        padding: 11px 16px !important; font-size: 0.82rem !important;
+        font-weight: 700 !important; border-radius: 10px !important;
         white-space: nowrap;
       }
-      /* Search input: lebih besar, full flex */
+      /* Search input: full width, sangat besar */
       #wmsBinSearchInput {
-        font-size: 0.85rem !important; padding: 10px 12px !important;
-        border-radius: 8px !important; flex: 1 !important;
+        font-size: 0.95rem !important; padding: 13px 14px !important;
+        border-radius: 10px !important; flex: 1 !important;
+        min-width: 0 !important;
       }
-      /* Scan input: lebih besar */
-      #wmsBinScanInput {
-        width: 110px !important; font-size: 0.82rem !important;
-        padding: 10px 10px !important; border-radius: 8px !important;
-      }
-      /* Clear button */
-      #wmsPanel-bin .wms-filter-bar > button:last-child {
-        padding: 9px 12px !important; font-size: 0.72rem !important;
-        border-radius: 8px !important; flex-shrink: 0;
-      }
+      /* Sembunyikan scan barcode input dan clear button */
+      #wmsBinScanInput { display: none !important; }
+      #wmsPanel-bin .wms-filter-bar > button:last-child { display: none !important; }
 
       /* Body wrapper: vertikal */
       #wmsPanel-bin > div:last-child {
