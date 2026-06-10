@@ -695,6 +695,12 @@
       .wms-topbar-right { gap: 6px; }
       .wms-topbar-right .wms-btn { display: none; }
       .wms-topbar-right .wms-btn[onclick*="switchPage('scan')"] { display: flex !important; padding: 7px 12px; font-size: 0.72rem; }
+      /* ── TOPBAR: sticky ── */
+      .wms-topbar {
+        position: sticky !important; top: 0; z-index: 50;
+        flex-shrink: 0 !important;
+      }
+
       .wms-search-bar { display: none; }
 
       /* ── BOTTOM NAV: sembunyikan semua ── */
@@ -702,16 +708,18 @@
 
       .wms-body { flex-direction: column; overflow: hidden; padding-bottom: 0; }
 
-      /* Sembunyikan tombol SCAN di topbar */
-      .wms-topbar-right .wms-btn[onclick*="switchPage('scan')"] { display: none !important; }
-
-      /* ── PANEL BIN VIEW ── */
+      /* Sembunyikan tombol SCAN & download & refresh di topbar */
+      .wms-topbar-right .wms-btn { display: none !important; }
+      /* Semua toko di topbar biarkan muncul */
+      #wmsStoreBadge { display: block !important; }
 
       /* ── PANEL BIN VIEW ── */
       #wmsPanel-bin { flex-direction: column !important; overflow: hidden; display: flex; }
 
-      /* ── FILTER BAR: hanya search, lebih besar ── */
+      /* ── FILTER BAR: sticky, hanya search + kamera ── */
       #wmsPanel-bin .wms-filter-bar {
+        position: sticky; top: 0; z-index: 40;
+        background: var(--card) !important;
         padding: 10px 12px; gap: 8px; flex-wrap: nowrap;
         flex-shrink: 0; align-items: center;
         border-bottom: 1px solid var(--border);
@@ -719,19 +727,21 @@
       /* Store toggle: lebih besar */
       #wmsStoreToggleBin { gap: 6px !important; flex-shrink: 0; }
       .wms-store-toggle {
-        padding: 11px 16px !important; font-size: 0.82rem !important;
+        padding: 13px 18px !important; font-size: 0.85rem !important;
         font-weight: 700 !important; border-radius: 10px !important;
         white-space: nowrap;
       }
       /* Search input: full width, sangat besar */
       #wmsBinSearchInput {
-        font-size: 0.95rem !important; padding: 13px 14px !important;
+        font-size: 1rem !important; padding: 14px 16px !important;
         border-radius: 10px !important; flex: 1 !important;
         min-width: 0 !important;
       }
       /* Sembunyikan scan barcode input dan clear button */
       #wmsBinScanInput { display: none !important; }
       #wmsPanel-bin .wms-filter-bar > button:last-child { display: none !important; }
+      /* Tampilkan tombol kamera mobile */
+      #wmsMobileCameraBtn { display: flex !important; }
 
       /* Body wrapper: vertikal */
       #wmsPanel-bin > div:last-child {
@@ -833,7 +843,6 @@
       .bv-product-img-placeholder { width: 110px !important; max-height: 130px !important; }
       .wms-bin-grid { grid-template-columns: repeat(6, 1fr) !important; }
       #wmsBinInfoPanel { max-height: 150px; }
-      .wms-body { padding-bottom: 56px; }
     }
   </style>
 </head>
@@ -1228,6 +1237,10 @@
           onkeydown="if(event.key==='Enter'){wmsBinScanBarcode(this.value);this.select();}"
           onblur="if(this.value.trim().length>3)wmsBinScanBarcode(this.value)"
           style="width:150px;padding:7px 10px;border-radius:7px;border:1px solid rgba(99,102,241,0.4);background:var(--bg);color:var(--text);font-size:0.72rem;font-family:monospace;" />
+        <!-- Tombol kamera mobile (hidden di desktop) -->
+        <button id="wmsMobileCameraBtn" onclick="wmsMobileOpenCamera()"
+          style="display:none;align-items:center;justify-content:center;width:46px;height:46px;border-radius:10px;border:1px solid rgba(99,102,241,0.4);background:rgba(99,102,241,0.1);color:#a78bfa;font-size:1.4rem;cursor:pointer;flex-shrink:0;"
+          title="Scan barcode via kamera">📷</button>
         <button onclick="wmsClearBinSearch()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:5px 10px;font-size:0.65rem;cursor:pointer;">✕ Clear</button>
       </div>
 
@@ -1456,7 +1469,31 @@
 
 </div><!-- end page-wms -->
 
-<!-- WMS MODAL JUAL/MOVE/DETAIL -->
+<!-- CAMERA MODAL untuk scan barcode mobile -->
+<div id="wmsCameraModal" style="display:none;position:fixed;inset:0;z-index:9999;background:#000;flex-direction:column;">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:rgba(0,0,0,0.8);position:absolute;top:0;left:0;right:0;z-index:10;">
+    <span style="color:#fff;font-size:1rem;font-weight:700;">📷 Scan Barcode</span>
+    <button onclick="wmsCameraClose()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:1.2rem;cursor:pointer;">✕</button>
+  </div>
+  <!-- Viewfinder -->
+  <video id="wmsCameraVideo" style="width:100%;height:100%;object-fit:cover;" autoplay playsinline muted></video>
+  <!-- Scan line -->
+  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
+    <div style="width:260px;height:120px;border:3px solid #22c55e;border-radius:12px;position:relative;box-shadow:0 0 0 4000px rgba(0,0,0,0.5);">
+      <div id="wmsScanLine" style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,#22c55e,transparent);animation:scanLine 1.5s ease-in-out infinite;"></div>
+    </div>
+  </div>
+  <div id="wmsCameraStatus" style="position:absolute;bottom:80px;left:0;right:0;text-align:center;color:#fff;font-size:0.85rem;padding:8px;">Arahkan kamera ke barcode...</div>
+  <div style="position:absolute;bottom:20px;left:0;right:0;text-align:center;">
+    <button onclick="wmsCameraClose()" style="background:rgba(239,68,68,0.9);border:none;color:#fff;padding:12px 32px;border-radius:25px;font-size:0.88rem;font-weight:700;cursor:pointer;">✕ Tutup</button>
+  </div>
+  <!-- Canvas untuk capture frame -->
+  <canvas id="wmsCameraCanvas" style="display:none;"></canvas>
+</div>
+
+<style>
+  @keyframes scanLine { 0%,100%{top:0} 50%{top:calc(100% - 3px)} }
+</style>
 <div class="wms-modal-backdrop" id="wmsModalBackdrop" onclick="if(event.target===this)wmsCloseModal()">
   <div class="wms-modal">
     <div class="wms-modal-header">
@@ -4097,10 +4134,13 @@
     const name    = first.name || first.description || first.Description || first.variant || '-';
     const article = first.generic || first.Generic || first.variant || '-';
     const brand   = first.brand || first.Brand || first.brand_name || first.Brand_Name || '-';
-    // Season — cek semua kemungkinan field name dari STOCK dan MASTER_PRODUK
+    // Season — cari dari semua item yang match, ambil yang pertama ada nilainya
     const prodMem = memProduk?.get(article) || memProduk?.get(first.generic) || memProduk?.get(first._id);
-    const season  = first.season || first.Season || first.season_yr || first.Season_Yr_
-                  || prodMem?.Season_Yr_ || prodMem?.SeasonYr || prodMem?.Season || '-';
+    const seasonFromItems = filtered.map(r =>
+      r.season || r.Season || r.season_yr || r.Season_Yr_ || r.SEASON || ''
+    ).find(s => s && s !== '-') || '';
+    const season = seasonFromItems
+      || prodMem?.Season_Yr_ || prodMem?.SeasonYr || prodMem?.Season || '-';
     const binList    = [...new Set(filtered.map(r=>r.bin))].slice(0,8);
     const sizeList   = [...new Set(filtered.map(r=>r.size_us||r.SIZE_US||'').filter(Boolean))].sort();
     const sizeUKList = [...new Set(filtered.map(r=>r.size_uk||r.SIZE_UK||'').filter(Boolean))].sort();
@@ -5249,7 +5289,92 @@
   };
   // Already assigned above: window.cacheAllMasterData, window.clearMasterCache, window.refreshCacheUI
 
-  // ═══════════════ PHOTO UPLOAD — FIREBASE STORAGE ═══════════════
+  // ═══════════════ MOBILE CAMERA SCAN ═══════════════
+  let wmsCameraStream   = null;
+  let wmsCameraTimer    = null;
+  let wmsBarcodeDetector = null;
+
+  window.wmsMobileOpenCamera = async function() {
+    const modal = document.getElementById('wmsCameraModal');
+    const video = document.getElementById('wmsCameraVideo');
+    const status = document.getElementById('wmsCameraStatus');
+    if (!modal || !video) return;
+
+    modal.style.display = 'flex';
+    modal.style.flexDirection = 'column';
+
+    try {
+      // Cek BarcodeDetector API
+      if ('BarcodeDetector' in window) {
+        wmsBarcodeDetector = new BarcodeDetector({
+          formats: ['ean_13','ean_8','code_128','code_39','upc_a','upc_e','qr_code']
+        });
+      }
+
+      // Buka kamera belakang
+      wmsCameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+      video.srcObject = wmsCameraStream;
+      await video.play();
+      if (status) status.textContent = 'Arahkan kamera ke barcode...';
+
+      // Mulai deteksi
+      wmsCameraStartDetect();
+
+    } catch(e) {
+      if (status) status.textContent = '❌ ' + (e.name === 'NotAllowedError' ? 'Izin kamera ditolak' : e.message);
+    }
+  };
+
+  function wmsCameraStartDetect() {
+    const video  = document.getElementById('wmsCameraVideo');
+    const canvas = document.getElementById('wmsCameraCanvas');
+    const status = document.getElementById('wmsCameraStatus');
+    if (!video || !canvas) return;
+
+    wmsCameraTimer = setInterval(async () => {
+      if (video.readyState < 2) return;
+
+      try {
+        let barcode = '';
+
+        if (wmsBarcodeDetector) {
+          // Native BarcodeDetector (Chrome Android)
+          const results = await wmsBarcodeDetector.detect(video);
+          if (results.length) barcode = results[0].rawValue;
+        } else {
+          // Fallback: capture frame ke canvas → kirim ke ZXing via API (tidak tersedia offline)
+          // Tampilkan input manual
+          if (status) status.textContent = 'Browser tidak support deteksi otomatis — ketik barcode manual';
+          clearInterval(wmsCameraTimer);
+          return;
+        }
+
+        if (barcode) {
+          clearInterval(wmsCameraTimer);
+          if (status) status.textContent = `✅ Terdeteksi: ${barcode}`;
+          // Jalankan pencarian
+          wmsBinScanBarcode(barcode);
+          const inp = document.getElementById('wmsBinSearchInput');
+          // Tampilkan hasil sebentar lalu tutup
+          setTimeout(() => wmsCameraClose(), 1200);
+        }
+      } catch(e) {}
+    }, 300);
+  }
+
+  window.wmsCameraClose = function() {
+    clearInterval(wmsCameraTimer);
+    if (wmsCameraStream) {
+      wmsCameraStream.getTracks().forEach(t => t.stop());
+      wmsCameraStream = null;
+    }
+    const modal = document.getElementById('wmsCameraModal');
+    const video = document.getElementById('wmsCameraVideo');
+    if (modal) modal.style.display = 'none';
+    if (video) video.srcObject = null;
+  };
   let photoSelectedDoc  = null;
   let photoSelectedFile = null;
   let photoSearchDebounce = null;
