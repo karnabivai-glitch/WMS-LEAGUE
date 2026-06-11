@@ -5354,9 +5354,28 @@
         if (barcode) {
           clearInterval(wmsCameraTimer);
           if (status) status.textContent = `✅ Terdeteksi: ${barcode}`;
-          // Jalankan pencarian
-          wmsBinScanBarcode(barcode);
+          
+          // Cari article dari barcode (sama seperti input manual)
+          const bcTrim = barcode.trim();
+          const bcRow = memBarcode.get(bcTrim) || memArticleB.get(bcTrim.toLowerCase());
+          let article = bcRow ? (bcRow.Article || bcRow.article || bcTrim) : bcTrim;
+          
+          // Fallback: gunakan scanLookupSync jika tidak ketemu
+          if (!bcRow) {
+            const lookup = scanLookupSync(bcTrim);
+            if (lookup && lookup.article) {
+              article = lookup.article;
+            }
+          }
+          
+          // Isi input search dengan article dan jalankan pencarian
           const inp = document.getElementById('wmsBinSearchInput');
+          if (inp) {
+            inp.value = article;
+            inp.focus();
+          }
+          wmsBinSearchLive(article);
+          
           // Tampilkan hasil sebentar lalu tutup
           setTimeout(() => wmsCameraClose(), 1200);
         }
