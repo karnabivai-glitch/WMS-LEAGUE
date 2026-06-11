@@ -694,7 +694,6 @@
       .wms-tabs { display: none; }
       .wms-topbar-right { gap: 6px; }
       .wms-topbar-right .wms-btn { display: none; }
-      .wms-topbar-right .wms-btn[onclick*="switchPage('scan')"] { display: flex !important; padding: 7px 12px; font-size: 0.72rem; }
       /* ── TOPBAR: sticky ── */
       .wms-topbar {
         position: sticky !important; top: 0; z-index: 50;
@@ -4151,29 +4150,33 @@
 
     const first   = filtered[0];
     const name    = first.name || first.description || first.Description || first.variant || '-';
-    const article = first.generic || first.Generic || first.variant || '-';
+    const article = first.generic || first.Generic || first.variant || first.sku || '-';
     const brand   = first.brand || first.Brand || first.brand_name || first.Brand_Name || '-';
-    // Season — cari dari semua item yang match, ambil yang pertama ada nilainya
-    const prodMem = memProduk?.get(article) || memProduk?.get(first.generic) || memProduk?.get(first._id);
-    const seasonFromItems = filtered.map(r =>
-      r.season || r.Season || r.season_yr || r.Season_Yr_ || r.SEASON || ''
-    ).find(s => s && s !== '-') || '';
-    const season = seasonFromItems
-      || prodMem?.Season_Yr_ || prodMem?.SeasonYr || prodMem?.Season || '-';
+    
+    // Season — cari dari memProduk pakai article/generic
+    let prodMem = memProduk?.get(article) || memProduk?.get(first.generic) || memProduk?.get(first._id) || memProduk?.get(first.variant);
+    // Fallback: cari dengan prefix (generic tanpa 3 digit terakhir)
+    if (!prodMem && article.length > 3) {
+      prodMem = memProduk?.get(article.substring(0, article.length - 3));
+    }
+    if (!prodMem && first.generic && first.generic.length > 3) {
+      prodMem = memProduk?.get(first.generic.substring(0, first.generic.length - 3));
+    }
+    
+    const season = prodMem?.Season_Yr_ || prodMem?.SeasonYr || prodMem?.Season || '-';
     const binList    = [...new Set(filtered.map(r=>r.bin))].slice(0,8);
     const sizeList   = [...new Set(filtered.map(r=>r.size_us||r.SIZE_US||'').filter(Boolean))].sort();
     const sizeUKList = [...new Set(filtered.map(r=>r.size_uk||r.SIZE_UK||'').filter(Boolean))].sort();
-    const prodRow = memProduk?.get(article) || memProduk?.get(first.generic);
-    let imgUrl    = prodRow?.image_url || prodRow?.img || '';
+    let imgUrl    = prodMem?.image_url || prodMem?.img || '';
 
     // Jika tidak ada di RAM, coba fetch dari Firestore (async, update UI saat dapat)
-    if (!imgUrl && db && (prodRow || first.generic)) {
-      const docId = prodRow?._id || first.generic || article;
+    if (!imgUrl && db && (prodMem || first.generic)) {
+      const docId = prodMem?._id || first.generic || article;
       getDoc(doc(db, 'MASTER_PRODUK', docId)).then(snap => {
         if (snap.exists() && snap.data().image_url) {
           const url = snap.data().image_url;
           // Update RAM agar tidak fetch lagi
-          if (prodRow) prodRow.image_url = url;
+          if (prodMem) prodMem.image_url = url;
           // Update UI langsung
           const imgEl = document.querySelector('#wmsBinProductInfo .bv-product-img');
           const phEl  = document.querySelector('#wmsBinProductInfo .bv-product-img-placeholder');
