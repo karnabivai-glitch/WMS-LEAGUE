@@ -5373,8 +5373,25 @@
         if (barcode) {
           clearInterval(wmsCameraTimer);
           if (status) status.textContent = `✅ Terdeteksi: ${barcode}`;
-          // Panggil wmsBinScanBarcode — sama persis dengan input Enter di PC
-          wmsBinScanBarcode(barcode);
+          
+          // --- SALINAN PERSIS dari wmsBinScanBarcode (input Enter PC) ---
+          const bcTrim = barcode.trim();
+          let bcRow    = memBarcode.get(bcTrim) || memArticleB.get(bcTrim.toLowerCase());
+          let article  = bcRow ? (bcRow.Article || bcRow.article || bcTrim) : bcTrim;
+          
+          // Fallback scanLookupSync jika tidak ketemu
+          if (!bcRow && typeof scanLookupSync === 'function') {
+            const lookup = scanLookupSync(bcTrim);
+            if (lookup && lookup.article) {
+              article = lookup.article;
+            }
+          }
+          
+          const inp = document.getElementById('wmsBinSearchInput');
+          if (inp) inp.value = article;
+          wmsBinSearchLive(article);
+          // --- AKHIR SALINAN ---
+          
           // Tampilkan hasil sebentar lalu tutup
           setTimeout(() => wmsCameraClose(), 1200);
         }
