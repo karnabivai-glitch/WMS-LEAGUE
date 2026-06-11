@@ -5354,8 +5354,28 @@
         if (barcode) {
           clearInterval(wmsCameraTimer);
           if (status) status.textContent = `✅ Terdeteksi: ${barcode}`;
-          // Panggil fungsi yang SAMA PERSIS dengan input Enter di PC
-          wmsBinScanBarcode(barcode);
+          
+          // Cari article dari barcode — logika persis seperti scanLookupSync di halaman SCAN
+          const bcTrim = barcode.trim();
+          let article = bcTrim;
+          
+          // 1. Coba cari di memBarcode (sama seperti input barcode manual)
+          const bcRow = memBarcode.get(bcTrim) || memArticleB.get(bcTrim.toLowerCase());
+          if (bcRow) {
+            article = bcRow.Article || bcRow.article || bcTrim;
+          } else {
+            // 2. Fallback: gunakan scanLookupSync (lebih lengkap, cari di memProduk juga)
+            const lookup = typeof scanLookupSync === 'function' ? scanLookupSync(bcTrim) : null;
+            if (lookup && lookup.article) {
+              article = lookup.article;
+            }
+          }
+          
+          // Isi input search dengan article dan jalankan pencarian
+          const inp = document.getElementById('wmsBinSearchInput');
+          if (inp) inp.value = article;
+          wmsBinSearchLive(article);
+          
           // Tampilkan hasil sebentar lalu tutup
           setTimeout(() => wmsCameraClose(), 1200);
         }
