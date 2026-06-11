@@ -4153,14 +4153,27 @@
     const article = first.generic || first.Generic || first.variant || first.sku || '-';
     const brand   = first.brand || first.Brand || first.brand_name || first.Brand_Name || '-';
     
-    // Season — cari dari memProduk pakai article/generic
-    let prodMem = memProduk?.get(article) || memProduk?.get(first.generic) || memProduk?.get(first._id) || memProduk?.get(first.variant);
-    // Fallback: cari dengan prefix (generic tanpa 3 digit terakhir)
-    if (!prodMem && article.length > 3) {
-      prodMem = memProduk?.get(article.substring(0, article.length - 3));
+    // Season — cari dari memProduk dengan berbagai variasi key
+    const genericCode = first.generic || first.Generic || first.variant || first.sku || '';
+    let prodMem = null;
+    
+    // Coba exact match dulu
+    if (genericCode) {
+      prodMem = memProduk?.get(genericCode)
+        || memProduk?.get(genericCode.substring(0, genericCode.length - 3))
+        || memProduk?.get(genericCode.substring(0, genericCode.length - 5));
     }
-    if (!prodMem && first.generic && first.generic.length > 3) {
-      prodMem = memProduk?.get(first.generic.substring(0, first.generic.length - 3));
+    // Coba dari _id atau variant
+    if (!prodMem) {
+      prodMem = memProduk?.get(first._id) || memProduk?.get(first.variant);
+    }
+    // Coba dari artikel di memBarcode (scanLookupSync logic)
+    if (!prodMem && typeof scanLookupSync === 'function') {
+      const lookup = scanLookupSync(genericCode);
+      if (lookup && lookup.article) {
+        prodMem = memProduk?.get(lookup.article)
+          || memProduk?.get(lookup.generic);
+      }
     }
     
     const season = prodMem?.Season_Yr_ || prodMem?.SeasonYr || prodMem?.Season || '-';
