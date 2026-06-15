@@ -753,7 +753,7 @@
         width: 100% !important; min-width: 0 !important;
         border-right: none !important; border-bottom: 1px solid var(--border);
         flex-shrink: 0; flex-direction: column !important;
-        max-height: 200px; overflow: hidden;
+        max-height: 280px; overflow: visible;
       }
       /* Sembunyikan stats SKU/Qty/BIN dan cat chips */
       #wmsBinInfoPanel > div:first-child { display: none !important; }
@@ -765,6 +765,7 @@
       }
       .bv-product-card {
         flex-direction: row !important; width: 100%; align-items: stretch;
+        min-height: 0; /* CRITICAL: allow flex container to shrink */
       }
       .bv-product-img {
         width: 160px !important; height: auto !important; max-height: 200px;
@@ -781,6 +782,7 @@
         flex: 1; min-width: 0; padding: 10px 14px !important;
         border-top: none !important; border-left: 1px solid var(--border);
         overflow-y: auto; -webkit-overflow-scrolling: touch;
+        min-height: 0; /* CRITICAL: allow flex child to shrink below content size */
       }
       .bv-product-name {
         font-size: 0.92rem !important; margin-bottom: 6px !important;
@@ -842,7 +844,7 @@
       .bv-product-img,
       .bv-product-img-placeholder { width: 110px !important; max-height: 130px !important; }
       .wms-bin-grid { grid-template-columns: repeat(6, 1fr) !important; }
-      #wmsBinInfoPanel { max-height: 150px; }
+      #wmsBinInfoPanel { max-height: 200px; overflow: visible; }
     }
   </style>
 </head>
@@ -4134,25 +4136,29 @@
     const name    = first.name || first.description || first.Description || first.variant || '-';
     const article = first.generic || first.Generic || first.variant || '-';
     const brand   = first.brand || first.Brand || first.brand_name || first.Brand_Name || '-';
-    // Cari prodMem — coba semua key: variant (artikel penuh), generic, prefix strip
-    const _variant = first.variant || first.sku || '';
-    const _generic = first.generic || first.Generic || '';
-    const _genericStrip = _variant.length > 3 ? _variant.substring(0, _variant.length - 3) : '';
-    const prodMem = memProduk?.get(_variant)
-      || memProduk?.get(_generic)
-      || memProduk?.get(_genericStrip)
-      || memProduk?.get(first._id)
-      || null;
     // Season — cari dari semua item yang match, ambil yang pertama ada nilainya
-    const seasonFromItems = filtered.map(r =>
-      r.season || r.Season || r.season_yr || r.Season_Yr_ || r.SEASON || ''
-    ).find(s => s && s !== '-') || '';
-    const season = seasonFromItems
-      || prodMem?.Season_Yr_ || prodMem?.SeasonYr || prodMem?.Season || prodMem?.season || '-';
+    const prodMem = memProduk?.get(article) || memProduk?.get(first.generic) || memProduk?.get(first._id);
+    // Season: cari dari semua item yang match, ambil yang pertama ada nilainya
+    // Coba semua variasi nama field yang mungkin
+    const seasonFromItems = filtered.map(r => {
+      // Cek semua kemungkinan nama field (case insensitive)
+      const s = r.season || r.Season || r.season_yr || r.Season_Yr_ || r.SEASON || 
+                r.season_yr_ || r.SEASON_YR || r.seasonYr || r.SeasonYr || 
+                r['Season Yr'] || r['season yr'] || '';
+      return s;
+    }).find(s => s && String(s).trim() !== '' && String(s).trim() !== '-') || '';
+
+    // Fallback ke master produk jika tidak ditemukan di items
+    const seasonFromMaster = prodMem ? (
+      prodMem.Season_Yr_ || prodMem.SeasonYr || prodMem.Season || 
+      prodMem.season || prodMem.season_yr || prodMem.SEASON || ''
+    ) : '';
+
+    const season = seasonFromItems || seasonFromMaster || '-';
     const binList    = [...new Set(filtered.map(r=>r.bin))].slice(0,8);
     const sizeList   = [...new Set(filtered.map(r=>r.size_us||r.SIZE_US||'').filter(Boolean))].sort();
     const sizeUKList = [...new Set(filtered.map(r=>r.size_uk||r.SIZE_UK||'').filter(Boolean))].sort();
-    const prodRow = prodMem || memProduk?.get(article) || memProduk?.get(_generic) || memProduk?.get(_genericStrip);
+    const prodRow = memProduk?.get(article) || memProduk?.get(first.generic);
     let imgUrl    = prodRow?.image_url || prodRow?.img || '';
 
     // Jika tidak ada di RAM, coba fetch dari Firestore (async, update UI saat dapat)
@@ -4559,7 +4565,7 @@
       if (!pivot[key]) pivot[key] = {
         sku: r.ARTICLE, bin: r.BIN, qty: 0,
         desc: r.DESCRIPTION||'', size_us: r.SIZE_US||'', size_uk: r.SIZE_UK||'',
-        generic: r.GENERIC||'', cat: r.CAT||'', brand: r.BRAND||'', season: r.SEASON||r.season||''
+        generic: r.GENERIC||'', cat: r.CAT||'', brand: r.BRAND||'', season: r.SEASON||''
       };
       pivot[key].qty++;
     });
