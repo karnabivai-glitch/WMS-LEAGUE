@@ -4135,12 +4135,12 @@
     const article = first.generic || first.Generic || first.variant || '-';
     const brand   = first.brand || first.Brand || first.brand_name || first.Brand_Name || '-';
     // Season — cari dari semua item yang match, ambil yang pertama ada nilainya
-    const prodMem = memProduk?.get(article) || memProduk?.get(first.generic) || memProduk?.get(first._id);
+    const prodMem = memProduk?.get(article) || memProduk?.get(first.generic) || memProduk?.get(first.variant) || memProduk?.get(first.sku) || memProduk?.get(first._id);
     const seasonFromItems = filtered.map(r =>
       r.season || r.Season || r.season_yr || r.Season_Yr_ || r.SEASON || ''
     ).find(s => s && s !== '-') || '';
     const season = seasonFromItems
-      || prodMem?.Season_Yr_ || prodMem?.SeasonYr || prodMem?.Season || '-';
+      || prodMem?.Season_Yr_ || prodMem?.SeasonYr || prodMem?.Season || prodMem?.season || '-';
     const binList    = [...new Set(filtered.map(r=>r.bin))].slice(0,8);
     const sizeList   = [...new Set(filtered.map(r=>r.size_us||r.SIZE_US||'').filter(Boolean))].sort();
     const sizeUKList = [...new Set(filtered.map(r=>r.size_uk||r.SIZE_UK||'').filter(Boolean))].sort();
@@ -4551,7 +4551,7 @@
       if (!pivot[key]) pivot[key] = {
         sku: r.ARTICLE, bin: r.BIN, qty: 0,
         desc: r.DESCRIPTION||'', size_us: r.SIZE_US||'', size_uk: r.SIZE_UK||'',
-        generic: r.GENERIC||'', cat: r.CAT||'', brand: r.BRAND||'', season: r.SEASON||''
+        generic: r.GENERIC||'', cat: r.CAT||'', brand: r.BRAND||'', season: r.SEASON||r.season||''
       };
       pivot[key].qty++;
     });
