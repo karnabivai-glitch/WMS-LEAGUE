@@ -4738,9 +4738,9 @@
     if (name === 'layout') wmsRenderLayout();
     if (name === 'admin') wmsAdmInit();
 
-    // Tampilkan bottom nav di mobile
+    // Tampilkan bottom nav hanya di mobile
     const mNav = document.getElementById('wmsMobileNav');
-    if (mNav) mNav.style.display = '';
+    if (mNav) mNav.style.display = window.innerWidth <= 768 ? '' : 'none';
   };
 
   // ═══════════════ TRANSACTION LOG ═══════════════
