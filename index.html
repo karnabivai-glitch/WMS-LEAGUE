@@ -3863,8 +3863,26 @@
   window.wmsBinScanBarcode = function(val) {
     if (!val || val.trim().length < 3) return;
     const barcode = val.trim();
-    const bcRow   = memBarcode.get(barcode) || memArticleB.get(barcode.toLowerCase());
-    const article = bcRow ? (bcRow.Article || bcRow.article || barcode) : barcode;
+    // 1. Coba lookup dari master cache (RAM)
+    let bcRow   = memBarcode.get(barcode) || memArticleB.get(barcode.toLowerCase());
+    let article = bcRow ? (bcRow.Article || bcRow.article || barcode) : null;
+
+    // 2. Kalau tidak ketemu di cache, coba cari langsung di wmsAllData (STOCK)
+    //    dengan matching barcode di field variant/sku/generic/name
+    if (!article) {
+      const stockMatch = wmsAllData.find(r => 
+        (r.variant && String(r.variant).trim() === barcode) ||
+        (r.sku && String(r.sku).trim() === barcode) ||
+        (r.generic && String(r.generic).trim() === barcode) ||
+        (r.barcode && String(r.barcode).trim() === barcode)
+      );
+      if (stockMatch) {
+        article = stockMatch.variant || stockMatch.sku || stockMatch.generic || barcode;
+      } else {
+        article = barcode; // fallback: pakai barcode mentah
+      }
+    }
+
     const inp = document.getElementById('wmsBinSearchInput');
     if (inp) inp.value = article;
     wmsBinSearchLive(article);
@@ -3876,8 +3894,25 @@
   window.wmsLayoutScanBarcode = function(val) {
     if (!val || val.trim().length < 3) return;
     const barcode = val.trim();
-    const bcRow   = memBarcode.get(barcode) || memArticleB.get(barcode.toLowerCase());
-    const article = bcRow ? (bcRow.Article || bcRow.article || barcode) : barcode;
+    // 1. Coba lookup dari master cache (RAM)
+    let bcRow   = memBarcode.get(barcode) || memArticleB.get(barcode.toLowerCase());
+    let article = bcRow ? (bcRow.Article || bcRow.article || barcode) : null;
+
+    // 2. Kalau tidak ketemu di cache, coba cari langsung di wmsAllData (STOCK)
+    if (!article) {
+      const stockMatch = wmsAllData.find(r => 
+        (r.variant && String(r.variant).trim() === barcode) ||
+        (r.sku && String(r.sku).trim() === barcode) ||
+        (r.generic && String(r.generic).trim() === barcode) ||
+        (r.barcode && String(r.barcode).trim() === barcode)
+      );
+      if (stockMatch) {
+        article = stockMatch.variant || stockMatch.sku || stockMatch.generic || barcode;
+      } else {
+        article = barcode;
+      }
+    }
+
     const inp = document.getElementById('wmsLayoutSearch');
     if (inp) inp.value = article;
     wmsLayoutDoSearch(article);
