@@ -5490,7 +5490,7 @@
   let wmsCameraTimer    = null;
   let wmsBarcodeDetector = null;
 
-  // ===== BEEP SOUND =====
+  // ===== BEEP SOUND - Supermarket Scanner Style =====
 let wmsAudioCtx = null;
 
 function wmsInitAudio() {
@@ -5506,17 +5506,33 @@ function wmsPlayBeep() {
   try {
     wmsInitAudio();
     if (!wmsAudioCtx) return;
-    const oscillator = wmsAudioCtx.createOscillator();
-    const gainNode = wmsAudioCtx.createGain();
-    oscillator.connect(gainNode);
-    gainNode.connect(wmsAudioCtx.destination);
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(1200, wmsAudioCtx.currentTime);
-    oscillator.frequency.exponentialRampToValueAtTime(600, wmsAudioCtx.currentTime + 0.08);
-    gainNode.gain.setValueAtTime(0.25, wmsAudioCtx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, wmsAudioCtx.currentTime + 0.12);
-    oscillator.start(wmsAudioCtx.currentTime);
-    oscillator.stop(wmsAudioCtx.currentTime + 0.12);
+
+    const t = wmsAudioCtx.currentTime;
+
+    // === Tone 1: High-pitched scanner beep (2.7kHz) ===
+    const osc1 = wmsAudioCtx.createOscillator();
+    const gain1 = wmsAudioCtx.createGain();
+    osc1.connect(gain1);
+    gain1.connect(wmsAudioCtx.destination);
+    osc1.type = 'square'; // Square wave = more "buzzy" like real scanner
+    osc1.frequency.setValueAtTime(2700, t);
+    gain1.gain.setValueAtTime(0.15, t);
+    gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+    osc1.start(t);
+    osc1.stop(t + 0.08);
+
+    // === Tone 2: Slightly lower harmonik untuk "fullness" ===
+    const osc2 = wmsAudioCtx.createOscillator();
+    const gain2 = wmsAudioCtx.createGain();
+    osc2.connect(gain2);
+    gain2.connect(wmsAudioCtx.destination);
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(1350, t); // Oktav di bawah
+    gain2.gain.setValueAtTime(0.08, t);
+    gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+    osc2.start(t);
+    osc2.stop(t + 0.1);
+
   } catch(e) { /* Audio not supported, silent fail */ }
 }
 
@@ -5580,12 +5596,12 @@ window.wmsMobileOpenCamera = async function() {
 
         if (barcode) {
           clearInterval(wmsCameraTimer);
-          wmsPlayBeep(); // 🔊 Beep!
+          wmsPlayBeep(); // 🔊 Beep! Instan - tidak tunggu apa-apa
           if (status) status.textContent = `✅ Terdeteksi: ${barcode}`;
-          // Jalankan pencarian (async - tunggu Firestore lookup)
-          await wmsBinScanBarcode(barcode);
-          // Tampilkan hasil sebentar lalu tutup
-          setTimeout(() => wmsCameraClose(), 1500);
+          // Jalankan pencarian di BACKGROUND - tidak block beep & UI
+          wmsBinScanBarcode(barcode);
+          // Tutup kamera cepat (300ms) - user sudah dengar beep & liat barcode
+          setTimeout(() => wmsCameraClose(), 300);
         }
       } catch(e) {}
     }, 300);
