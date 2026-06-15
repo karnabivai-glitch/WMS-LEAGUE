@@ -5490,7 +5490,38 @@
   let wmsCameraTimer    = null;
   let wmsBarcodeDetector = null;
 
-  window.wmsMobileOpenCamera = async function() {
+  // ===== BEEP SOUND =====
+let wmsAudioCtx = null;
+
+function wmsInitAudio() {
+  if (!wmsAudioCtx) {
+    wmsAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (wmsAudioCtx.state === 'suspended') {
+    wmsAudioCtx.resume();
+  }
+}
+
+function wmsPlayBeep() {
+  try {
+    wmsInitAudio();
+    if (!wmsAudioCtx) return;
+    const oscillator = wmsAudioCtx.createOscillator();
+    const gainNode = wmsAudioCtx.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(wmsAudioCtx.destination);
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(1200, wmsAudioCtx.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(600, wmsAudioCtx.currentTime + 0.08);
+    gainNode.gain.setValueAtTime(0.25, wmsAudioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, wmsAudioCtx.currentTime + 0.12);
+    oscillator.start(wmsAudioCtx.currentTime);
+    oscillator.stop(wmsAudioCtx.currentTime + 0.12);
+  } catch(e) { /* Audio not supported, silent fail */ }
+}
+
+window.wmsMobileOpenCamera = async function() {
+    wmsInitAudio(); // 🔊 Init audio context dari user gesture (klik tombol kamera)
     const modal = document.getElementById('wmsCameraModal');
     const video = document.getElementById('wmsCameraVideo');
     const status = document.getElementById('wmsCameraStatus');
@@ -5549,6 +5580,7 @@
 
         if (barcode) {
           clearInterval(wmsCameraTimer);
+          wmsPlayBeep(); // 🔊 Beep!
           if (status) status.textContent = `✅ Terdeteksi: ${barcode}`;
           // Jalankan pencarian (async - tunggu Firestore lookup)
           await wmsBinScanBarcode(barcode);
