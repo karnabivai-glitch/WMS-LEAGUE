@@ -694,7 +694,7 @@
       .wms-tabs { display: none; }
       .wms-topbar-right { gap: 6px; }
       .wms-topbar-right .wms-btn { display: none; }
-      .wms-topbar-right .wms-btn[onclick*="switchPage('scan')"] { display: flex !important; padding: 7px 12px; font-size: 0.72rem; }
+      .wms-topbar-right .wms-btn[onclick*="switchPage('scan')"] { display: none !important; padding: 7px 12px; font-size: 0.72rem; }
       /* ── TOPBAR: sticky ── */
       .wms-topbar {
         position: sticky !important; top: 0; z-index: 50;
@@ -706,7 +706,7 @@
       /* ── BOTTOM NAV: sembunyikan semua ── */
       .wms-mobile-nav { display: none !important; }
 
-      .wms-body { flex-direction: column; overflow: hidden; padding-bottom: 0; ; overflow: hidden; ; overflow: hidden; ; overflow: hidden; }
+      .wms-body { flex-direction: column; overflow: hidden; padding-bottom: 0; }
 
       /* Sembunyikan tombol SCAN & download & refresh di topbar */
       .wms-topbar-right .wms-btn { display: none !important; }
@@ -753,10 +753,7 @@
         width: 100% !important; min-width: 0 !important;
         border-right: none !important; border-bottom: 1px solid var(--border);
         flex-shrink: 0; flex-direction: column !important;
-        /* FIX: Hapus max-height, biarkan auto height */
-        /* Panel menyesuaikan tinggi konten secara natural */
-        max-height: none !important;
-        overflow: visible !important;
+        max-height: 200px; overflow: hidden;
       }
       /* Sembunyikan stats SKU/Qty/BIN dan cat chips */
       #wmsBinInfoPanel > div:first-child { display: none !important; }
@@ -768,30 +765,22 @@
       }
       .bv-product-card {
         flex-direction: row !important; width: 100%; align-items: stretch;
-        min-height: 0; /* CRITICAL: override default min-height:auto */
-        max-height: 240px; /* Batasi tinggi total card */
-        overflow: hidden; /* Pastikan konten tidak overflow */
       }
       .bv-product-img {
-        width: 120px !important; height: 120px !important; /* Fixed size */
-        max-height: 120px !important;
+        width: 160px !important; height: auto !important; max-height: 200px;
         aspect-ratio: auto !important; flex-shrink: 0;
         border-radius: 0 !important; background: #fff; object-fit: contain;
-        min-height: 0; /* CRITICAL: allow shrink */
       }
       .bv-product-img-placeholder {
-        width: 120px !important; height: 120px !important;
-        min-height: 120px; max-height: 120px !important;
+        width: 160px !important; height: auto !important;
+        min-height: 120px; max-height: 200px;
         aspect-ratio: auto !important; flex-shrink: 0;
         border-radius: 0 !important; font-size: 3rem !important;
-        min-height: 0; /* CRITICAL: allow shrink */
       }
       .bv-product-detail {
         flex: 1; min-width: 0; padding: 10px 14px !important;
         border-top: none !important; border-left: 1px solid var(--border);
         overflow-y: auto; -webkit-overflow-scrolling: touch;
-        min-height: 0; /* CRITICAL: override default min-height:auto */
-        /* Pastikan detail bisa scroll jika konten melebihi space */
       }
       .bv-product-name {
         font-size: 0.92rem !important; margin-bottom: 6px !important;
@@ -848,19 +837,12 @@
       .app-btn-login { font-size: 0.9rem !important; padding: 13px !important; }
     }
 
-    
-    /* FORCE: SEASON row selalu visible di mobile */
-    .bv-product-row:nth-child(5) {
-      display: flex !important;
-      visibility: visible !important;
-      opacity: 1 !important;
-    }
-/* Landscape */
+    /* Landscape */
     @media (max-width: 900px) and (orientation: landscape) {
       .bv-product-img,
       .bv-product-img-placeholder { width: 110px !important; max-height: 130px !important; }
       .wms-bin-grid { grid-template-columns: repeat(6, 1fr) !important; }
-      #wmsBinInfoPanel { max-height: none !important; overflow: visible !important; }
+      #wmsBinInfoPanel { max-height: 150px; }
     }
   </style>
 </head>
@@ -4154,23 +4136,11 @@
     const brand   = first.brand || first.Brand || first.brand_name || first.Brand_Name || '-';
     // Season — cari dari semua item yang match, ambil yang pertama ada nilainya
     const prodMem = memProduk?.get(article) || memProduk?.get(first.generic) || memProduk?.get(first._id);
-    // Season: cari dari semua item yang match, ambil yang pertama ada nilainya
-    // Coba semua variasi nama field yang mungkin
-    const seasonFromItems = filtered.map(r => {
-      // Cek semua kemungkinan nama field (case insensitive)
-      const s = r.season || r.Season || r.season_yr || r.Season_Yr_ || r.SEASON || 
-                r.season_yr_ || r.SEASON_YR || r.seasonYr || r.SeasonYr || 
-                r['Season Yr'] || r['season yr'] || '';
-      return s;
-    }).find(s => s && String(s).trim() !== '' && String(s).trim() !== '-') || '';
-
-    // Fallback ke master produk jika tidak ditemukan di items
-    const seasonFromMaster = prodMem ? (
-      prodMem.Season_Yr_ || prodMem.SeasonYr || prodMem.Season || 
-      prodMem.season || prodMem.season_yr || prodMem.SEASON || ''
-    ) : '';
-
-    const season = seasonFromItems || seasonFromMaster || '-';
+    const seasonFromItems = filtered.map(r =>
+      r.season || r.Season || r.season_yr || r.Season_Yr_ || r.SEASON || ''
+    ).find(s => s && s !== '-') || '';
+    const season = seasonFromItems
+      || prodMem?.Season_Yr_ || prodMem?.SeasonYr || prodMem?.Season || '-';
     const binList    = [...new Set(filtered.map(r=>r.bin))].slice(0,8);
     const sizeList   = [...new Set(filtered.map(r=>r.size_us||r.SIZE_US||'').filter(Boolean))].sort();
     const sizeUKList = [...new Set(filtered.map(r=>r.size_uk||r.SIZE_UK||'').filter(Boolean))].sort();
