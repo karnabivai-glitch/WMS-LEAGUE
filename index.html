@@ -737,9 +737,9 @@
         border-radius: 10px !important; flex: 1 !important;
         min-width: 0 !important;
       }
-      /* Sembunyikan scan barcode input dan clear button */
+      /* Sembunyikan scan barcode input */
       #wmsBinScanInput { display: none !important; }
-      #wmsPanel-bin .wms-filter-bar > button:last-child { display: none !important; }
+      /* Tombol clear sekarang ada di dalam div wrapper, tetap tampil */
       /* Tampilkan tombol kamera mobile */
       #wmsMobileCameraBtn { display: flex !important; }
 
@@ -1228,10 +1228,12 @@
         <select id="wmsFilterStoreBin" onchange="wmsRenderBinView()" style="display:none;">
           <option value="">🏪 Semua Toko</option>
         </select>
-        <div style="flex:1;min-width:200px;">
+        <div style="flex:1;min-width:200px;display:flex;align-items:center;gap:6px;">
           <input id="wmsBinSearchInput" placeholder="🔍 Cari SKU / BIN / Brand / Description..."
             oninput="wmsBinSearchLive(this.value)"
-            style="width:100%;padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.72rem;" />
+            style="flex:1;padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.72rem;" />
+          <button onclick="wmsClearBinSearch()" title="Clear pencarian"
+            style="flex-shrink:0;padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-size:0.72rem;cursor:pointer;white-space:nowrap;">✕ Clear</button>
         </div>
         <input id="wmsBinScanInput" placeholder="📷 Scan Barcode..."
           onkeydown="if(event.key==='Enter'){wmsBinScanBarcode(this.value);this.select();}"
@@ -1334,9 +1336,13 @@
       <!-- Toolbar -->
       <div class="wms-filter-bar" style="gap:6px;flex-wrap:wrap;">
         <span style="font-size:0.7rem;font-weight:700;color:var(--muted);">🗺️ LAYOUT</span>
-        <input id="wmsLayoutSearch" placeholder="🔍 Cari SKU..."
-          style="padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.72rem;width:160px;"
-          oninput="wmsLayoutDoSearch(this.value)" />
+        <div style="display:flex;align-items:center;gap:5px;">
+          <input id="wmsLayoutSearch" placeholder="🔍 Cari SKU..."
+            style="padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.72rem;width:130px;"
+            oninput="wmsLayoutDoSearch(this.value)" />
+          <button onclick="wmsLayoutClearSearch()" title="Clear"
+            style="padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--muted);font-size:0.62rem;cursor:pointer;">✕</button>
+        </div>
         <input id="wmsLayoutScanInput" placeholder="📷 Scan..."
           onkeydown="if(event.key==='Enter'){wmsLayoutScanBarcode(this.value);this.select();}"
           onblur="if(this.value.trim().length>3)wmsLayoutScanBarcode(this.value)"
