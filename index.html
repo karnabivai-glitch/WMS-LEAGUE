@@ -687,43 +687,60 @@
       }
       #page-wms.show { display: flex; }
 
-      /* ── TOPBAR ── */
-      .wms-topbar { padding: 10px 14px; min-height: 52px; flex-wrap: nowrap; }
-      .wms-logo { font-size: 0.92rem; font-weight: 800; }
-      .wms-store-badge { font-size: 0.72rem !important; padding: 5px 10px !important; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .wms-tabs { display: none; }
-      .wms-topbar-right { gap: 6px; }
-      .wms-topbar-right .wms-btn { display: none; }
-      .wms-topbar-right .wms-btn[onclick*="switchPage('scan')"] { display: flex !important; padding: 7px 12px; font-size: 0.72rem; }
-      /* ── TOPBAR: sticky ── */
+      /* ── PAGE WMS: fixed full screen ── */
+      #page-wms { position: fixed !important; inset: 0 !important; z-index: 100 !important; display: flex; flex-direction: column; overflow: hidden !important; }
+      #page-wms.show { display: flex !important; }
+
+      /* ── TOPBAR: sticky di atas, tidak scroll ── */
       .wms-topbar {
-        position: sticky !important; top: 0; z-index: 50;
+        position: sticky !important; top: 0 !important;
+        z-index: 300 !important; flex-shrink: 0 !important;
+        padding: 10px 14px !important; min-height: 56px !important;
+        flex-wrap: nowrap !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
+        background: var(--card) !important;
+        width: 100% !important;
+      }
+
+      .wms-logo { font-size: 0.92rem; font-weight: 800; }
+      .wms-store-badge { font-size: 0.72rem !important; padding: 5px 10px !important; max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .wms-tabs { display: none !important; }
+      .wms-topbar-right .wms-btn { display: none !important; }
+      .wms-topbar-right .wms-search-bar { display: none !important; }
+      #wmsLogoutBtnMobile { display: flex !important; }
+        flex: 1 !important; min-height: 0 !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+        padding: 0 !important; margin: 0 !important;
+      }
+
+      /* ── FILTER BAR BIN VIEW: fixed di bawah topbar ── */
+      #wmsPanel-bin .wms-filter-bar {
+        position: fixed !important;
+        top: 56px !important; left: 0 !important; right: 0 !important;
+        z-index: 250 !important; background: var(--card) !important;
+        padding: 10px 12px !important; gap: 8px !important;
+        flex-wrap: nowrap !important; align-items: center !important;
+        border-bottom: 2px solid var(--border) !important;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
         flex-shrink: 0 !important;
       }
 
-      .wms-search-bar { display: none; }
-
-      /* ── BOTTOM NAV: sembunyikan semua ── */
-      .wms-mobile-nav { display: none !important; }
-
-      .wms-body { flex-direction: column; overflow: hidden; padding-bottom: 0; }
-
-      /* Sembunyikan tombol SCAN & download & refresh di topbar */
-      .wms-topbar-right .wms-btn { display: none !important; }
-      /* Semua toko di topbar biarkan muncul */
-      #wmsStoreBadge { display: block !important; }
-
-      /* ── PANEL BIN VIEW ── */
-      #wmsPanel-bin { flex-direction: column !important; overflow: hidden; display: flex; }
-
-      /* ── FILTER BAR: sticky, hanya search + kamera ── */
-      #wmsPanel-bin .wms-filter-bar {
-        position: sticky; top: 0; z-index: 40;
-        background: var(--card) !important;
-        padding: 10px 12px; gap: 8px; flex-wrap: nowrap;
-        flex-shrink: 0; align-items: center;
-        border-bottom: 1px solid var(--border);
+      /* PANEL BIN VIEW: flex column, overflow hidden */
+      #wmsPanel-bin {
+        flex-direction: column !important; overflow: hidden !important;
+        display: flex !important; flex: 1 !important; min-height: 0 !important;
       }
+
+      /* Info panel + bin grid: push down untuk topbar(56px) + filter bar(60px) */
+      #wmsPanel-bin > div:last-child {
+        flex: 1 !important; overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        margin-top: 116px !important;
+      }
+
+      /* ── BOTTOM NAV: sembunyikan ── */
+      .wms-mobile-nav { display: none !important; }
       /* Store toggle: lebih besar */
       #wmsStoreToggleBin { gap: 6px !important; flex-shrink: 0; }
       .wms-store-toggle {
@@ -731,7 +748,7 @@
         font-weight: 700 !important; border-radius: 10px !important;
         white-space: nowrap;
       }
-      /* Search input: full width, sangat besar */
+      /* Search input: full width, besar */
       #wmsBinSearchInput {
         font-size: 1rem !important; padding: 14px 16px !important;
         border-radius: 10px !important; flex: 1 !important;
@@ -739,7 +756,7 @@
       }
       /* Sembunyikan scan barcode input dan clear button */
       #wmsBinScanInput { display: none !important; }
-      #wmsPanel-bin .wms-filter-bar > button:last-child { display: none !important; }
+      #wmsPanel-bin .wms-filter-bar > button[onclick*="wmsClearBinSearch"] { display: none !important; }
       /* Tampilkan tombol kamera mobile */
       #wmsMobileCameraBtn { display: flex !important; }
 
@@ -1203,7 +1220,13 @@
       </div>
     </div>
     <div class="wms-topbar-right">
-      <button class="wms-btn" onclick="switchPage('scan')" style="padding:6px 12px;font-size:0.65rem;background:rgba(249,115,22,0.15);color:var(--accent);border:1px solid rgba(249,115,22,0.3);" title="Kembali ke Scan">📱 SCAN</button>
+      <!-- Mobile: tombol logout -->
+      <button id="wmsLogoutBtnMobile" onclick="appLogout()"
+        style="display:none;padding:8px 14px;font-size:0.75rem;background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.3);border-radius:8px;font-weight:700;cursor:pointer;align-items:center;gap:5px;">
+        🚪 Keluar
+      </button>
+      <!-- Desktop: tombol logout -->
+      <button class="wms-btn" onclick="appLogout()" style="padding:6px 12px;font-size:0.65rem;background:rgba(239,68,68,0.12);color:var(--red);border:1px solid rgba(239,68,68,0.3);" title="Keluar">🚪 Keluar</button>
       <input class="wms-search-bar" id="wmsSearchBar" placeholder="🔍 Cari SKU / BIN / Brand..."
         oninput="const v=this.value;wmsBinSearchLive(v);const bi=document.getElementById('wmsBinSearchInput');if(bi)bi.value=v;" />
       <button class="wms-btn primary" onclick="wmsDownloadExcel()" style="padding:6px 10px;font-size:0.65rem;" title="Download Excel">📥</button>
@@ -4134,13 +4157,23 @@
     const name    = first.name || first.description || first.Description || first.variant || '-';
     const article = first.generic || first.Generic || first.variant || '-';
     const brand   = first.brand || first.Brand || first.brand_name || first.Brand_Name || '-';
-    // Season — cari dari semua item yang match, ambil yang pertama ada nilainya
-    const prodMem = memProduk?.get(article) || memProduk?.get(first.generic) || memProduk?.get(first._id);
-    const seasonFromItems = filtered.map(r =>
-      r.season || r.Season || r.season_yr || r.Season_Yr_ || r.SEASON || ''
-    ).find(s => s && s !== '-') || '';
-    const season = seasonFromItems
-      || prodMem?.Season_Yr_ || prodMem?.SeasonYr || prodMem?.Season || '-';
+    // Season — scan semua item & semua kemungkinan field
+    const prodMem  = memProduk?.get(article) || memProduk?.get(first.generic) || memProduk?.get(first._id);
+    const SEASON_FIELDS = ['season','Season','SEASON','season_yr','Season_Yr_','seasonYr','SeasonYr','season_year'];
+    let season = '-';
+    // Cari dari items
+    for (const r of filtered) {
+      for (const f of SEASON_FIELDS) {
+        if (r[f] && r[f] !== '-') { season = r[f]; break; }
+      }
+      if (season !== '-') break;
+    }
+    // Fallback ke memProduk
+    if (season === '-' && prodMem) {
+      for (const f of SEASON_FIELDS) {
+        if (prodMem[f] && prodMem[f] !== '-') { season = prodMem[f]; break; }
+      }
+    }
     const binList    = [...new Set(filtered.map(r=>r.bin))].slice(0,8);
     const sizeList   = [...new Set(filtered.map(r=>r.size_us||r.SIZE_US||'').filter(Boolean))].sort();
     const sizeUKList = [...new Set(filtered.map(r=>r.size_uk||r.SIZE_UK||'').filter(Boolean))].sort();
@@ -5354,10 +5387,19 @@
         if (barcode) {
           clearInterval(wmsCameraTimer);
           if (status) status.textContent = `✅ Terdeteksi: ${barcode}`;
+          // Beep sound saat barcode terdeteksi
+          try {
+            const ctx  = new (window.AudioContext || window.webkitAudioContext)();
+            const osc  = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.frequency.value = 1800; osc.type = 'sine';
+            gain.gain.setValueAtTime(0.4, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+            osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.15);
+          } catch(e) {}
           // Jalankan pencarian
           wmsBinScanBarcode(barcode);
-          const inp = document.getElementById('wmsBinSearchInput');
-          // Tampilkan hasil sebentar lalu tutup
           setTimeout(() => wmsCameraClose(), 1200);
         }
       } catch(e) {}
