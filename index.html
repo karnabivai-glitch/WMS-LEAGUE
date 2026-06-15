@@ -3883,12 +3883,44 @@
       return null;
     }
 
-    // Coba barcode asli
-    article = tryLookup(barcode);
+    // ===== VARIASI BARCODE YANG DICOBA =====
+    // BarcodeDetector API sering mengubah format barcode:
+    // - EAN-13 dengan leading 0 → di-strip jadi 12 digit (UPC-A)
+    // - EAN-13 13 digit → mungkin tanpa checksum
+    // Jadi kita coba SEMUA variasi yang mungkin
 
-    // Kalau tidak ketemu dan barcode 13 digit (EAN-13 dengan checksum), coba tanpa digit terakhir
-    if (!article && barcode.length === 13 && /^\d{13}$/.test(barcode)) {
-      article = tryLookup(barcode.slice(0, 12));
+    const variations = [barcode]; // 1. Original
+
+    // 2. Kalau 12 digit numerik, coba tambah leading 0 (EAN-13 → UPC-A conversion)
+    if (/^\d{12}$/.test(barcode)) {
+      variations.push('0' + barcode);
+    }
+
+    // 3. Kalau 13 digit dan mulai dengan 0, coba tanpa leading 0
+    if (/^0\d{12}$/.test(barcode)) {
+      variations.push(barcode.slice(1));
+    }
+
+    // 4. Kalau 13 digit numerik, coba tanpa digit terakhir (checksum)
+    if (/^\d{13}$/.test(barcode)) {
+      variations.push(barcode.slice(0, 12));
+    }
+
+    // 5. Kalau 12 digit numerik, coba tambah leading 0 + tanpa checksum
+    if (/^\d{12}$/.test(barcode)) {
+      variations.push('0' + barcode.slice(0, 11)); // 0 + 11 digit
+    }
+
+    // 6. Kalau 14 digit, coba tanpa digit terakhir
+    if (/^\d{14}$/.test(barcode)) {
+      variations.push(barcode.slice(0, 13));
+      variations.push(barcode.slice(0, 12));
+    }
+
+    // Coba setiap variasi sampai ketemu
+    for (const variant of variations) {
+      if (article) break;
+      article = tryLookup(variant);
     }
 
     // Kalau masih tidak ketemu, coba cari barcode sebagai substring di memBarcode keys
@@ -3918,10 +3950,10 @@
     wmsBinSearchLive(article);
     
     // Feedback: tunjukkan barcode vs article yang ditemukan
-    if (article !== barcode) {
+    if (article && article !== barcode) {
       showToast(`🔍 ${barcode} → ${article}`, 'success');
-    } else {
-      showToast(`⚠️ Barcode ${barcode} tidak ditemukan`, 'error');
+    } else if (!article || article === barcode) {
+      showToast(`⚠️ Barcode "${barcode}" tidak ditemukan. Coba: ${variations.join(', ')}`, 'error');
     }
     
     // Clear setelah pakai
@@ -3947,10 +3979,18 @@
       return null;
     }
 
-    article = tryLookup(barcode);
-    if (!article && barcode.length === 13 && /^\d{13}$/.test(barcode)) {
-      article = tryLookup(barcode.slice(0, 12));
+    const variations = [barcode];
+    if (/^\d{12}$/.test(barcode)) variations.push('0' + barcode);
+    if (/^0\d{12}$/.test(barcode)) variations.push(barcode.slice(1));
+    if (/^\d{13}$/.test(barcode)) variations.push(barcode.slice(0, 12));
+    if (/^\d{12}$/.test(barcode)) variations.push('0' + barcode.slice(0, 11));
+    if (/^\d{14}$/.test(barcode)) { variations.push(barcode.slice(0, 13)); variations.push(barcode.slice(0, 12)); }
+
+    for (const variant of variations) {
+      if (article) break;
+      article = tryLookup(variant);
     }
+
     if (!article) {
       for (const [key, row] of memBarcode) {
         if (key.includes(barcode) || barcode.includes(key)) {
