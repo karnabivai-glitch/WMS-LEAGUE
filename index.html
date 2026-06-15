@@ -3863,29 +3863,67 @@
   window.wmsBinScanBarcode = function(val) {
     if (!val || val.trim().length < 3) return;
     const barcode = val.trim();
-    // 1. Coba lookup dari master cache (RAM)
-    let bcRow   = memBarcode.get(barcode) || memArticleB.get(barcode.toLowerCase());
-    let article = bcRow ? (bcRow.Article || bcRow.article || barcode) : null;
+    let article = null;
 
-    // 2. Kalau tidak ketemu di cache, coba cari langsung di wmsAllData (STOCK)
-    //    dengan matching barcode di field variant/sku/generic/name
-    if (!article) {
+    // ===== HELPER: Coba berbagai variasi barcode =====
+    function tryLookup(code) {
+      // 1. Exact match di memBarcode
+      let row = memBarcode.get(code) || memArticleB.get(code.toLowerCase());
+      if (row) return row.Article || row.article || null;
+
+      // 2. Cari di wmsAllData (STOCK) — cocokkan barcode dengan variant/sku/generic
       const stockMatch = wmsAllData.find(r => 
-        (r.variant && String(r.variant).trim() === barcode) ||
-        (r.sku && String(r.sku).trim() === barcode) ||
-        (r.generic && String(r.generic).trim() === barcode) ||
-        (r.barcode && String(r.barcode).trim() === barcode)
+        (r.variant && String(r.variant).trim() === code) ||
+        (r.sku && String(r.sku).trim() === code) ||
+        (r.generic && String(r.generic).trim() === code) ||
+        (r.barcode && String(r.barcode).trim() === code)
       );
-      if (stockMatch) {
-        article = stockMatch.variant || stockMatch.sku || stockMatch.generic || barcode;
-      } else {
-        article = barcode; // fallback: pakai barcode mentah
+      if (stockMatch) return stockMatch.variant || stockMatch.sku || stockMatch.generic || null;
+
+      return null;
+    }
+
+    // Coba barcode asli
+    article = tryLookup(barcode);
+
+    // Kalau tidak ketemu dan barcode 13 digit (EAN-13 dengan checksum), coba tanpa digit terakhir
+    if (!article && barcode.length === 13 && /^\d{13}$/.test(barcode)) {
+      article = tryLookup(barcode.slice(0, 12));
+    }
+
+    // Kalau masih tidak ketemu, coba cari barcode sebagai substring di memBarcode keys
+    if (!article) {
+      for (const [key, row] of memBarcode) {
+        if (key.includes(barcode) || barcode.includes(key)) {
+          article = row.Article || row.article || null;
+          break;
+        }
       }
     }
+
+    // Kalau masih tidak ketemu, coba cari di wmsAllData dengan partial match
+    if (!article) {
+      const partialMatch = wmsAllData.find(r => {
+        const v = String(r.variant || r.sku || r.generic || '');
+        return v.includes(barcode) || barcode.includes(v);
+      });
+      if (partialMatch) article = partialMatch.variant || partialMatch.sku || partialMatch.generic || null;
+    }
+
+    // Fallback: pakai barcode mentah
+    if (!article) article = barcode;
 
     const inp = document.getElementById('wmsBinSearchInput');
     if (inp) inp.value = article;
     wmsBinSearchLive(article);
+    
+    // Feedback: tunjukkan barcode vs article yang ditemukan
+    if (article !== barcode) {
+      showToast(`🔍 ${barcode} → ${article}`, 'success');
+    } else {
+      showToast(`⚠️ Barcode ${barcode} tidak ditemukan`, 'error');
+    }
+    
     // Clear setelah pakai
     const scanInp = document.getElementById('wmsBinScanInput');
     if (scanInp) { scanInp.value = ''; scanInp.focus(); }
@@ -3894,24 +3932,41 @@
   window.wmsLayoutScanBarcode = function(val) {
     if (!val || val.trim().length < 3) return;
     const barcode = val.trim();
-    // 1. Coba lookup dari master cache (RAM)
-    let bcRow   = memBarcode.get(barcode) || memArticleB.get(barcode.toLowerCase());
-    let article = bcRow ? (bcRow.Article || bcRow.article || barcode) : null;
+    let article = null;
 
-    // 2. Kalau tidak ketemu di cache, coba cari langsung di wmsAllData (STOCK)
-    if (!article) {
+    function tryLookup(code) {
+      let row = memBarcode.get(code) || memArticleB.get(code.toLowerCase());
+      if (row) return row.Article || row.article || null;
       const stockMatch = wmsAllData.find(r => 
-        (r.variant && String(r.variant).trim() === barcode) ||
-        (r.sku && String(r.sku).trim() === barcode) ||
-        (r.generic && String(r.generic).trim() === barcode) ||
-        (r.barcode && String(r.barcode).trim() === barcode)
+        (r.variant && String(r.variant).trim() === code) ||
+        (r.sku && String(r.sku).trim() === code) ||
+        (r.generic && String(r.generic).trim() === code) ||
+        (r.barcode && String(r.barcode).trim() === code)
       );
-      if (stockMatch) {
-        article = stockMatch.variant || stockMatch.sku || stockMatch.generic || barcode;
-      } else {
-        article = barcode;
+      if (stockMatch) return stockMatch.variant || stockMatch.sku || stockMatch.generic || null;
+      return null;
+    }
+
+    article = tryLookup(barcode);
+    if (!article && barcode.length === 13 && /^\d{13}$/.test(barcode)) {
+      article = tryLookup(barcode.slice(0, 12));
+    }
+    if (!article) {
+      for (const [key, row] of memBarcode) {
+        if (key.includes(barcode) || barcode.includes(key)) {
+          article = row.Article || row.article || null;
+          break;
+        }
       }
     }
+    if (!article) {
+      const partialMatch = wmsAllData.find(r => {
+        const v = String(r.variant || r.sku || r.generic || '');
+        return v.includes(barcode) || barcode.includes(v);
+      });
+      if (partialMatch) article = partialMatch.variant || partialMatch.sku || partialMatch.generic || null;
+    }
+    if (!article) article = barcode;
 
     const inp = document.getElementById('wmsLayoutSearch');
     if (inp) inp.value = article;
@@ -5391,9 +5446,8 @@
           if (status) status.textContent = `✅ Terdeteksi: ${barcode}`;
           // Jalankan pencarian
           wmsBinScanBarcode(barcode);
-          const inp = document.getElementById('wmsBinSearchInput');
           // Tampilkan hasil sebentar lalu tutup
-          setTimeout(() => wmsCameraClose(), 1200);
+          setTimeout(() => wmsCameraClose(), 1500);
         }
       } catch(e) {}
     }, 300);
