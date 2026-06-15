@@ -3860,7 +3860,7 @@
 
   // ── SCAN BARCODE di BIN VIEW ──
   // Scan barcode → cari article di memBarcode → pakai article sebagai query
-  window.wmsBinScanBarcode = function(val) {
+  window.wmsBinScanBarcode = async function(val) {
     if (!val || val.trim().length < 3) return;
     const barcode = val.trim();
     let article = null;
@@ -3917,10 +3917,53 @@
       variations.push(barcode.slice(0, 12));
     }
 
-    // Coba setiap variasi sampai ketemu
+    // Coba setiap variasi di memory (RAM) dulu
     for (const variant of variations) {
       if (article) break;
       article = tryLookup(variant);
+    }
+
+    // ===== FIRESTORE FALLBACK: Kalau tidak ketemu di memory, query langsung ke Firebase =====
+    if (!article && db) {
+      try {
+        const { query, collection, where, getDocs, limit } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+
+        // Coba cari di MASTER_BARCODE dengan setiap variasi
+        for (const variant of variations) {
+          if (article) break;
+
+          // Query by Barcode field
+          let q = query(collection(db, 'MASTER_BARCODE'), where('Barcode', '==', variant), limit(1));
+          let snap = await getDocs(q);
+          if (!snap.empty) {
+            article = snap.docs[0].data().Article || snap.docs[0].data().article || null;
+            break;
+          }
+
+          // Query by doc ID (barcode as document ID)
+          const { getDoc, doc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+          const docSnap = await getDoc(doc(db, 'MASTER_BARCODE', variant));
+          if (docSnap.exists()) {
+            article = docSnap.data().Article || docSnap.data().article || null;
+            break;
+          }
+        }
+
+        // Kalau masih tidak ketemu, coba query dengan Article field (kalau barcode = article)
+        if (!article) {
+          for (const variant of variations) {
+            if (article) break;
+            let q = query(collection(db, 'MASTER_BARCODE'), where('Article', '==', variant), limit(1));
+            let snap = await getDocs(q);
+            if (!snap.empty) {
+              article = snap.docs[0].data().Article || snap.docs[0].data().article || null;
+              break;
+            }
+          }
+        }
+      } catch(e) {
+        console.warn('Firestore barcode lookup failed:', e);
+      }
     }
 
     // Kalau masih tidak ketemu, coba cari barcode sebagai substring di memBarcode keys
@@ -3961,7 +4004,7 @@
     if (scanInp) { scanInp.value = ''; scanInp.focus(); }
   };
 
-  window.wmsLayoutScanBarcode = function(val) {
+  window.wmsLayoutScanBarcode = async function(val) {
     if (!val || val.trim().length < 3) return;
     const barcode = val.trim();
     let article = null;
@@ -3989,6 +4032,29 @@
     for (const variant of variations) {
       if (article) break;
       article = tryLookup(variant);
+    }
+
+    // ===== FIRESTORE FALLBACK =====
+    if (!article && db) {
+      try {
+        const { query, collection, where, getDocs, limit, getDoc, doc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        for (const variant of variations) {
+          if (article) break;
+          let q = query(collection(db, 'MASTER_BARCODE'), where('Barcode', '==', variant), limit(1));
+          let snap = await getDocs(q);
+          if (!snap.empty) { article = snap.docs[0].data().Article || null; break; }
+          const docSnap = await getDoc(doc(db, 'MASTER_BARCODE', variant));
+          if (docSnap.exists()) { article = docSnap.data().Article || null; break; }
+        }
+        if (!article) {
+          for (const variant of variations) {
+            if (article) break;
+            let q = query(collection(db, 'MASTER_BARCODE'), where('Article', '==', variant), limit(1));
+            let snap = await getDocs(q);
+            if (!snap.empty) { article = snap.docs[0].data().Article || null; break; }
+          }
+        }
+      } catch(e) { console.warn('Firestore lookup failed:', e); }
     }
 
     if (!article) {
@@ -5484,8 +5550,8 @@
         if (barcode) {
           clearInterval(wmsCameraTimer);
           if (status) status.textContent = `✅ Terdeteksi: ${barcode}`;
-          // Jalankan pencarian
-          wmsBinScanBarcode(barcode);
+          // Jalankan pencarian (async - tunggu Firestore lookup)
+          await wmsBinScanBarcode(barcode);
           // Tampilkan hasil sebentar lalu tutup
           setTimeout(() => wmsCameraClose(), 1500);
         }
