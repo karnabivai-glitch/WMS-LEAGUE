@@ -4134,8 +4134,16 @@
     const name    = first.name || first.description || first.Description || first.variant || '-';
     const article = first.generic || first.Generic || first.variant || '-';
     const brand   = first.brand || first.Brand || first.brand_name || first.Brand_Name || '-';
+    // Cari prodMem — coba semua key: variant (artikel penuh), generic, prefix strip
+    const _variant = first.variant || first.sku || '';
+    const _generic = first.generic || first.Generic || '';
+    const _genericStrip = _variant.length > 3 ? _variant.substring(0, _variant.length - 3) : '';
+    const prodMem = memProduk?.get(_variant)
+      || memProduk?.get(_generic)
+      || memProduk?.get(_genericStrip)
+      || memProduk?.get(first._id)
+      || null;
     // Season — cari dari semua item yang match, ambil yang pertama ada nilainya
-    const prodMem = memProduk?.get(article) || memProduk?.get(first.generic) || memProduk?.get(first.variant) || memProduk?.get(first.sku) || memProduk?.get(first._id);
     const seasonFromItems = filtered.map(r =>
       r.season || r.Season || r.season_yr || r.Season_Yr_ || r.SEASON || ''
     ).find(s => s && s !== '-') || '';
@@ -4144,7 +4152,7 @@
     const binList    = [...new Set(filtered.map(r=>r.bin))].slice(0,8);
     const sizeList   = [...new Set(filtered.map(r=>r.size_us||r.SIZE_US||'').filter(Boolean))].sort();
     const sizeUKList = [...new Set(filtered.map(r=>r.size_uk||r.SIZE_UK||'').filter(Boolean))].sort();
-    const prodRow = memProduk?.get(article) || memProduk?.get(first.generic);
+    const prodRow = prodMem || memProduk?.get(article) || memProduk?.get(_generic) || memProduk?.get(_genericStrip);
     let imgUrl    = prodRow?.image_url || prodRow?.img || '';
 
     // Jika tidak ada di RAM, coba fetch dari Firestore (async, update UI saat dapat)
