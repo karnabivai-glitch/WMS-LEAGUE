@@ -898,7 +898,7 @@
         <div class="stat-mini" style="border-color:rgba(99,102,241,0.3);">
           <div class="val" id="statFirebaseTotal" style="color:#818cf8;">—</div>
           <div class="lbl" style="display:flex;align-items:center;justify-content:center;gap:3px;">
-            ☁️ Firebase
+            ☁️ Cloud
             <button onclick="refreshFirebaseCount()" style="background:none;border:none;cursor:pointer;font-size:0.6rem;color:var(--muted);padding:0;" title="Refresh">🔄</button>
           </div>
         </div>
@@ -1026,10 +1026,12 @@
       <button class="btn btn-reset" onclick="switchPage('scan')" style="width:auto;padding:8px 16px;">← Kembali</button>
     </div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
-      <h3>Konfigurasi Firebase</h3>
+      <h3>Konfigurasi Nhost</h3>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
-        <input id="cfgApiKey" placeholder="API Key..." style="padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);" />
-        <button class="btn btn-upload" onclick="initFirebase()" style="width:auto;">🔌 Sambungkan</button>
+        <input id="cfgSub" placeholder="Subdomain proyek..." style="padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);" />
+        <input id="cfgRegion" placeholder="Region (ap-southeast-1)..." style="padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);" />
+        <input id="cfgDomain" placeholder="Email domain (brg.local)..." style="padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);" />
+        <button class="btn btn-upload" onclick="initNhost()" style="width:auto;">🔌 Simpan Konfigurasi</button>
         <div id="configStatus" style="font-size:0.8rem;"></div>
       </div>
     </div>
@@ -1074,7 +1076,7 @@
     </div>
 
     <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;">
-      <h3>Upload Excel ke Firebase</h3>
+      <h3>Upload Excel ke Cloud</h3>
       <div id="dropzone" onclick="document.getElementById('fileInput').click()" style="border:2px dashed var(--border);border-radius:10px;padding:30px;text-align:center;cursor:pointer;margin-top:12px;">
         <p>📂 Klik atau drop file .xlsx</p>
       </div>
@@ -1083,11 +1085,11 @@
       <div id="sheetOptions" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;"></div>
       <div id="uploadCard" style="display:none;margin-top:16px;">
         <div style="font-size:0.68rem;color:var(--muted);background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:7px;padding:8px 10px;margin-bottom:10px;">
-          ℹ️ Hanya article <strong>baru</strong> yang belum ada di Firebase yang akan diupload. Data lama tetap aman, tidak ada yang dihapus.
+          ℹ️ Hanya article <strong>baru</strong> yang belum ada di Cloud yang akan diupload. Data lama tetap aman, tidak ada yang dihapus.
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-upload" onclick="startUpload()" style="width:auto;">⬆ Upload Article Baru</button>
-          <button class="btn" onclick="resetAndUpload()" style="width:auto;background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.4);font-size:0.65rem;" title="Hapus semua di Firebase lalu upload ulang dari Excel">🔄 Reset & Upload Ulang</button>
+          <button class="btn" onclick="resetAndUpload()" style="width:auto;background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.4);font-size:0.65rem;" title="Hapus semua di Cloud lalu upload ulang dari Excel">🔄 Reset & Upload Ulang</button>
           <button class="btn btn-danger" onclick="clearSelected()" style="width:auto;">✕ Batal</button>
         </div>
       </div>
@@ -1098,7 +1100,7 @@
     <!-- UPLOAD FOTO PRODUK -->
     <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-top:16px;">
       <h3>🖼️ Upload Foto Produk</h3>
-      <p style="font-size:0.68rem;color:var(--muted);margin:6px 0 14px;">Upload foto ke Firebase Storage. Foto akan ditampilkan di BIN View saat artikel dicari.</p>
+      <p style="font-size:0.68rem;color:var(--muted);margin:6px 0 14px;">Upload foto ke Cloud Storage. Foto akan ditampilkan di BIN View saat artikel dicari.</p>
 
       <!-- Search artikel -->
       <div style="display:flex;gap:8px;margin-bottom:12px;">
@@ -1143,7 +1145,7 @@
             <div>
               <div id="photoPreviewName" style="font-size:0.68rem;color:var(--muted);margin-bottom:4px;"></div>
               <div id="photoPreviewSize" style="font-size:0.62rem;color:var(--muted);margin-bottom:8px;"></div>
-              <button onclick="photoUploadNow()" class="btn btn-upload" style="width:auto;padding:7px 16px;" id="photoUploadBtn">☁️ Upload ke Firebase</button>
+              <button onclick="photoUploadNow()" class="btn btn-upload" style="width:auto;padding:7px 16px;" id="photoUploadBtn">☁️ Upload ke Cloud</button>
               <button onclick="photoCancelPreview()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:6px 10px;font-size:0.62rem;cursor:pointer;margin-left:6px;">Batal</button>
             </div>
           </div>
@@ -1172,10 +1174,14 @@
     <div style="font-size:2.5rem;margin-bottom:8px;">📦</div>
     <h2>BRG WMS</h2>
     <div class="sub">Warehouse Management System</div>
-    <!-- Step 1: Firebase API Key (jika belum tersimpan) -->
+    <!-- Step 1: Nhost Config (jika belum tersimpan) -->
     <div class="app-login-firebase" id="loginFirebaseStep">
-      <label>Firebase API Key</label>
-      <input type="text" id="loginApiKey" placeholder="Masukkan API Key..." />
+      <label>Nhost Subdomain</label>
+      <input type="text" id="loginSub" placeholder="Subdomain proyek..." />
+      <label>Region</label>
+      <input type="text" id="loginRegion" placeholder="ap-southeast-1" />
+      <label>Email Domain</label>
+      <input type="text" id="loginDomain" placeholder="brg.local" />
     </div>
     <!-- Step 2: Username & Password -->
     <input type="text" id="loginUsername" placeholder="Username" autocomplete="off"
@@ -1299,7 +1305,7 @@
             </div>
             <div id="srcFirebase" class="wms-src-card" onclick="wmsSetScanSource('firebase')">
               <div style="font-size:1.2rem;margin-bottom:4px;">☁️</div>
-              <div style="font-weight:700;font-size:0.75rem;">Firebase</div>
+              <div style="font-weight:700;font-size:0.75rem;">Cloud</div>
               <div style="font-size:0.6rem;color:var(--muted);margin-top:2px;">Semua data scan toko ini</div>
               <div id="srcFirebaseCount" style="font-size:0.7rem;font-weight:700;color:#818cf8;margin-top:4px;">— data</div>
             </div>
@@ -1525,7 +1531,7 @@
     <div class="export-opt firebase" id="exportFbOpt" onclick="doExportFirebase()">
       <div class="eo-icon">☁️</div>
       <div>
-        <div class="eo-title">Dari Firebase (Semua User)</div>
+        <div class="eo-title">Dari Cloud (Semua User)</div>
         <div class="eo-desc" id="exportFbDesc">Data keseluruhan semua device &nbsp;·&nbsp; Butuh koneksi</div>
       </div>
     </div>
@@ -1538,10 +1544,384 @@
 </div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore, collection, writeBatch, doc, getDocs, query, where, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  NHOST CLIENT SHIM
+  //  Menyediakan API kompatibel Firestore (collection/doc/query/getDocs/dll)
+  //  di atas Hasura GraphQL + Nhost Auth + Nhost Storage.
+  //  Konfigurasi disimpan di localStorage: nh_sub, nh_region, nh_email_domain
+  // ═══════════════════════════════════════════════════════════════════════════
 
-  const PROJECT_ID = "wms-league";
+  const NH = {
+    get sub()  { return localStorage.getItem('nh_sub') || ''; },
+    get reg()  { return localStorage.getItem('nh_region') || 'ap-southeast-1'; },
+    get dom()  { return localStorage.getItem('nh_email_domain') || 'brg.local'; },
+    setCfg(sub, reg, dom) {
+      if (sub) localStorage.setItem('nh_sub', sub);
+      if (reg) localStorage.setItem('nh_region', reg);
+      if (dom) localStorage.setItem('nh_email_domain', dom);
+    },
+    authUrl(p)  { return `https://${this.sub}.auth.${this.reg}.nhost.run/v1${p}`; },
+    gqlUrl()    { return `https://${this.sub}.hasura.${this.reg}.nhost.run/v1/graphql`; },
+    storageUrl(p){ return `https://${this.sub}.storage.${this.reg}.nhost.run/v1${p}`; },
+    get at()    { return localStorage.getItem('nh_at') || ''; },
+    get rt()    { return localStorage.getItem('nh_rt') || ''; },
+    setSession(s) {
+      localStorage.setItem('nh_at',  s.accessToken  || '');
+      localStorage.setItem('nh_rt',  s.refreshToken  || '');
+      localStorage.setItem('nh_exp', String(s.accessTokenExpiresIn ? Date.now() + s.accessTokenExpiresIn*1000 : (Date.now()+900000)));
+      if (s.user) localStorage.setItem('nh_user', JSON.stringify(s.user));
+    },
+    clearSession() {
+      ['nh_at','nh_rt','nh_exp','nh_user'].forEach(k => localStorage.removeItem(k));
+    },
+  };
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  async function nhSignIn(email, password) {
+    const r = await fetch(NH.authUrl('/signin/email-password'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.session) throw new Error(j.message || j.error_description || j.error || 'Login gagal');
+    NH.setSession(j.session);
+    db = {}; // tandai "terhubung"
+    return j.session;
+  }
+
+  async function nhRefresh() {
+    if (!NH.rt) return false;
+    try {
+      const r = await fetch(NH.authUrl('/token'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: NH.rt }),
+      });
+      if (!r.ok) { NH.clearSession(); db = null; return false; }
+      const j = await r.json();
+      NH.setSession(j);
+      db = {};
+      return true;
+    } catch (e) { return false; }
+  }
+
+  async function nhSignOut() {
+    try {
+      if (NH.rt) await fetch(NH.authUrl('/signout'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: NH.rt }),
+      });
+    } catch (e) {}
+    NH.clearSession();
+    db = null;
+  }
+
+  async function nhEnsureToken() {
+    if (!NH.at) return false;
+    const exp = Number(localStorage.getItem('nh_exp') || 0);
+    if (exp && Date.now() > exp - 30000) return await nhRefresh();
+    return true;
+  }
+
+  // ── GraphQL ───────────────────────────────────────────────────────────────
+  async function nhGql(query, variables) {
+    if (!(await nhEnsureToken())) throw new Error('Belum terhubung ke Nhost');
+    const r = await fetch(NH.gqlUrl(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${NH.at}` },
+      body: JSON.stringify({ query, variables: variables || {} }),
+    });
+    if (r.status === 401) { // token basi → refresh sekali lalu ulang
+      if (await nhRefresh()) {
+        return await nhGql(query, variables);
+      }
+      throw new Error('Sesi berakhir, silakan login ulang');
+    }
+    const j = await r.json();
+    if (j.errors && j.errors.length) throw new Error(j.errors[0].message);
+    return j.data;
+  }
+
+  // ── Tabel: pemetaan koleksi → tabel + kolom ───────────────────────────────
+  const TBL = {
+    SCAN_DATA:      { t:'scan_data',      pk:'local_id', extra:false,
+      alias:{BARCODE:'barcode',LOKASI:'lokasi',ARTICLE:'article',BIN:'bin',SIZE_US:'size_us',SIZE_UK:'size_uk',GENERIC:'generic',DESCRIPTION:'description',BRAND:'brand',CAT:'cat',SEASON:'season',DATE:'scan_date',USER:'scanned_by',MERCH_CAT:'merch_cat'},
+      cols:['local_id','store_code','barcode','lokasi','article','bin','size_us','size_uk','generic','description','brand','cat','season','scan_date','scanned_by','merch_cat','scanned_at','created_at'] },
+    MASTER_BARCODE: { t:'master_barcode', pk:'id', extra:true,
+      alias:{Barcode:'barcode',Article:'article',Description:'description',updatedAt:'updated_at'},
+      cols:['id','barcode','article','description','updated_at','created_at'] },
+    MASTER_PRODUK:  { t:'master_produk',  pk:'id', extra:true,
+      alias:{Article:'article',Description:'description',Brand_Name:'brand_name',Season_Yr_:'season_yr',Merch_Cat:'merch_cat',updatedAt:'updated_at'},
+      cols:['id','article','description','brand_name','season_yr','merch_cat','image_url','updated_at','created_at'] },
+    SIZE:           { t:'size_chart',     pk:'id', extra:true,
+      alias:{US_Size:'us_size',Gender:'gender',UK_Size:'uk_size',updatedAt:'updated_at'},
+      cols:['id','us_size','gender','uk_size','updated_at','created_at'] },
+    STOCK:          { t:'stock',          pk:'id', extra:false, alias:{},
+      cols:['id','store_code','store_name','generic','cat','variant','sku','name','brand','size_us','size_uk','bin','season','qty','updated_at','created_at'] },
+    STORES:         { t:'stores',         pk:'code', extra:false, alias:{},
+      cols:['code','name','created_at'] },
+    USERS_WMS:      { t:'user_profiles',  pk:'username', extra:false, alias:{},
+      cols:['username','user_id','role','store_code','store_name','created_at'] },
+    TRANSACTIONS:   { t:'transactions',   pk:'id', extra:false, alias:{},
+      cols:['id','type','store_code','store_name','sku','bin','bin_to','qty','note','user','created_at'] },
+    BIN_LAYOUT:     { t:'bin_layout',     pk:'store_code', extra:false, alias:{updatedAt:'updated_at'},
+      cols:['store_code','positions','floors','updated_at'] },
+    _META:          { t:'meta_cache',     pk:'key', extra:false, alias:{updatedAt:'updated_at', uploadedBy:'uploaded_by'},
+      cols:['key','updated_at','count','uploaded_by'] },
+  };
+  // alias balik: kolom DB -> key aplikasi (dipakai present())
+  Object.values(TBL).forEach(T => { T.rev = {}; Object.entries(T.alias).forEach(([k,v]) => T.rev[v] = k); });
+  const TBL_BY_TABLE = Object.fromEntries(Object.entries(TBL).map(([k,v]) => [v.t, v]));
+
+  // ── Ref pembangun (kompatibel Firestore) ──────────────────────────────────
+  function mkRef(coll, store) { return { coll, store: store||null, wheres:[], orders:[], lim:null }; }
+  function collection(dbArg, a, b, c) {
+    if (a === 'STORES' && c === 'SCAN_DATA') return mkRef('SCAN_DATA', b);
+    if (typeof a === 'string' && a.includes('/')) {
+      const p = a.split('/');
+      if (p[0] === 'STORES' && p[2] === 'SCAN_DATA') return mkRef('SCAN_DATA', p[1]);
+      return mkRef(a);
+    }
+    return mkRef(a);
+  }
+  function doc(dbArg, coll, id) {
+    // doc(collectionRef) → dokumen baru dengan id otomatis (gaya Firestore)
+    if (dbArg && typeof dbArg === 'object' && dbArg.coll) { const r0 = mkRef(dbArg.coll, dbArg.store); r0.id = coll; return r0; }
+    const r = mkRef(coll); r.id = id; return r;
+  }
+  function where(f, op, v) { return { k:'where', f, op, v }; }
+  function orderBy(f, d)  { return { k:'order', f, d }; }
+  function limit(n)       { return { k:'limit', n }; }
+  function query(ref, ...cs) {
+    const r = mkRef(ref.coll, ref.store); r.id = ref.id;
+    cs.forEach(c => {
+      if (!c) return;
+      if (c.k === 'where') r.wheres.push(c);
+      else if (c.k === 'order') r.orders.push(c);
+      else if (c.k === 'limit') r.lim = c.n;
+    });
+    return r;
+  }
+
+  function mapCol(T, f) { return T.alias[f] || f; }
+
+  function buildWhere(T, ref) {
+    const conds = [];
+    if (ref.store) conds.push({ store_code: { _eq: ref.store } });
+    ref.wheres.forEach(w => {
+      const col = mapCol(T, w.f);
+      if (T.cols.indexOf(col) < 0 && col !== T.pk) return; // lewati kolom tak dikenal
+      let val = w.v;
+      const opMap = { '==':'_eq', '>':'_gt', '>=':'_gte', '<':'_lt', '<=':'_lte' };
+      const gop = opMap[w.op] || '_eq';
+      if (gop === '_eq' && val !== null && val !== undefined) val = String(val); // kolom teks
+      const cond = {}; cond[col] = {}; cond[col][gop] = val;
+      conds.push(cond);
+    });
+    if (!conds.length) return {};
+    if (conds.length === 1) return conds[0];
+    return { _and: conds };
+  }
+
+  function buildOrder(T, ref) {
+    if (!ref.orders.length) return undefined;
+    const o = {};
+    ref.orders.forEach(x => { o[mapCol(T, x.f)] = (x.d === 'desc' ? 'desc' : 'asc'); });
+    return o;
+  }
+
+  // Ubah row DB → objek seperti dokumen Firestore (sebar extra utk kolom dinamis)
+  function present(T, row) {
+    if (!row) return row;
+    const o = {};
+    if (T.extra && row.extra && typeof row.extra === 'object') Object.assign(o, row.extra);
+    T.cols.forEach(c => { if (c !== 'extra') o[(T.rev && T.rev[c]) || c] = row[c]; });
+    delete o.extra;
+    return o;
+  }
+
+  // Ubah objek dokumen → input insert (pisahkan kolom dikenal vs extra)
+  function toInput(T, data, forcedId, store) {
+    const obj = {};
+    const ext = {};
+    Object.keys(data || {}).forEach(k => {
+      if (k === 'synced' || k === '_id') return;
+      const col = mapCol(T, k);
+      if (T.cols.indexOf(col) >= 0 && col !== T.pk) obj[col] = data[k];
+      else if (T.extra) ext[k] = data[k];
+    });
+    if (T.extra && Object.keys(ext).length) obj.extra = ext;
+    const pkVal = forcedId !== undefined && forcedId !== null ? forcedId
+      : (data && data[T.pk] !== undefined ? data[T.pk] : undefined);
+    if (pkVal !== undefined && pkVal !== null && T.pk !== 'id') obj[T.pk] = pkVal;
+    else if (pkVal !== undefined && pkVal !== null && T.pk === 'id') obj.id = pkVal;
+    if (store) obj.store_code = store;
+    // Kolom teks di Postgres: ubah angka (mis. barcode/article dari Excel) menjadi string
+    const NON_TEXT = ['qty','count','floors','extra','updated_at','created_at','scanned_at'];
+    Object.keys(obj).forEach(k => {
+      if (NON_TEXT.indexOf(k) < 0 && typeof obj[k] === 'number') obj[k] = String(obj[k]);
+    });
+    return obj;
+  }
+
+  function selFields(T) {
+    const f = T.cols.filter(c => c !== 'extra');
+    if (T.extra) f.push('extra');
+    return f.join(' ');
+  }
+
+  const OP_MAP = { '==':'_eq', '>':'_gt', '>=':'_gte', '<':'_lt', '<=':'_lte' };
+
+  // ── Operasi baca ──────────────────────────────────────────────────────────
+  async function getDocs(ref) {
+    const T = TBL[ref.coll]; if (!T) return { empty:true, size:0, docs:[], forEach(){} };
+    const whereStr = JSON.stringify(buildWhere(T, ref));
+    const ord = buildOrder(T, ref);
+    const args = [`where: $where`];
+    if (ord) args.push(`order_by: { ${Object.entries(ord).map(([k, d]) => `${k}: ${d}`).join(', ')} }`); // enum GraphQL, bukan JSON
+    if (ref.lim) args.push(`limit: ${ref.lim}`);
+    const q = `query($where: ${T.t}_bool_exp!) { ${T.t}(${args.join(', ')}) { ${selFields(T)} } }`;
+    const data = await nhGql(q, { where: JSON.parse(whereStr) });
+    const rows = data[T.t] || [];
+    const docs = rows.map(row => {
+      const id = row[T.pk];
+      const ref2 = mkRef(ref.coll, ref.store); ref2.id = id;
+      return { id, ref: ref2, data: () => present(T, row), exists: () => true };
+    });
+    return { empty: docs.length === 0, size: docs.length, docs, forEach(cb){ docs.forEach(cb); } };
+  }
+
+  async function getDoc(ref) {
+    const T = TBL[ref.coll]; if (!T) return { exists: () => false, data: () => ({}) };
+    const q = `query($id: ${T.t === 'transactions' ? 'bigint' : 'String'}!) { ${T.t}(where: { ${T.pk}: { _eq: $id } }, limit: 1) { ${selFields(T)} } }`;
+    const data = await nhGql(q, { id: String(ref.id) });
+    const row = (data[T.t] || [])[0];
+    return {
+      id: row ? row[T.pk] : ref.id,
+      exists: () => !!row,
+      data: () => present(T, row) || {},
+    };
+  }
+
+  async function getCountFromServer(ref) {
+    const T = TBL[ref.coll]; if (!T) return { data: () => ({ count: 0 }) };
+    const whereStr = JSON.stringify(buildWhere(T, ref));
+    const q = `query($where: ${T.t}_bool_exp!) { ${T.t}_aggregate(where: $where) { aggregate { count } } }`;
+    const data = await nhGql(q, { where: JSON.parse(whereStr) });
+    const count = data[`${T.t}_aggregate`]?.aggregate?.count || 0;
+    return { data: () => ({ count }) };
+  }
+
+  // Realtime:ambil sekali lalu poll tiap 15 detik (ganti onSnapshot)
+  function onSnapshot(ref, cb, errCb) {
+    let alive = true;
+    const snap = async () => {
+      try {
+        const res = await getDocs(ref);
+        if (alive) cb(res);
+      } catch (e) { if (alive && errCb) errCb(e); }
+    };
+    snap();
+    const iv = setInterval(snap, 15000);
+    return () => { alive = false; clearInterval(iv); };
+  }
+
+  // ── Operasi tulis ─────────────────────────────────────────────────────────
+  async function upsertObjects(coll, objs) {
+    const T = TBL[coll]; if (!T || !objs.length) return;
+    if (T.pk !== 'id' || coll !== 'TRANSACTIONS') {
+      // satu perintah upsert tidak boleh memuat pk yang sama dua kali (yang terakhir menang)
+      const seen = new Map();
+      objs.forEach(o => { const k = o[T.pk]; if (k === undefined || k === null) seen.set(Symbol(), o); else seen.set(String(k), o); });
+      objs = [...seen.values()];
+    }
+    const updCols = T.cols.filter(c => c !== T.pk && c !== 'extra');
+    if (T.extra) updCols.push('extra');
+    const q = `mutation($objs: [${T.t}_insert_input!]!) {
+      insert_${T.t}(objects: $objs, on_conflict: { constraint: ${T.t}_pkey, update_columns: [${updCols.join(', ')}] }) { affected_rows }
+    }`;
+    await nhGql(q, { objs });
+  }
+
+  async function deleteByPk(coll, ids) {
+    const T = TBL[coll]; if (!T || !ids.length) return;
+    const q = `mutation($ids: [String!]!) {
+      delete_${T.t}(where: { ${T.pk}: { _in: $ids } }) { affected_rows }
+    }`;
+    await nhGql(q, { ids: ids.map(String) });
+  }
+
+  async function deleteWhere(coll, whereObj) {
+    const T = TBL[coll]; if (!T) return { data: () => ({ affected_rows: 0 }) };
+    const q = `mutation($where: ${T.t}_bool_exp!) {
+      delete_${T.t}(where: $where) { affected_rows }
+    }`;
+    return await nhGql(q, { where: whereObj });
+  }
+
+  async function setDoc(ref, data) {
+    const T = TBL[ref.coll]; if (!T) return;
+    const obj = toInput(T, data, ref.id, ref.store);
+    await upsertObjects(ref.coll, [obj]);
+  }
+
+  async function updateDoc(ref, data) {
+    const T = TBL[ref.coll]; if (!T) return;
+    const set = {};
+    Object.keys(data || {}).forEach(k => {
+      const col = mapCol(T, k);
+      if (T.cols.indexOf(col) >= 0 && col !== T.pk) set[col] = data[k];
+      else if (T.extra && k === 'extra') set.extra = data[k];
+    });
+    const q = `mutation($where: ${T.t}_bool_exp!, $set: ${T.t}_set_input!) {
+      update_${T.t}(where: $where, _set: $set) { affected_rows }
+    }`;
+    const whereObj = {}; whereObj[T.pk] = { _eq: String(ref.id) };
+    await nhGql(q, { where: whereObj, set });
+  }
+
+  async function deleteDoc(ref) {
+    await deleteByPk(ref.coll, [ref.id]);
+  }
+
+  async function addDoc(ref, data) {
+    const T = TBL[ref.coll]; if (!T) return { id: '' };
+    const obj = toInput(T, data, null, ref.store);
+    delete obj[T.pk]; // biarkan DB generate (serial)
+    const q = `mutation($obj: ${T.t}_insert_input!) {
+      insert_${T.t}(objects: [$obj]) { returning { ${T.pk} } }
+    }`;
+    const res = await nhGql(q, { obj });
+    return { id: res[`insert_${T.t}`].returning[0][T.pk] };
+  }
+
+  function writeBatch() {
+    const sets = [], dels = [];
+    let coll = null, store = null;
+    return {
+      set(ref, data) { coll = coll || ref.coll; store = store || ref.store; sets.push(toInput(TBL[ref.coll], data, ref.id, ref.store)); },
+      delete(ref)   { coll = coll || ref.coll; store = store || ref.store; dels.push(String(ref.id)); },
+      async commit() {
+        if (sets.length) await upsertObjects(coll, sets);
+        if (dels.length) await deleteByPk(coll, dels);
+      },
+    };
+  }
+
+  // Stub Timestamp (dipakai sekali, tidak berpengaruh)
+  const Timestamp = { now: () => ({ toMillis: () => Date.now(), seconds: Date.now()/1000 }), fromDate: d => d, fromMillis: m => new Date(m) };
+
+  // Namespace untuk menggantikan `await import("...firebase-*.js")`
+  const NHNS = {
+    collection, doc, query, where, orderBy, limit,
+    getDocs, getDoc, getCountFromServer, onSnapshot,
+    writeBatch, addDoc, setDoc, updateDoc, deleteDoc,
+    Timestamp,
+    // storage (dipakai photoUploadNow — sudah ditulis ulang, hanya jaga-jaga)
+    getStorage: () => ({}), ref: () => ({}), uploadBytesResumable: () => ({}), getDownloadURL: async () => '',
+    getApp: () => ({}),
+  };
+
+
   const BATCH_SIZE = 200;
   const MAX_ROWS = 20;
   const IDB_NAME = 'BRG_WMS';
@@ -1806,7 +2186,7 @@
       refreshFirebaseCount(); // update setelah delete queue juga diproses
     } catch(err) {
       // Retry otomatis setelah 5 detik jika masih online
-      showToast('⚠️ Sync gagal, retry dalam 5 detik...', 'info');
+      console.error('Sync gagal:', err); showToast('⚠️ Sync gagal: ' + (err && err.message ? err.message : err).toString().slice(0,90), 'info');
       setTimeout(() => { if (navigator.onLine && db) autoSyncQueue(); }, 5000);
     } finally {
       isSyncing = false;
@@ -1918,7 +2298,7 @@
     if (!forceDownload && localCount > 0 && lastSync) {
       setCacheItemUI(colName, 'loading', '⏳ Cek update...', localCount.toLocaleString());
       try {
-        const { Timestamp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        const { Timestamp } = NHNS;
         const sinceDate = new Date(lastSync);
         // Query hanya dokumen yang updatedAt > lastSync
         const q = query(
@@ -2585,70 +2965,79 @@
   // ADMIN  → SCAN + MASTER + WMS
   // TOKO   → SCAN + WMS (tanpa MASTER)
 
+    // Autentikasi Nhost + ambil profil (role/store). Return {ok, error, user}
+  async function nhAuthenticate(username, password) {
+    if (!NH.sub) return { ok:false, error:'\u26a0\ufe0f Konfigurasi Nhost belum diisi' };
+    const email = username.includes('@') ? username : `${username}@${NH.dom}`;
+    let session;
+    try { session = await nhSignIn(email, password); }
+    catch(e) { return { ok:false, error:'\u274c Username atau password salah' }; }
+
+    const uid = session.user && session.user.id;
+    let prof = null, profErr = false;
+    try {
+      const data = await nhGql(`query { user_profiles(where: {user_id: {_eq: "${uid}"}}) { username role store_code store_name } }`);
+      prof = (data && data.user_profiles && data.user_profiles[0]) || null;
+    } catch(e) { profErr = true; }
+
+    // Jika permission belum diset (error) -> fallback metadata signup
+    if (!prof && profErr && session.user && session.user.metadata) {
+      const m = session.user.metadata;
+      prof = { username: m.username || username, role: m.role, store_code: m.store_code, store_name: m.store_name };
+    }
+    // Profil tidak ada (dihapus/di-revoke) -> tolak
+    if (!prof) { await nhSignOut(); return { ok:false, error:'\u274c Akun tidak terdaftar / telah dihapus. Hubungi admin.' }; }
+
+    return { ok:true, user: {
+      username:   prof.username || username,
+      role:       (prof.role || 'TOKO').toUpperCase(),
+      store_code: prof.store_code || username.toUpperCase(),
+      store_name: prof.store_name || username,
+    }};
+  }
+
   window.appDoLogin = async function() {
-    const apiKeyInput = document.getElementById('loginApiKey');
-    const usernameEl  = document.getElementById('loginUsername');
-    const passwordEl  = document.getElementById('loginPassword');
-    const errEl       = document.getElementById('appLoginErr');
+    const subEl      = document.getElementById('loginSub');
+    const regEl      = document.getElementById('loginRegion');
+    const domEl      = document.getElementById('loginDomain');
+    const usernameEl = document.getElementById('loginUsername');
+    const passwordEl = document.getElementById('loginPassword');
+    const errEl      = document.getElementById('appLoginErr');
     errEl.textContent = '';
 
-    // Step 1: pastikan Firebase terhubung
-    if (!db) {
-      const apiKey = apiKeyInput?.value.trim().replace(/[",\s]/g,'') || localStorage.getItem('fb_api_key');
-      if (!apiKey) { errEl.textContent = '⚠️ Masukkan Firebase API Key dulu'; return; }
-      try {
-        const app = initializeApp({ apiKey, authDomain:`${PROJECT_ID}.firebaseapp.com`, projectId:PROJECT_ID, storageBucket:`${PROJECT_ID}.firebasestorage.app` });
-        db = getFirestore(app);
-        localStorage.setItem('fb_api_key', apiKey);
-        if (apiKeyInput) apiKeyInput.closest('.app-login-firebase')?.classList.remove('show');
-        updateFirestoreStatus();
-      } catch(e) { errEl.textContent = '❌ API Key salah: ' + e.message; return; }
+    // Step 1: konfigurasi Nhost (jika belum ada)
+    if (!NH.sub) {
+      const sub = subEl && subEl.value.trim();
+      if (!sub) { errEl.textContent = '\u26a0\ufe0f Masukkan Nhost Subdomain dulu'; return; }
+      NH.setCfg(sub, regEl && regEl.value.trim(), domEl && domEl.value.trim());
+      document.getElementById('loginFirebaseStep') && document.getElementById('loginFirebaseStep').classList.remove('show');
     }
 
-    // Step 2: cek username & password
-    const username = usernameEl?.value.trim().toLowerCase();
-    const password = passwordEl?.value.trim();
-    if (!username || !password) { errEl.textContent = '⚠️ Isi username dan password'; return; }
+    // Step 2: username & password
+    const username = usernameEl && usernameEl.value.trim().toLowerCase();
+    const password = passwordEl && passwordEl.value.trim();
+    if (!username || !password) { errEl.textContent = '\u26a0\ufe0f Isi username dan password'; return; }
 
     errEl.textContent = '🔄 Memeriksa...';
     try {
-      const q    = query(collection(db, 'USERS_WMS'), where('username','==', username));
-      const snap = await getDocs(q);
-      if (snap.empty) { errEl.textContent = '❌ User tidak ditemukan'; return; }
-      const udata = snap.docs[0].data();
-      if (String(udata.password) !== String(password)) { errEl.textContent = '❌ Password salah'; return; }
+      const r = await nhAuthenticate(username, password);
+      if (!r.ok) { errEl.textContent = r.error; return; }
+      wmsCurrentUser = r.user;
 
-      // Login berhasil — set user global
-      wmsCurrentUser = {
-        username:   udata.username,
-        role:       (udata.role || 'TOKO').toUpperCase(),
-        store_code: udata.store_code || udata.username.toUpperCase(),
-        store_name: udata.store_name || udata.username,
-      };
-
-      // Tutup overlay login
       document.getElementById('appLoginOverlay').classList.remove('show');
-
-      // Setup nav tabs berdasarkan role
       applyRoleUI();
-
-      // Init Firebase post-login
       updateFirestoreStatus();
       updateStoreBadge();
       refreshFirebaseCount();
       setTimeout(() => { autoSyncQueue(); }, 300);
-
-      // Load WMS data di background
       wmsLoadStores().then(() => { wmsLoadData(); wmsPopulateSelects(); });
-
-      // Load master cache
       if (idb) await refreshCacheUI();
 
-      showToast(`✅ Selamat datang, ${wmsCurrentUser.store_name}!`, 'success');
+      showToast(`\u2705 Selamat datang, ${wmsCurrentUser.store_name}!`, 'success');
       switchPage('scan');
-
-    } catch(e) { errEl.textContent = '❌ Error: ' + e.message; }
+    } catch(e) { errEl.textContent = '\u274c Error: ' + e.message; }
   };
+
 
   function applyRoleUI() {
     if (!wmsCurrentUser) return;
@@ -2672,6 +3061,7 @@
 
   window.appLogout = function() {
     if (!confirm('Keluar dari aplikasi?')) return;
+    nhSignOut();
     wmsCurrentUser = null; wmsAllData = []; wmsFilteredData = [];
     const tabMaster = document.getElementById('tabMaster');
     if (tabMaster) tabMaster.style.display = 'none';
@@ -2961,7 +3351,7 @@
     fbCountFetching = true;
     safeSetText('statFirebaseTotal', '...');
     try {
-      const { getCountFromServer } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+      const { getCountFromServer } = NHNS;
       const snap = await getCountFromServer(getScanCollectionRef());
       safeSetText('statFirebaseTotal', snap.data().count.toLocaleString());
     } catch(e) {
@@ -3150,31 +3540,17 @@
   };
 
   // ═══════════════ FIREBASE INIT ═══════════════
-  async function initFirebase() {
-    const apiKeyInput = document.getElementById('cfgApiKey');
-    if (!apiKeyInput) return;
-    const apiKey = apiKeyInput.value.trim();
-    if (!apiKey) { safeSetText('configStatus', '❌ API Key wajib diisi!'); return; }
-    
-    try {
-      const app = initializeApp({ apiKey, authDomain: `${PROJECT_ID}.firebaseapp.com`, projectId: PROJECT_ID, storageBucket: `${PROJECT_ID}.firebasestorage.app` });
-      db = getFirestore(app);
-      
-      const tb = writeBatch(db);
-      tb.set(doc(db, 'test_write', 'conn_test'), { test: 'connection_test', timestamp: new Date().toISOString() });
-      await tb.commit();
-      
-      localStorage.setItem('fb_api_key', apiKey);
-      safeSetText('configStatus', '✅ Terhubung!');
-      updateFirestoreStatus();
-      showToast('✅ Firebase terhubung!', 'success');
-      setTimeout(() => { autoSyncQueue(); refreshFirebaseCount(); }, 500);
-    } catch(err) {
-      safeSetText('configStatus', '❌ Gagal: ' + err.message);
-      db = null;
-      updateFirestoreStatus();
-      showToast('❌ Gagal: ' + err.message, 'error');
-    }
+    async function initNhost() {
+    const subI = document.getElementById('cfgSub');
+    const regI = document.getElementById('cfgRegion');
+    const domI = document.getElementById('cfgDomain');
+    if (!subI) return;
+    const sub = subI.value.trim();
+    if (!sub) { safeSetText('configStatus', '\u274c Subdomain wajib diisi!'); return; }
+    NH.setCfg(sub, regI && regI.value.trim(), domI && domI.value.trim());
+    safeSetText('configStatus', '\u2705 Konfigurasi tersimpan \u2014 login untuk menyambungkan.');
+    updateFirestoreStatus();
+    showToast('\u2705 Konfigurasi Nhost tersimpan', 'success');
   }
 
   function updateFirestoreStatus() {
@@ -3238,46 +3614,33 @@
   }
 
   // 3. Auto-connect Firebase jika API key sudah tersimpan
-  const savedKey = localStorage.getItem('fb_api_key');
-  if (savedKey) {
-    try {
-      const app = initializeApp({ apiKey: savedKey, authDomain:`${PROJECT_ID}.firebaseapp.com`, projectId:PROJECT_ID, storageBucket:`${PROJECT_ID}.firebasestorage.app` });
-      db = getFirestore(app);
-      // Sembunyikan input API key di login overlay karena sudah tersimpan
-      const fbStep = document.getElementById('loginFirebaseStep');
-      if (fbStep) fbStep.classList.remove('show');
-      // Pre-fill juga di halaman master config
-      const cfgKey = document.getElementById('cfgApiKey');
-      if (cfgKey) cfgKey.value = savedKey;
-      updateFirestoreStatus();
-    } catch(e) { console.warn('Auto-connect failed:', e); }
-  } else {
-    // Belum punya API key — tampilkan input API key di login overlay
+    // 3. Auto-connect: pulihkan sesi Nhost / tampilkan konfigurasi
+  if (!NH.sub) {
     const fbStep = document.getElementById('loginFirebaseStep');
     if (fbStep) fbStep.classList.add('show');
+  } else {
+    const fbStep = document.getElementById('loginFirebaseStep');
+    if (fbStep) fbStep.classList.remove('show');
+    const c1 = document.getElementById('cfgSub');    if (c1) c1.value = NH.sub;
+    const c2 = document.getElementById('cfgRegion'); if (c2) c2.value = NH.reg;
+    const c3 = document.getElementById('cfgDomain'); if (c3) c3.value = NH.dom;
+    if (NH.at || NH.rt) {
+      nhEnsureToken().then(ok => { if (ok) { db = {}; updateFirestoreStatus(); } }).catch(() => {});
+    }
   }
 
   // Fokus ke input username saat app load
   setTimeout(() => { document.getElementById('loginUsername')?.focus(); }, 300);
 
   // ── Auto-reconnect + sync saat kembali online ──
-  async function onNetworkOnline() {
+    async function onNetworkOnline() {
     showToast('🌐 Online! Menyinkronkan...', 'info');
-    updateFirestoreStatus();
-    if (db) {
-      autoSyncQueue();
-      processDeleteQueue();
-      return;
-    }
-    const savedApiKey = localStorage.getItem('fb_api_key');
-    if (!savedApiKey) return;
-    try {
-      const app = initializeApp({ apiKey: savedApiKey, authDomain: `${PROJECT_ID}.firebaseapp.com`, projectId: PROJECT_ID, storageBucket: `${PROJECT_ID}.firebasestorage.app` });
-      db = getFirestore(app);
+    if (await nhEnsureToken()) {
+      db = {};
       updateFirestoreStatus();
       autoSyncQueue();
       processDeleteQueue();
-    } catch(e) {
+    } else {
       db = null;
       updateFirestoreStatus();
     }
@@ -3455,7 +3818,7 @@
           // Ambil count Firebase untuk deteksi shrink (hanya count, bukan baca semua)
           let fbCount = 0;
           try {
-            const { getCountFromServer } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+            const { getCountFromServer } = NHNS;
             const countSnap = await getCountFromServer(collection(db, name));
             fbCount = countSnap.data().count;
           } catch(e) {
@@ -3532,7 +3895,7 @@
       for (const col of uploadedMasters) {
         try {
           // Tulis _META agar device lain tahu ada data baru
-          const { setDoc: sd } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+          const { setDoc: sd } = NHNS;
           await sd(doc(db, '_META', col), {
             updatedAt: now, count: parsedSheets[col]?.length || 0,
             uploadedBy: document.getElementById('scanUser')?.value || 'ADMIN'
@@ -3597,29 +3960,17 @@
   }
 
   // ── LOGIN ──
-  window.wmsLogin = async function() {
+    window.wmsLogin = async function() {
     const user = document.getElementById('wmsUser').value.trim();
     const pass = document.getElementById('wmsPass').value.trim();
     const errEl = document.getElementById('wmsLoginErr');
     errEl.textContent = '';
     if (!user || !pass) { errEl.textContent = 'Isi username dan password'; return; }
-    if (!db) { errEl.textContent = '⚠️ Firebase offline'; return; }
     try {
-      const q    = query(collection(db, 'USERS_WMS'), where('username', '==', user.toLowerCase()));
-      const snap = await getDocs(q);
-      if (snap.empty) { errEl.textContent = '❌ User tidak ditemukan'; return; }
-      const udata = snap.docs[0].data();
-      if (String(udata.password) !== String(pass)) { errEl.textContent = '❌ Password salah'; return; }
-
-      wmsCurrentUser = {
-        username:   udata.username,
-        role:       (udata.role || 'TOKO').toUpperCase(),
-        store_code: udata.store_code || udata.username.toUpperCase(),
-        store_name: udata.store_name || udata.username,
-      };
-      // Tutup overlay login terpusat
-      document.getElementById('appLoginOverlay')?.classList.remove('show');
-      // Update WMS store badge
+      const r = await nhAuthenticate(user.toLowerCase(), pass);
+      if (!r.ok) { errEl.textContent = r.error; return; }
+      wmsCurrentUser = r.user;
+      document.getElementById('appLoginOverlay') && document.getElementById('appLoginOverlay').classList.remove('show');
       const wmsBadge = document.getElementById('wmsStoreBadge');
       if (wmsBadge) wmsBadge.textContent = wmsCurrentUser.role === 'ADMIN' ? '👑 ADMIN' : `🏪 ${wmsCurrentUser.store_name}`;
       updateStoreBadge();
@@ -3628,7 +3979,7 @@
       await wmsLoadStores();
       await wmsLoadData();
       wmsPopulateSelects();
-    } catch(e) { errEl.textContent = '❌ Error: ' + e.message; }
+    } catch(e) { errEl.textContent = '\u274c Error: ' + e.message; }
   };
 
   window.wmsLogout = window.appLogout; // alias
@@ -3931,7 +4282,7 @@
     // ===== FIRESTORE FALLBACK: Kalau tidak ketemu di memory, query langsung ke Firebase =====
     if (!article && db) {
       try {
-        const { query, collection, where, getDocs, limit } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        const { query, collection, where, getDocs, limit } = NHNS;
 
         // Coba cari di MASTER_BARCODE dengan setiap variasi
         for (const variant of variations) {
@@ -3946,7 +4297,7 @@
           }
 
           // Query by doc ID (barcode as document ID)
-          const { getDoc, doc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+          const { getDoc, doc } = NHNS;
           const docSnap = await getDoc(doc(db, 'MASTER_BARCODE', variant));
           if (docSnap.exists()) {
             article = docSnap.data().Article || docSnap.data().article || null;
@@ -4042,7 +4393,7 @@
     // ===== FIRESTORE FALLBACK =====
     if (!article && db) {
       try {
-        const { query, collection, where, getDocs, limit, getDoc, doc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        const { query, collection, where, getDocs, limit, getDoc, doc } = NHNS;
         for (const variant of variations) {
           if (article) break;
           let q = query(collection(db, 'MASTER_BARCODE'), where('Barcode', '==', variant), limit(1));
@@ -4557,7 +4908,7 @@
         await deleteDoc(doc(db, 'STOCK', docId));
         wmsAllData = wmsAllData.filter(r => r._id !== docId);
       } else {
-        await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js")
+        NHNS
           .then(({ updateDoc }) => updateDoc(doc(db, 'STOCK', docId), { qty: newQty, updated_at: new Date().toISOString() }));
         const found = wmsAllData.find(r => r._id === docId);
         if (found) found.qty = newQty;
@@ -4595,7 +4946,7 @@
     if (!toBin) { msgEl.textContent = '❌ Isi BIN tujuan'; return; }
     if (!qty || qty <= 0 || qty > item.qty) { msgEl.textContent = '❌ Qty tidak valid'; return; }
     try {
-      const { updateDoc, setDoc: sd } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+      const { updateDoc, setDoc: sd } = NHNS;
       // Kurangi asal
       const newQtyAsal = item.qty - qty;
       if (newQtyAsal === 0) {
@@ -4640,7 +4991,7 @@
       const masterData    = barcodeResult?.found ? barcodeResult.data : null;
 
       const docId   = `${store}_${sku}_${bin}`;
-      const { updateDoc, setDoc: sd } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+      const { updateDoc, setDoc: sd } = NHNS;
       const existing = wmsAllData.find(r => r._id === docId);
 
       const sizeUS  = sku.slice(-3);
@@ -4857,7 +5208,7 @@
       if (msgEl) msgEl.textContent = `⏳ Memproses ${sourceRows.length} data...`;
       const pivot    = buildPivot(sourceRows);
       const storeObj = wmsStoreList.find(s => s.code === store);
-      const { updateDoc, setDoc: sd } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+      const { updateDoc, setDoc: sd } = NHNS;
 
       if (wmsScanMode === 'upload') {
         const existing = wmsAllData.filter(r => r.store_code === store);
@@ -4957,7 +5308,7 @@
   async function wmsWriteLog(type, data) {
     if (!db) return;
     try {
-      const { addDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+      const { addDoc } = NHNS;
       await addDoc(collection(db, 'TRANSACTIONS'), {
         type,
         store_code:  data.store_code  || wmsCurrentUser?.store_code || '',
@@ -4986,7 +5337,7 @@
     if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--muted);">⏳ Memuat log...</td></tr>`;
 
     try {
-      const { orderBy, limit, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+      const { orderBy, limit, onSnapshot } = NHNS;
       const isAdmin    = wmsCurrentUser?.role === 'ADMIN';
       const myStore    = wmsCurrentUser?.store_code || '';
 
@@ -5286,7 +5637,7 @@
   window.wmsSaveLayout = async function() {
     if (!db) { showToast('❌ Firebase offline', 'error'); return; }
     const store = wmsCurrentUser?.store_code || 'TOKO';
-    const { setDoc: sd } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+    const { setDoc: sd } = NHNS;
     try {
       await sd(doc(db, 'BIN_LAYOUT', store), {
         positions: JSON.stringify(wmsLayoutPos),
@@ -5406,22 +5757,27 @@
     } catch(e) {}
   }
 
-  window.wmsAdmAddUser = async function() {
-    const user  = document.getElementById('admUser')?.value.trim().toLowerCase();
-    const pass  = document.getElementById('admPass')?.value.trim();
-    const role  = document.getElementById('admRole')?.value;
-    const code  = document.getElementById('admStoreCode')?.value.trim().toUpperCase();
-    const name  = document.getElementById('admStoreName')?.value.trim();
+    window.wmsAdmAddUser = async function() {
+    const user  = document.getElementById('admUser') && document.getElementById('admUser').value.trim().toLowerCase();
+    const pass  = document.getElementById('admPass') && document.getElementById('admPass').value.trim();
+    const role  = document.getElementById('admRole') && document.getElementById('admRole').value;
+    const code  = document.getElementById('admStoreCode') && document.getElementById('admStoreCode').value.trim().toUpperCase();
+    const name  = document.getElementById('admStoreName') && document.getElementById('admStoreName').value.trim();
     const msgEl = document.getElementById('admUserMsg');
-    if (!user||!pass) { msgEl.textContent='❌ Username & password wajib'; return; }
+    if (!user || !pass) { msgEl.textContent='\u274c Username & password wajib'; return; }
+    if (!NH.sub) { msgEl.textContent='\u26a0\ufe0f Belum terhubung Nhost'; return; }
     try {
-      const { setDoc: sd } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-      await sd(doc(db, 'USERS_WMS', user), { username: user, password: pass, role, store_code: code, store_name: name });
-      // Also register store if provided
-      if (code) await sd(doc(db, 'STORES', code), { name: name||code });
-      msgEl.style.color = 'var(--green)'; msgEl.textContent = `✅ User ${user} disimpan`;
+      const email = `${user}@${NH.dom}`;
+      const r = await fetch(NH.authUrl('/signup/email-password'), {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email, password: pass, options:{ metadata:{ username: user, role: role||'TOKO', store_code: code||null, store_name: name||code||user } } })
+      });
+      const j = await r.json().catch(()=>({}));
+      if (!r.ok) { msgEl.style.color='var(--red)'; msgEl.textContent='\u274c '+(j.message||j.error_description||j.error||('HTTP '+r.status)); return; }
+      if (code) { const { setDoc: sd } = NHNS; await sd(doc(db, 'STORES', code), { name: name||code }); }
+      msgEl.style.color='var(--green)'; msgEl.textContent='\u2705 User '+user+' dibuat';
       await wmsAdmLoadUsers(); await wmsLoadStores(); wmsPopulateSelects();
-    } catch(e) { msgEl.style.color='var(--red)'; msgEl.textContent='❌ '+e.message; }
+    } catch(e) { msgEl.style.color='var(--red)'; msgEl.textContent='\u274c '+e.message; }
   };
 
   window.wmsAdmAddStore = async function() {
@@ -5430,7 +5786,7 @@
     const msgEl = document.getElementById('admStoreMsg');
     if (!code) { msgEl.textContent='❌ Kode toko wajib'; return; }
     try {
-      const { setDoc: sd } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+      const { setDoc: sd } = NHNS;
       await sd(doc(db, 'STORES', code), { name: name||code });
       msgEl.style.color='var(--green)'; msgEl.textContent=`✅ Toko ${code} disimpan`;
       await wmsAdmLoadStores(); await wmsLoadStores(); wmsPopulateSelects();
@@ -5725,9 +6081,9 @@ window.wmsMobileOpenCamera = async function() {
     document.getElementById('photoFileInput').value = '';
   };
 
-  window.photoUploadNow = async function() {
-    if (!photoSelectedDoc || !photoSelectedFile) { showToast('⚠️ Pilih artikel dan foto', 'error'); return; }
-    if (!db) { showToast('❌ Firebase belum terhubung', 'error'); return; }
+    window.photoUploadNow = async function() {
+    if (!photoSelectedDoc || !photoSelectedFile) { showToast('\u26a0\ufe0f Pilih artikel dan foto', 'error'); return; }
+    if (!db) { showToast('\u274c Belum terhubung', 'error'); return; }
 
     const btn  = document.getElementById('photoUploadBtn');
     const prog = document.getElementById('photoProgressArea');
@@ -5740,82 +6096,57 @@ window.wmsMobileOpenCamera = async function() {
     if (msg)  msg.textContent = '';
 
     try {
-      const { getStorage, ref, uploadBytesResumable, getDownloadURL } =
-        await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js');
-      const { getApp } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
-      const { updateDoc, doc: fsDoc } =
-        await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+      const art = photoSelectedDoc.Article || photoSelectedDoc.article || photoSelectedDoc._id;
+      if (lbl) lbl.textContent = 'Mengupload ke Storage...';
+      if (!(await nhEnsureToken())) throw new Error('Sesi berakhir \u2014 login ulang');
 
-      // Pakai app instance yang sudah ada (sama dengan yang dipakai Firestore)
-      let fbApp;
-      try { fbApp = getApp(); } catch(e) { throw new Error('Firebase belum terhubung, sambungkan dulu'); }
-      const storage = getStorage(fbApp);
-      const art     = photoSelectedDoc.Article || photoSelectedDoc.article || photoSelectedDoc._id;
-      const ext     = photoSelectedFile.type.split('/')[1].replace('jpeg','jpg');
-      const storRef = ref(storage, `products/${art}.${ext}`);
-      if (lbl) lbl.textContent = 'Menghubungi Storage...';
+      const ext = (photoSelectedFile.type.split('/')[1] || 'jpg').replace('jpeg','jpg');
+      const form = new FormData();
+      form.append('file[]', photoSelectedFile, `${art}.${ext}`);
+      const r = await fetch(NH.storageUrl('/files'), {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${NH.at}` },
+        body: form,
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        const em = (e) => !e ? '' : (typeof e === 'string' ? e : (e.message || JSON.stringify(e)));
+        console.error('Storage upload gagal', r.status, j);
+        throw new Error('Storage HTTP ' + r.status + ': ' + (em(j.error) || em(j.message) || JSON.stringify(j)));
+      }
+      const fileId = j.processedFiles && j.processedFiles[0] && j.processedFiles[0].id;
+      if (!fileId) throw new Error('Upload gagal: fileId tidak dikembalikan');
+      const url = `${NH.storageUrl('/files')}/${fileId}`;
 
-      // Timeout: jika 10 detik masih 0% → kemungkinan rules blocking
-      let started = false;
-      const timeoutId = setTimeout(() => {
-        if (!started) {
-          if (msg) { msg.textContent = '❌ Upload tidak bisa dimulai. Pastikan Firebase Storage Rules sudah diset ke allow write: if true;'; msg.style.color = 'var(--red)'; }
-          if (prog) prog.style.display = 'none';
-          if (btn)  btn.disabled = false;
-        }
-      }, 10000);
-
-      const task = uploadBytesResumable(storRef, photoSelectedFile, { contentType: photoSelectedFile.type });
-      task.on('state_changed',
-        s => {
-          started = true;
-          clearTimeout(timeoutId);
-          const pct = Math.round(s.bytesTransferred / s.totalBytes * 100);
-          if (bar) bar.style.width = pct + '%';
-          if (lbl) lbl.textContent = `Mengupload... ${pct}%`;
-        },
-        err => {
-          clearTimeout(timeoutId);
-          const errMsg = err.code === 'storage/unauthorized'
-            ? '❌ Akses ditolak — set Storage Rules: allow write: if true'
-            : err.code === 'storage/unknown'
-            ? '❌ Storage error — cek CORS & bucket name di Firebase Console'
-            : '❌ ' + err.message;
-          if (msg) { msg.textContent = errMsg; msg.style.color = 'var(--red)'; }
-          if (prog) prog.style.display = 'none';
-          if (btn)  btn.disabled = false;
-        },
-        async () => {
-          const url = await getDownloadURL(task.snapshot.ref);
-          if (lbl) lbl.textContent = 'Menyimpan URL...';
-          // Update Firestore
-          await updateDoc(fsDoc(db, 'MASTER_PRODUK', photoSelectedDoc._id), { image_url: url, updatedAt: new Date().toISOString() });
-          // Invalidate IDB cache timestamp agar next "Cek & Update Cache" re-download MASTER_PRODUK
-          if (idb) await idbPut(STORE_META, { key: `cache_time_MASTER_PRODUK`, value: null }).catch(()=>{});
-          // Update RAM agar BIN View langsung tampil foto
-          const cached = memProduk.get(photoSelectedDoc._id) || memProduk.get(art);
-          if (cached) cached.image_url = url;
-          photoSelectedDoc.image_url = url;
-          // Update thumbnail
-          const thumb = document.getElementById('photoCurrentThumb');
-          if (thumb) thumb.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:contain;border-radius:6px;" />`;
-          if (prog) prog.style.display = 'none';
-          if (msg)  { msg.textContent = `✅ Foto berhasil diupload!`; msg.style.color = 'var(--green)'; }
-          photoCancelPreview();
-          showToast(`✅ Foto ${art} tersimpan!`, 'success');
-          if (btn) btn.disabled = false;
-        }
-      );
+      if (bar) bar.style.width = '100%';
+      if (lbl) lbl.textContent = 'Menyimpan URL...';
+      await updateDoc(doc(db, 'MASTER_PRODUK', photoSelectedDoc._id), { image_url: url, updatedAt: new Date().toISOString() });
+      if (idb) await idbPut(STORE_META, { key: `cache_time_MASTER_PRODUK`, value: null }).catch(()=>{});
+      const cached = memProduk.get(photoSelectedDoc._id) || memProduk.get(art);
+      if (cached) cached.image_url = url;
+      photoSelectedDoc.image_url = url;
+      const thumb = document.getElementById('photoCurrentThumb');
+      if (thumb) thumb.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:contain;border-radius:6px;" />`;
+      if (prog) prog.style.display = 'none';
+      if (msg)  { msg.textContent = `\u2705 Foto berhasil diupload!`; msg.style.color = 'var(--green)'; }
+      photoCancelPreview();
+      showToast(`\u2705 Foto ${art} tersimpan!`, 'success');
+      if (btn) btn.disabled = false;
     } catch(e) {
-      if (msg) { msg.textContent = '❌ ' + e.message; msg.style.color = 'var(--red)'; }
+      if (msg) { msg.textContent = '\u274c ' + e.message; msg.style.color = 'var(--red)'; }
       if (prog) prog.style.display = 'none';
       if (btn) btn.disabled = false;
     }
   };
 
+  // Ekspor fungsi yang dipanggil lewat onclick="..." (script type=module tidak global)
+  window.startUpload = startUpload;
+  window.clearSelected = clearSelected;
+  window.initNhost = initNhost;
+
   renderScanTable(); updateScanStats(); renderBinCardsInPopup(); updateFirestoreStatus(); updateSyncStatusUI();
   setInterval(()=>{ updateScanStats(); updateFirestoreStatus(); updateSyncStatusUI(); },30000);
-  // Firebase count hanya di-refresh saat connect & setelah sync — tidak polling periodik
+  // Cloud count hanya di-refresh saat connect & setelah sync — tidak polling periodik
 </script>
 </body>
 </html>
