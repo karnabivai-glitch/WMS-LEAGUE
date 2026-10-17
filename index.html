@@ -1834,7 +1834,9 @@
       objs.forEach(o => { const k = o[T.pk]; if (k === undefined || k === null) seen.set(Symbol(), o); else seen.set(String(k), o); });
       objs = [...seen.values()];
     }
-    const updCols = T.cols.filter(c => c !== T.pk && c !== 'extra');
+    // hanya timpa kolom yang benar-benar dikirim (agar mis. image_url tidak terhapus saat upload ulang Excel)
+    const sentKeys = new Set(); objs.forEach(o => Object.keys(o).forEach(k => sentKeys.add(k)));
+    const updCols = T.cols.filter(c => c !== T.pk && c !== 'extra' && sentKeys.has(c));
     if (T.extra) updCols.push('extra');
     const q = `mutation($objs: [${T.t}_insert_input!]!) {
       insert_${T.t}(objects: $objs, on_conflict: { constraint: ${T.t}_pkey, update_columns: [${updCols.join(', ')}] }) { affected_rows }
