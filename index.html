@@ -4850,10 +4850,18 @@
       ];
     }
 
-    document.getElementById('wmsModalTitle').textContent = `📦 BIN ${bin} — ${store}`;
+    // Judul "BIN D1 — LG26" disembunyikan; nama BIN tampil besar di kanan kotak info
+    const _mt = document.getElementById('wmsModalTitle');
+    _mt.textContent = `BIN ${bin}`;
+    _mt.style.display = 'none';
     document.getElementById('wmsModalInfo').innerHTML =
-      `<div class="mi-label">Total Qty</div><div class="mi-val" style="font-size:1.2rem;">${items.reduce((s,r)=>s+Number(r.qty||0),0)}</div>
-       ${q ? `<div class="mi-label" style="margin-top:4px;">Pencarian</div><div class="mi-val" style="color:#fbbf24;">"${q}"</div>` : ''}`;
+      `<div style="display:flex;align-items:center;gap:12px;">
+         <div style="flex:1;min-width:0;">
+           <div class="mi-label">Total Qty</div><div class="mi-val" style="font-size:1.2rem;">${items.reduce((s,r)=>s+Number(r.qty||0),0)}</div>
+           ${q ? `<div class="mi-label" style="margin-top:4px;">Pencarian</div><div class="mi-val" style="color:#fbbf24;word-break:break-all;">"${String(q).toUpperCase()}"</div>` : ''}
+         </div>
+         <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:2.6rem;font-weight:800;line-height:1;color:var(--accent);">${bin}</div>
+       </div>`;
 
     document.getElementById('wmsModalBody').innerHTML = items.map(r => {
       const isMatch = q && `${r.variant||''} ${r.generic||''} ${r.name||''} ${r.brand||''}`.toLowerCase().includes(q);
@@ -4888,7 +4896,10 @@
     }
   };
 
-  window.wmsCloseModal = () => document.getElementById('wmsModalBackdrop').classList.remove('show');
+  window.wmsCloseModal = () => {
+    document.getElementById('wmsModalBackdrop').classList.remove('show');
+    const _t = document.getElementById('wmsModalTitle'); if (_t) _t.style.display = '';
+  };
 
   // ── JUAL ──
   window.wmsOpenJual = function(docId) {
