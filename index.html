@@ -1394,6 +1394,7 @@
           <option value="CYCLE">🔁 Cycle Count</option>
         </select>
         <button onclick="wmsLoadLog()" style="padding:4px 12px;border-radius:6px;background:var(--accent2);color:#fff;border:none;font-size:0.65rem;cursor:pointer;">🔄 Refresh</button>
+        <button id="btnResetLog" onclick="wmsResetLog()" style="display:none;padding:4px 12px;border-radius:6px;background:#ef4444;color:#fff;border:none;font-size:0.65rem;cursor:pointer;">🗑 Reset Log</button>
         <span id="wmsLogCount" style="font-size:0.62rem;color:var(--muted);margin-left:auto;"></span>
       </div>
       <div style="flex:1;overflow-y:auto;padding:0;">
@@ -5363,6 +5364,8 @@
       const { orderBy, limit, onSnapshot } = NHNS;
       const isAdmin    = wmsCurrentUser?.role === 'ADMIN';
       const myStore    = wmsCurrentUser?.store_code || '';
+      const _rb = document.getElementById('btnResetLog');
+      if (_rb) _rb.style.display = isAdmin ? '' : 'none';
 
       // Pakai query sederhana — hanya orderBy + limit (tidak butuh composite index)
       // Filter toko & tipe dilakukan di client side
@@ -5423,6 +5426,37 @@
     }
   };
   window.wmsLoadLog = wmsLoadLog;
+
+  // ── RESET LOG (khusus ADMIN) ──
+  // Toko dipilih di dropdown → hapus semua log toko itu. "Semua Toko" → hapus seluruh log.
+  window.wmsResetLog = async function() {
+    if (wmsCurrentUser?.role !== 'ADMIN') { showToast('❌ Hanya ADMIN yang bisa reset log', 'error'); return; }
+    const sel   = document.getElementById('wmsLogFilterStore');
+    const store = sel?.value || '';
+    let where;
+    if (store) {
+      if (!confirm(`Hapus SEMUA log transaksi toko ${store}?\n\nTidak bisa dikembalikan!`)) return;
+      where = { store_code: { _eq: store } };
+    } else {
+      if (!confirm('Hapus SEMUA log transaksi dari SEMUA toko?\n\nTidak bisa dikembalikan!')) return;
+      const ans = prompt('Ketik RESET (huruf besar) untuk melanjutkan:');
+      if (ans !== 'RESET') { showToast('Reset log dibatalkan', 'info'); return; }
+      where = {};
+    }
+    const btn = document.getElementById('btnResetLog');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Menghapus...'; }
+    try {
+      const res = await deleteWhere('TRANSACTIONS', where);
+      const n = res && res.delete_transactions ? res.delete_transactions.affected_rows : 0;
+      showToast(`✅ ${n} log ${store ? 'toko ' + store : 'semua toko'} dihapus`, 'success');
+      await wmsLoadLog();
+    } catch (e) {
+      console.error('Reset log gagal:', e);
+      showToast('❌ Reset log gagal: ' + (e && e.message ? e.message : e), 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '🗑 Reset Log'; }
+    }
+  };
   let wmsLayoutPos    = {};   // key "store|bin|floor" → {x,y,w,h,label,floor}
   let wmsLayoutDirty  = false;
   let wmsLayoutEdit   = false;
