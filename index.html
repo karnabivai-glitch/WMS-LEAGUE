@@ -4662,7 +4662,7 @@
       `${r.variant||''} ${r.generic||''} ${r.name||''} ${r.brand||''} ${r.bin||''}`.toLowerCase().includes(q)
     ) : data;
 
-    const totalSKU = filtered.length;
+    const totalSKU = new Set(filtered.map(r => r.variant || r.sku || r.id)).size; // SKU unik (bukan jumlah baris SKU×BIN)
     const totalQty = filtered.reduce((s,r) => s+(Number(r.qty)||0), 0);
     const totalBin = new Set(filtered.map(r=>r.bin)).size;
 
