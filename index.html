@@ -2982,6 +2982,17 @@
       prof = (data && data.user_profiles && data.user_profiles[0]) || null;
     } catch(e) { profErr = true; }
 
+    // Profil dipulihkan admin (user_id belum tertaut) -> cari lewat username lalu tautkan
+    if (!prof && !profErr) {
+      try {
+        const uname = (username.includes('@') ? username.split('@')[0] : username).toLowerCase();
+        const d2 = await nhGql(`query($u: String!) { user_profiles(where: {username: {_eq: $u}, user_id: {_is_null: true}}) { username role store_code store_name } }`, { u: uname });
+        prof = (d2 && d2.user_profiles && d2.user_profiles[0]) || null;
+        if (prof) {
+          await nhGql(`mutation($u: String!, $id: uuid!) { update_user_profiles(where: {username: {_eq: $u}}, _set: {user_id: $id}) { affected_rows } }`, { u: uname, id: uid });
+        }
+      } catch(e) {}
+    }
     // Jika permission belum diset (error) -> fallback metadata signup
     if (!prof && profErr && session.user && session.user.metadata) {
       const m = session.user.metadata;
@@ -4054,10 +4065,10 @@
         el.style.display = 'none';
       });
 
-      // Setup tombol toko sendiri dengan nama toko
+      // Setup tombol toko sendiri dengan KODE toko (huruf besar); nama toko sudah ada di header
       ['btnStokOwn','btnBinOwn'].forEach(id => {
         const btn = document.getElementById(id);
-        if (btn) btn.textContent = `🏪 ${storeName}`;
+        if (btn) btn.textContent = `🏪 ${String(storeCode || storeName || '').toUpperCase()}`;
       });
 
       // Tampilkan/sembunyikan toggle buttons
@@ -5775,6 +5786,17 @@
         body: JSON.stringify({ email, password: pass, options:{ metadata:{ username: user, role: role||'TOKO', store_code: code||null, store_name: name||code||user } } })
       });
       const j = await r.json().catch(()=>({}));
+      const already = !r.ok && (r.status === 409 || /already|exist|in-use/i.test(String(j.error||'') + ' ' + String(j.message||'')));
+      if (already) {
+        // Akun login Nhost masih ada (hapus user di aplikasi hanya menghapus profil). Pulihkan profilnya.
+        const { setDoc: sd0 } = NHNS;
+        await sd0(doc(db, 'USERS_WMS', user), { username: user, role: role||'TOKO', store_code: code||null, store_name: name||code||user });
+        if (code) { await sd0(doc(db, 'STORES', code), { name: name||code }); }
+        msgEl.style.color='var(--green)';
+        msgEl.textContent='\u2705 Profil '+user+' dipulihkan. Akun login lama masih ada, jadi password tetap yang lama (ubah lewat Nhost: Auth \u2192 Users bila perlu).';
+        await wmsAdmLoadUsers(); await wmsLoadStores(); wmsPopulateSelects();
+        return;
+      }
       if (!r.ok) { msgEl.style.color='var(--red)'; msgEl.textContent='\u274c '+(j.message||j.error_description||j.error||('HTTP '+r.status)); return; }
       if (code) { const { setDoc: sd } = NHNS; await sd(doc(db, 'STORES', code), { name: name||code }); }
       msgEl.style.color='var(--green)'; msgEl.textContent='\u2705 User '+user+' dibuat';
