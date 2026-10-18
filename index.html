@@ -912,10 +912,17 @@
     <!-- INPUT SCAN -->
     <div class="sidebar-section">
       <h3>📱 Input Scan</h3>
-      <div class="input-group">
-        <label>🔍 Barcode / Article</label>
-        <input type="text" id="scanBarcode" class="input-barcode" placeholder="Scan atau ketik..." autofocus onkeydown="handleBarcodeKeydown(event)" />
-        <span class="input-hint">Enter = submit &nbsp;|&nbsp; \ = reset sesi</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:4px;">
+        <div class="input-group">
+          <label>🔍 Barcode / Article</label>
+          <input type="text" id="scanBarcode" class="input-barcode" placeholder="Scan atau ketik..." autofocus onkeydown="handleBarcodeKeydown(event)" />
+          <span class="input-hint">Enter = submit &nbsp;|&nbsp; \ = reset sesi</span>
+        </div>
+        <div class="input-group">
+          <label>📄 No. Dokumen <span style="opacity:.6;">(opsional)</span></label>
+          <input type="text" id="scanDocNo" class="input-barcode" placeholder="mis. DO-0012345" autocomplete="off" oninput="autoUppercase(this)" />
+          <span class="input-hint">Dicatat di setiap scan &amp; log inbound</span>
+        </div>
       </div>
       <div class="input-row">
         <div class="input-group">
@@ -1394,24 +1401,31 @@
           <option value="CYCLE">🔁 Cycle Count</option>
         </select>
         <button onclick="wmsLoadLog()" style="padding:4px 12px;border-radius:6px;background:var(--accent2);color:#fff;border:none;font-size:0.65rem;cursor:pointer;">🔄 Refresh</button>
+        <input id="wmsLogSearch" type="search" oninput="wmsRenderLog()" placeholder="🔍 Cari SKU / nama / article / no. dokumen..." autocomplete="off"
+          style="font-size:0.7rem;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);width:280px;max-width:100%;">
+        <button id="btnLogActual" onclick="wmsToggleLogActual()" title="Tampilkan posisi barang saat ini saja (bukan riwayat)" style="padding:4px 12px;border-radius:6px;background:var(--bg);color:var(--text);border:1px solid var(--border);font-size:0.65rem;font-weight:700;cursor:pointer;">📍 Posisi Aktual</button>
         <button id="btnResetLog" onclick="wmsResetLog()" style="display:none;padding:4px 12px;border-radius:6px;background:#ef4444;color:#fff;border:none;font-size:0.65rem;cursor:pointer;">🗑 Reset Log</button>
-        <span id="wmsLogCount" style="font-size:0.62rem;color:var(--muted);margin-left:auto;"></span>
+        <span id="wmsLogStock" style="margin-left:auto;font-size:0.68rem;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 10px;white-space:nowrap;"></span>
+        <span id="wmsLogCount" style="font-size:0.62rem;color:var(--muted);"></span>
       </div>
+      <div id="wmsLogLegend" style="display:none;padding:6px 14px;font-size:0.64rem;color:var(--muted);background:var(--bg);border-bottom:1px solid var(--border);line-height:1.7;"></div>
       <div style="flex:1;overflow-y:auto;padding:0;">
-        <table style="width:100%;border-collapse:collapse;font-size:0.7rem;">
+        <div id="wmsLogActualWrap" style="display:none;"></div>
+        <table id="wmsLogTable" style="width:100%;border-collapse:collapse;font-size:0.7rem;">
           <thead style="position:sticky;top:0;background:#14161f;z-index:5;">
             <tr style="border-bottom:2px solid var(--border);">
               <th style="padding:8px 12px;text-align:left;color:var(--muted);font-size:0.6rem;font-weight:700;text-transform:uppercase;width:140px;">Waktu</th>
               <th style="padding:8px 12px;text-align:left;color:var(--muted);font-size:0.6rem;font-weight:700;text-transform:uppercase;width:80px;">Tipe</th>
               <th style="padding:8px 12px;text-align:left;color:var(--muted);font-size:0.6rem;font-weight:700;text-transform:uppercase;width:80px;">Toko</th>
               <th style="padding:8px 12px;text-align:left;color:var(--muted);font-size:0.6rem;font-weight:700;text-transform:uppercase;">SKU / Keterangan</th>
+              <th style="padding:8px 6px;text-align:center;color:var(--muted);font-size:0.6rem;font-weight:700;text-transform:uppercase;width:56px;">Detail</th>
               <th style="padding:8px 12px;text-align:left;color:var(--muted);font-size:0.6rem;font-weight:700;text-transform:uppercase;width:60px;">BIN</th>
               <th style="padding:8px 12px;text-align:center;color:var(--muted);font-size:0.6rem;font-weight:700;text-transform:uppercase;width:50px;">Qty</th>
               <th style="padding:8px 12px;text-align:left;color:var(--muted);font-size:0.6rem;font-weight:700;text-transform:uppercase;width:70px;">User</th>
             </tr>
           </thead>
           <tbody id="wmsLogBody">
-            <tr><td colspan="7" style="padding:40px;text-align:center;color:var(--muted);">Buka tab Log untuk memuat data...</td></tr>
+            <tr><td colspan="8" style="padding:40px;text-align:center;color:var(--muted);">Buka tab Log untuk memuat data...</td></tr>
           </tbody>
         </table>
       </div>
@@ -1515,6 +1529,18 @@
     <div class="wms-modal-body" id="wmsModalBody"></div>
     <div class="wms-modal-footer">
       <button class="wms-btn danger" onclick="wmsCloseModal()" style="width:100%;padding:9px;font-size:0.72rem;">✕ Tutup</button>
+    </div>
+  </div>
+</div>
+<div class="wms-modal-backdrop" id="wmsLogModalBackdrop" onclick="if(event.target===this)wmsCloseLogModal()">
+  <div class="wms-modal" style="width:640px;">
+    <div class="wms-modal-header">
+      <h3 id="wmsLogModalTitle">Detail</h3>
+      <div class="wms-modal-info" id="wmsLogModalInfo"></div>
+    </div>
+    <div class="wms-modal-body" id="wmsLogModalBody"></div>
+    <div class="wms-modal-footer">
+      <button class="wms-btn danger" onclick="wmsCloseLogModal()" style="width:100%;padding:9px;font-size:0.72rem;">✕ Tutup</button>
     </div>
   </div>
 </div>
@@ -1671,6 +1697,24 @@
   };
   // alias balik: kolom DB -> key aplikasi (dipakai present())
   Object.values(TBL).forEach(T => { T.rev = {}; Object.entries(T.alias).forEach(([k,v]) => T.rev[v] = k); });
+
+  // Kolom opsional scan_data.doc_no: aktif otomatis bila sudah ada di database & diizinkan di Hasura.
+  // Bila belum ada, nomor dokumen tetap tersimpan lokal (dan tetap masuk log saat import dari data lokal).
+  let docColState = 'unknown';
+  async function nhEnsureDocCol() {
+    if (docColState !== 'unknown') return docColState === 'yes';
+    try {
+      await nhGql('query { scan_data(limit: 1) { doc_no } }');
+      const T = TBL.SCAN_DATA;
+      if (T.cols.indexOf('doc_no') < 0) T.cols.push('doc_no');
+      T.alias.DOC_NO = 'doc_no'; T.rev.doc_no = 'DOC_NO';
+      docColState = 'yes';
+    } catch (e) {
+      if (/doc_no|not found|field/i.test(String((e && e.message) || e))) docColState = 'no';
+      // error jaringan/sesi: dicoba lagi lain waktu
+    }
+    return docColState === 'yes';
+  }
   const TBL_BY_TABLE = Object.fromEntries(Object.entries(TBL).map(([k,v]) => [v.t, v]));
 
   // ── Ref pembangun (kompatibel Firestore) ──────────────────────────────────
@@ -2151,6 +2195,7 @@
   // ═══════════════ AUTO SYNC QUEUE ═══════════════
   async function autoSyncQueue() {
     if (!db || !idb || isSyncing) return;
+    await nhEnsureDocCol();
     const queue = await idbGetAll(STORE_QUEUE);
     if (!queue.length) { updateSyncStatusUI(); return; }
 
@@ -2173,7 +2218,8 @@
             BIN:data.BIN||'', SIZE_US:data.SIZE_US||'', SIZE_UK:data.SIZE_UK||'',
             GENERIC:data.GENERIC||'', DESCRIPTION:data.DESCRIPTION||'',
             BRAND:data.BRAND||'', CAT:data.CAT||'', SEASON:data.SEASON||'',
-            DATE:data.DATE, USER:data.USER, scanned_at:data.timestamp, local_id:data.id
+            DATE:data.DATE, USER:data.USER, scanned_at:data.timestamp, local_id:data.id,
+            DOC_NO:data.DOC_NO||''
           });
         });
         await batch.commit();
@@ -2782,6 +2828,7 @@
 
   // ═══════════════ RESET SESI ═══════════════
   window.resetSession = function() {
+    const _dn = document.getElementById('scanDocNo'); if (_dn) _dn.value = '';
     const count = currentSessionData.length;
     if (count === 0) { showToast('📭 Sesi kosong', 'info'); focusBarcode(); return; }
     currentSessionData = [];
@@ -3215,6 +3262,7 @@
           BRAND:       found.brand,          CAT:      found.cat,
           SEASON:      found.season,         DATE:     getTodayDate(),
           USER:        user,                 MERCH_CAT: found.merchCat,
+          DOC_NO:      (document.getElementById('scanDocNo')?.value || '').trim(),
           timestamp:   new Date().toISOString(),
         };
 
@@ -3259,6 +3307,7 @@
         BRAND:       d.brandName || '', CAT:       d.cat || '',
         SEASON:      d.seasonYr || '', DATE:       getTodayDate(),
         USER:        user,           MERCH_CAT:   d.merchCat || '',
+        DOC_NO:      (document.getElementById('scanDocNo')?.value || '').trim(),
         timestamp:   new Date().toISOString(),
       };
       scanDataArray.unshift(newRow);
@@ -4932,13 +4981,13 @@
         await deleteDoc(doc(db, 'STOCK', docId));
         wmsAllData = wmsAllData.filter(r => r._id !== docId);
       } else {
-        NHNS
-          .then(({ updateDoc }) => updateDoc(doc(db, 'STOCK', docId), { qty: newQty, updated_at: new Date().toISOString() }));
+        await NHNS.updateDoc(doc(db, 'STOCK', docId), { qty: newQty, updated_at: new Date().toISOString() });
         const found = wmsAllData.find(r => r._id === docId);
         if (found) found.qty = newQty;
       }
       wmsCloseModal(); wmsRenderBinView(); wmsUpdateBinLeftPanel();
-      wmsWriteLog('JUAL', { store_code: item.store_code, store_name: item.store_name, sku: item.variant||item.sku||'', bin: item.bin, qty });
+      wmsWriteLog('JUAL', { store_code: item.store_code, store_name: item.store_name, sku: item.variant||item.sku||'', bin: item.bin, qty,
+        note: JSON.stringify({ msg: '', items: [{ sku: item.variant||item.sku||'', name: item.name||'', us: item.size_us||'', uk: item.size_uk||'', bin: item.bin||'', qty }] }) });
       showToast(`✅ Terjual ${qty} pcs. Sisa: ${newQty}`, 'success');
     } catch(e) { document.getElementById('wmsJualMsg').textContent = '❌ ' + e.message; }
   };
@@ -4994,7 +5043,8 @@
         wmsAllData.push({ _id: newId, ...newDoc });
       }
       wmsCloseModal(); wmsRenderBinView(); wmsUpdateBinLeftPanel();
-      wmsWriteLog('MOVE', { store_code: item.store_code, store_name: item.store_name, sku: item.variant||item.sku||'', bin: item.bin, bin_to: toBin, qty });
+      wmsWriteLog('MOVE', { store_code: item.store_code, store_name: item.store_name, sku: item.variant||item.sku||'', bin: item.bin, bin_to: toBin, qty,
+        note: JSON.stringify({ msg: '', items: [{ sku: item.variant||item.sku||'', name: item.name||'', us: item.size_us||'', uk: item.size_uk||'', bin: `${item.bin||''} → ${toBin}`, qty }] }) });
       showToast(`✅ ${qty} pcs dipindah ke BIN ${toBin}`, 'success');
     } catch(e) { msgEl.textContent = '❌ ' + e.message; }
   };
@@ -5100,6 +5150,7 @@
   // Ambil scan data dari Firebase untuk toko tertentu
   async function fetchFirebaseScanData(storeCode) {
     if (!db) throw new Error('Firebase offline');
+    await nhEnsureDocCol();
     const scanCol = collection(db, 'STORES', storeCode, 'SCAN_DATA');
     const snap = await getDocs(scanCol);
     return snap.docs.map(d => {
@@ -5115,6 +5166,7 @@
         BRAND:       r.BRAND   || r.brand   || '',
         SEASON:      r.SEASON  || r.season  || '',
         USER:        r.USER    || r.user    || '',
+        DOC_NO:      r.DOC_NO  || r.doc_no  || '',
       };
     }).filter(r => r.ARTICLE && r.BIN);
   }
@@ -5127,9 +5179,11 @@
       if (!pivot[key]) pivot[key] = {
         sku: r.ARTICLE, bin: r.BIN, qty: 0,
         desc: r.DESCRIPTION||'', size_us: r.SIZE_US||'', size_uk: r.SIZE_UK||'',
-        generic: r.GENERIC||'', cat: r.CAT||'', brand: r.BRAND||'', season: r.SEASON||''
+        generic: r.GENERIC||'', cat: r.CAT||'', brand: r.BRAND||'', season: r.SEASON||'',
+        docs: new Set()
       };
       pivot[key].qty++;
+      if (r.DOC_NO) pivot[key].docs.add(String(r.DOC_NO).trim());
     });
     return pivot;
   }
@@ -5164,12 +5218,12 @@
         const pivot = buildPivot(rows);
         const pivotRows = Object.values(pivot);
         prevEl.innerHTML = `<table>
-          <tr><th>SKU/Article</th><th>BIN</th><th>Qty</th><th>Deskripsi</th></tr>
+          <tr><th>SKU/Article</th><th>BIN</th><th>Qty</th><th>Deskripsi</th><th>No. Dok</th></tr>
           ${pivotRows.map(r => `<tr>
             <td style="font-family:monospace;">${r.sku}</td>
             <td><span class="wms-bin-tag">${r.bin}</span></td>
             <td><b>${r.qty}</b></td>
-            <td style="color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;">${r.desc}</td>
+            <td style="color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;">${r.desc}</td><td style="font-family:monospace;font-size:0.62rem;">${[...(r.docs||[])].join(', ') || '-'}</td>
           </tr>`).join('')}
         </table>`;
         importBtn.disabled = false;
@@ -5188,12 +5242,12 @@
     const pivot = buildPivot(scanDataArray);
     const rows  = Object.values(pivot);
     prevEl.innerHTML = `<table>
-      <tr><th>SKU/Article</th><th>BIN</th><th>Qty</th><th>Deskripsi</th></tr>
+      <tr><th>SKU/Article</th><th>BIN</th><th>Qty</th><th>Deskripsi</th><th>No. Dok</th></tr>
       ${rows.map(r => `<tr>
         <td style="font-family:monospace;">${r.sku}</td>
         <td><span class="wms-bin-tag">${r.bin}</span></td>
         <td><b>${r.qty}</b></td>
-        <td style="color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;">${r.desc}</td>
+        <td style="color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;">${r.desc}</td><td style="font-family:monospace;font-size:0.62rem;">${[...(r.docs||[])].join(', ') || '-'}</td>
       </tr>`).join('')}
     </table>`;
     importBtn.disabled = false;
@@ -5283,7 +5337,11 @@
         store_code: store, store_name: storeObj?.name || store,
         sku: `${totalItems} SKU`, bin: [...new Set(Object.values(pivot).map(p=>p.bin))].join(',').slice(0,100),
         qty: Object.values(pivot).reduce((s,p)=>s+p.qty,0),
-        note: `${modeLabel} dari ${srcLabel}: ${addedCount} baru, ${updatedCount} update`
+        note: JSON.stringify({
+          msg: `${modeLabel} dari ${srcLabel}: ${addedCount} baru, ${updatedCount} update` +
+               ([...new Set(Object.values(pivot).flatMap(p => [...p.docs]))].length ? ` · No. Dok: ${[...new Set(Object.values(pivot).flatMap(p => [...p.docs]))].join(', ')}` : ''),
+          items: Object.values(pivot).slice(0, 3000).map(p => ({ sku: p.sku, name: p.desc || '', us: p.size_us || '', uk: p.size_uk || '', bin: p.bin || '', qty: p.qty || 0, doc: [...p.docs].join(', ') }))
+        })
       });
       if (msgEl) msgEl.textContent = `✅ ${modeLabelUI} selesai (${srcLabel}): ${addedCount} baru, ${updatedCount} update`;
       showToast(`✅ WMS ${modeLabelUI} selesai!`, 'success');
@@ -5358,7 +5416,7 @@
     const countEl = document.getElementById('wmsLogCount');
     const typeF   = document.getElementById('wmsLogFilterType')?.value || '';
     const storeSelF = document.getElementById('wmsLogFilterStore')?.value || '';
-    if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--muted);">⏳ Memuat log...</td></tr>`;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="8" style="padding:30px;text-align:center;color:var(--muted);">⏳ Memuat log...</td></tr>`;
 
     try {
       const { orderBy, limit, onSnapshot } = NHNS;
@@ -5372,43 +5430,14 @@
       const q = query(collection(db, 'TRANSACTIONS'), orderBy('created_at','desc'), limit(500));
 
       wmsLogUnsubscribe = onSnapshot(q, (snap) => {
-        // Client-side filter
-        let docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        if (!isAdmin)  docs = docs.filter(r => r.store_code === myStore);
-        if (storeSelF) docs = docs.filter(r => r.store_code === storeSelF);
-        if (typeF)     docs = docs.filter(r => r.type === typeF);
-        docs = docs.slice(0, 200);
+        window._wmsLogRaw = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-        if (countEl) countEl.textContent = `${docs.length} transaksi`;
-
-        if (!docs.length) {
-          if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--muted);">Belum ada transaksi</td></tr>`;
-          return;
-        }
-
-        if (tbody) tbody.innerHTML = docs.map(r => {
-          const ts  = r.created_at ? new Date(r.created_at).toLocaleString('id-ID',{dateStyle:'short',timeStyle:'short'}) : '-';
-          const st  = LOG_TYPE_STYLE[r.type] || { color:'#94a3b8', icon:'📝', bg:'transparent' };
-          const bin = r.bin_to ? `${r.bin} → ${r.bin_to}` : (r.bin || '-');
-          return `<tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:6px 12px;color:var(--muted);font-size:0.63rem;white-space:nowrap;">${ts}</td>
-            <td style="padding:6px 12px;">
-              <span style="background:${st.bg};color:${st.color};border-radius:5px;padding:2px 7px;font-size:0.6rem;font-weight:700;white-space:nowrap;">${st.icon} ${r.type}</span>
-            </td>
-            <td style="padding:6px 12px;font-size:0.63rem;color:var(--accent2);white-space:nowrap;">${r.store_code||'-'}</td>
-            <td style="padding:6px 12px;font-family:monospace;font-size:0.65rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;">${r.sku||r.note||'-'}</td>
-            <td style="padding:6px 12px;font-size:0.63rem;color:#a78bfa;font-family:monospace;">${bin}</td>
-            <td style="padding:6px 12px;text-align:center;font-weight:700;color:${st.color};">${r.qty||'-'}</td>
-            <td style="padding:6px 12px;font-size:0.62rem;color:var(--muted);">${r.user||'-'}</td>
-          </tr>`;
-        }).join('');
-
-        // Populate store filter (admin only)
+        // Isi dropdown toko (admin saja)
         if (isAdmin) {
           const logStoreSel = document.getElementById('wmsLogFilterStore');
           if (logStoreSel) {
             const existing = [...logStoreSel.options].map(o => o.value);
-            const stores   = [...new Set(snap.docs.map(d => d.data().store_code).filter(Boolean))];
+            const stores   = [...new Set(window._wmsLogRaw.map(d => d.store_code).filter(Boolean))];
             stores.forEach(s => {
               if (!existing.includes(s)) {
                 const opt = document.createElement('option');
@@ -5417,15 +5446,260 @@
             });
           }
         }
+        wmsRenderLog();
       }, (err) => {
         console.error('Log listener error:', err);
-        if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--red);">❌ ${err.message}</td></tr>`;
+        if (tbody) tbody.innerHTML = `<tr><td colspan="8" style="padding:30px;text-align:center;color:var(--red);">❌ ${err.message}</td></tr>`;
       });
     } catch(e) {
-      if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--red);">❌ ${e.message}</td></tr>`;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="8" style="padding:30px;text-align:center;color:var(--red);">❌ ${e.message}</td></tr>`;
     }
   };
   window.wmsLoadLog = wmsLoadLog;
+
+  // ── RENDER LOG: filter toko/tipe + pencarian SKU/nama/article + stok saat ini ──
+  window.wmsRenderLog = function() {
+    const tbody   = document.getElementById('wmsLogBody');
+    const countEl = document.getElementById('wmsLogCount');
+    const stockEl = document.getElementById('wmsLogStock');
+    const typeF   = document.getElementById('wmsLogFilterType')?.value || '';
+    const storeF  = document.getElementById('wmsLogFilterStore')?.value || '';
+    const qRaw    = (document.getElementById('wmsLogSearch')?.value || '').trim();
+    const q       = qRaw.toLowerCase();
+    const isAdmin = wmsCurrentUser?.role === 'ADMIN';
+    const myStore = wmsCurrentUser?.store_code || '';
+    const hit = (...vals) => vals.some(v => v != null && String(v).toLowerCase().includes(q));
+
+    let docs = (window._wmsLogRaw || []).slice();
+    if (!isAdmin) docs = docs.filter(r => r.store_code === myStore);
+    if (storeF)   docs = docs.filter(r => r.store_code === storeF);
+    if (typeF)    docs = docs.filter(r => r.type === typeF);
+
+    // Pencarian: cocokkan SKU/nama/article pada transaksi (termasuk rincian item di dalamnya)
+    if (q) {
+      docs = docs.map(r => {
+        const items = wmsParseLogNote(r.note).items;
+        const mi = items.filter(i => hit(i.sku, i.name, i.doc));
+        const skuOk = r.sku && !/^\d+ SKU$/.test(r.sku) && hit(r.sku);
+        if (!mi.length && !skuOk) return null;
+        return { ...r, _mi: mi };
+      }).filter(Boolean);
+    }
+    docs = docs.slice(0, q ? 500 : 200);
+    window._wmsLogMap = {}; docs.forEach(d => { window._wmsLogMap[String(d.id)] = d; });
+
+    // Saat mencari: pecah jadi satu baris per produk (SKU) agar mudah dibaca
+    let lines = docs.map(r => ({ r, it: null }));
+    if (q) {
+      lines = docs.flatMap(r => (r._mi && r._mi.length)
+        ? r._mi.map(it => ({ r, it }))
+        : [{ r, it: { sku: r.sku, name: '', bin: r.bin, qty: r.qty } }]).slice(0, 500);
+    }
+    if (countEl) countEl.textContent = q ? `${lines.length} riwayat` : `${docs.length} transaksi`;
+
+    const legendEl = document.getElementById('wmsLogLegend');
+    if (legendEl) {
+      legendEl.style.display = q ? '' : 'none';
+      legendEl.innerHTML = `📖 <b>Cara membaca riwayat</b> (terbaru di atas):
+        <span style="color:#34d399;font-weight:700;">+ Masuk</span> = stok bertambah ·
+        <span style="color:#f87171;font-weight:700;">− Terjual</span> = stok berkurang ·
+        <span style="color:#fbbf24;font-weight:700;">⇄ Pindah</span> = pindah BIN, total stok tetap ·
+        <span style="color:#fb923c;font-weight:700;">= Hitung ulang</span> = stok BIN dikoreksi sesuai hitungan fisik`;
+    }
+
+    // Total stok saat ini (sesuai toko yang dilihat + kata kunci pencarian)
+    if (stockEl) {
+      const scope = isAdmin ? storeF : myStore;
+      let rows = (typeof wmsAllData !== 'undefined' ? wmsAllData : []).filter(r => !scope || r.store_code === scope);
+      if (q) rows = rows.filter(r => hit(r.variant, r.sku, r.name, r.generic));
+      const total = rows.reduce((a, r) => a + Number(r.qty || 0), 0);
+      stockEl.innerHTML = `📦 ${q ? 'Stok saat ini' : 'Total stok'}: <b style="color:#34d399;font-size:0.8rem;">${total}</b> pcs`;
+      stockEl.title = scope ? `Toko ${scope}` : 'Semua toko';
+    }
+
+    // ── Mode "Posisi Aktual": tampilkan stok nyata saat ini per produk & BIN (bukan riwayat) ──
+    const tblEl = document.getElementById('wmsLogTable');
+    const actEl = document.getElementById('wmsLogActualWrap');
+    const actual = !!window._wmsLogActual;
+    if (tblEl) tblEl.style.display = actual ? 'none' : '';
+    if (actEl) actEl.style.display = actual ? '' : 'none';
+    const actBtn = document.getElementById('btnLogActual');
+    if (actBtn) {
+      actBtn.style.background = actual ? 'var(--accent2)' : 'var(--bg)';
+      actBtn.style.color = actual ? '#fff' : 'var(--text)';
+      actBtn.textContent = actual ? '📍 Posisi Aktual ✓' : '📍 Posisi Aktual';
+    }
+    if (actual) {
+      const scope = isAdmin ? storeF : myStore;
+      let rows = (typeof wmsAllData !== 'undefined' ? wmsAllData : []).filter(r => (!scope || r.store_code === scope) && Number(r.qty || 0) > 0);
+      if (q) rows = rows.filter(r => hit(r.variant, r.sku, r.name, r.generic));
+      const groups = new Map();
+      rows.forEach(r => {
+        const sku = r.variant || r.sku || '-';
+        const key = `${r.store_code || ''}|${sku}`;
+        if (!groups.has(key)) groups.set(key, { store: r.store_code, sku, name: r.name, us: r.size_us, uk: r.size_uk, bins: [], total: 0 });
+        const g = groups.get(key); const n = Number(r.qty || 0);
+        g.bins.push({ bin: r.bin || '-', qty: n }); g.total += n;
+      });
+      const list = [...groups.values()].sort((a, b) => String(a.sku).localeCompare(String(b.sku)) || String(a.store).localeCompare(String(b.store)));
+      const grand = list.reduce((a, g) => a + g.total, 0);
+      if (legendEl) {
+        legendEl.style.display = '';
+        legendEl.innerHTML = `📍 <b>Posisi barang saat ini</b> — diambil dari data stok nyata (bukan riwayat transaksi). Total di sini sama dengan angka "Stok saat ini". Klik tombol <b>Posisi Aktual</b> lagi untuk kembali ke riwayat.`;
+      }
+      if (countEl) countEl.textContent = `${list.length} produk`;
+      if (!list.length) {
+        actEl.innerHTML = `<div style="padding:30px;text-align:center;color:var(--muted);font-size:0.72rem;">${q ? 'Tidak ada stok untuk "' + _logEsc(qRaw) + '"' : 'Belum ada stok'}</div>`;
+        return;
+      }
+      const showStore = !scope;
+      actEl.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:0.72rem;">
+        <thead style="position:sticky;top:0;background:#14161f;z-index:5;"><tr style="border-bottom:2px solid var(--border);color:var(--muted);font-size:0.6rem;text-transform:uppercase;">
+          <th style="padding:8px 12px;text-align:left;">Produk</th>
+          <th style="padding:8px 12px;text-align:left;">Ada di BIN (jumlah)</th>
+          <th style="padding:8px 12px;text-align:center;width:90px;">Total</th>
+        </tr></thead>
+        <tbody>${list.slice(0, 300).map(g => `<tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:8px 12px;">
+            <div style="font-family:monospace;font-weight:700;color:#fb923c;">${_logEsc(g.sku)}${showStore && g.store ? ` <span style="font-family:system-ui;font-size:0.6rem;color:var(--accent2);">· ${_logEsc(g.store)}</span>` : ''}</div>
+            <div style="font-size:0.64rem;color:var(--muted);margin-top:2px;">${_logEsc(g.name || '-')}${g.us ? ` · US ${_logEsc(g.us)} / UK ${_logEsc(g.uk || '-')}` : ''}</div>
+          </td>
+          <td style="padding:8px 12px;">${g.bins.sort((a, b) => String(a.bin).localeCompare(String(b.bin))).map(b =>
+            `<span style="display:inline-block;margin:2px 6px 2px 0;padding:3px 9px;border-radius:7px;background:var(--bg);border:1px solid var(--border);font-size:0.68rem;"><b style="color:#a78bfa;font-family:monospace;">${_logEsc(b.bin)}</b> = <b style="color:#34d399;">${b.qty}</b> pcs</span>`).join('')}</td>
+          <td style="padding:8px 12px;text-align:center;font-weight:800;font-size:0.9rem;color:#34d399;">${g.total}<div style="font-size:0.55rem;font-weight:400;color:var(--muted);">pcs</div></td>
+        </tr>`).join('')}
+        <tr><td colspan="2" style="padding:9px 12px;text-align:right;color:var(--muted);font-size:0.65rem;">TOTAL STOK</td>
+            <td style="padding:9px 12px;text-align:center;font-weight:800;font-size:0.95rem;color:#34d399;">${grand}</td></tr></tbody></table>`;
+      return;
+    }
+
+    if (!lines.length) {
+      if (tbody) tbody.innerHTML = `<tr><td colspan="8" style="padding:30px;text-align:center;color:var(--muted);">${q ? 'Tidak ada transaksi untuk "' + _logEsc(qRaw) + '"' : 'Belum ada transaksi'}</td></tr>`;
+      return;
+    }
+
+    // Penjelasan bahasa awam + perubahan stok per jenis transaksi
+    const explain = (r, it) => {
+      const n  = Number(it.qty || 0);
+      const bn = it.bin || r.bin || '-';
+      switch (r.type) {
+        case 'UPLOAD':  return { sign: `${n}`,    label: 'stok awal',    color: '#34d399', text: `Stok awal (upload): ${n} pcs di BIN ${bn}` };
+        case 'INBOUND':
+        case 'IMPORT':  return { sign: `+${n}`,   label: 'masuk',        color: '#34d399', text: `Barang masuk ${n} pcs ke BIN ${bn}` };
+        case 'JUAL':    return { sign: `−${n}`,   label: 'terjual',      color: '#f87171', text: `Terjual ${n} pcs dari BIN ${bn}` };
+        case 'MOVE': {
+          const from = r.bin || String(bn).split('→')[0].trim();
+          const to   = r.bin_to || String(bn).split('→')[1]?.trim() || '-';
+          return { sign: `⇄ ${n}`, label: 'pindah', color: '#fbbf24', text: `Dipindah ${n} pcs dari BIN ${from} ke BIN ${to}` };
+        }
+        case 'CYCLE':   return { sign: `= ${n}`,  label: 'hitung ulang', color: '#fb923c', text: `Hitung ulang: stok di BIN ${bn} dikoreksi menjadi ${n} pcs` };
+        default:        return { sign: `${n}`,    label: '',             color: '#94a3b8', text: `${r.type}: ${n} pcs di BIN ${bn}` };
+      }
+    };
+
+    if (tbody) tbody.innerHTML = lines.map(({ r, it }) => {
+      const ts  = r.created_at ? new Date(r.created_at).toLocaleString('id-ID',{dateStyle:'short',timeStyle:'short'}) : '-';
+      const st  = LOG_TYPE_STYLE[r.type] || { color:'#94a3b8', icon:'📝', bg:'transparent' };
+      let binTxt = r.bin_to ? `${r.bin} → ${r.bin_to}` : (r.bin || '-');
+      let skuCell, qtyCell;
+      if (it) {
+        const ex = explain(r, it);
+        binTxt = r.type === 'MOVE' ? `${r.bin || ''} → ${r.bin_to || ''}` : (it.bin || r.bin || '-');
+        skuCell = `<div style="font-family:monospace;font-size:0.68rem;font-weight:700;">${_logEsc(it.sku || '-')}${it.name ? ` <span style="font-family:system-ui;font-weight:400;color:var(--muted);">· ${_logEsc(it.name)}</span>` : ''}</div>
+                   <div style="font-size:0.64rem;color:${ex.color};margin-top:2px;">${_logEsc(ex.text + (it.doc ? ' · No. Dok: ' + it.doc : ''))}</div>`;
+        qtyCell = `<div style="font-weight:800;font-size:0.85rem;color:${ex.color};white-space:nowrap;">${_logEsc(ex.sign)}</div>
+                   <div style="font-size:0.55rem;color:var(--muted);">${_logEsc(ex.label)}</div>`;
+      } else {
+        skuCell = `<span style="font-family:monospace;font-size:0.65rem;">${_logEsc(r.sku || wmsParseLogNote(r.note).msg || '-')}</span>`;
+        qtyCell = `<span style="font-weight:700;color:${st.color};">${r.qty || '-'}</span>`;
+      }
+      return `<tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:7px 12px;color:var(--muted);font-size:0.63rem;white-space:nowrap;">${ts}</td>
+        <td style="padding:7px 12px;">
+          <span style="background:${st.bg};color:${st.color};border-radius:5px;padding:2px 7px;font-size:0.6rem;font-weight:700;white-space:nowrap;">${st.icon} ${r.type}</span>
+        </td>
+        <td style="padding:7px 12px;font-size:0.63rem;color:var(--accent2);white-space:nowrap;">${r.store_code||'-'}</td>
+        <td style="padding:7px 12px;max-width:340px;overflow:hidden;text-overflow:ellipsis;">${skuCell}</td>
+        <td style="padding:7px 6px;text-align:center;"><button onclick="wmsShowLogDetail('${r.id}')" title="Lihat detail SKU" style="padding:3px 9px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--accent2);font-size:0.62rem;font-weight:700;cursor:pointer;">🔍</button></td>
+        <td style="padding:7px 12px;font-size:0.63rem;color:#a78bfa;font-family:monospace;white-space:nowrap;">${_logEsc(binTxt)}</td>
+        <td style="padding:7px 12px;text-align:center;">${qtyCell}</td>
+        <td style="padding:7px 12px;font-size:0.62rem;color:var(--muted);">${r.user||'-'}</td>
+      </tr>`;
+    }).join('');
+  };
+
+  window.wmsToggleLogActual = function() {
+    window._wmsLogActual = !window._wmsLogActual;
+    wmsRenderLog();
+  };
+
+  // ── DETAIL SKU PER TRANSAKSI ──
+  // Detail disimpan sebagai JSON di kolom note: { msg: "...", items: [{sku,name,us,uk,bin,qty}] }
+  function wmsParseLogNote(note) {
+    if (!note) return { msg: '', items: [] };
+    try {
+      const o = JSON.parse(note);
+      if (o && typeof o === 'object') return { msg: o.msg || '', items: Array.isArray(o.items) ? o.items : [] };
+    } catch (e) {}
+    return { msg: String(note), items: [] };
+  }
+  function _logEsc(v) { return String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  window.wmsShowLogDetail = function(id) {
+    const r = (window._wmsLogMap || {})[String(id)];
+    if (!r) return;
+    const st  = LOG_TYPE_STYLE[r.type] || { color:'#94a3b8', icon:'📝', bg:'transparent' };
+    const ts  = r.created_at ? new Date(r.created_at).toLocaleString('id-ID', { dateStyle:'medium', timeStyle:'short' }) : '-';
+    const bin = r.bin_to ? `${r.bin} → ${r.bin_to}` : (r.bin || '-');
+    const { msg, items } = wmsParseLogNote(r.note);
+
+    document.getElementById('wmsLogModalTitle').innerHTML =
+      `<span style="background:${st.bg};color:${st.color};border-radius:5px;padding:2px 8px;font-size:0.7rem;">${st.icon} ${_logEsc(r.type)}</span> <span style="font-size:0.8rem;">${_logEsc(r.store_code || '-')}</span>`;
+    document.getElementById('wmsLogModalInfo').innerHTML =
+      `<div style="display:flex;flex-wrap:wrap;gap:6px 18px;">
+         <div><div class="mi-label">Waktu</div><div class="mi-val">${_logEsc(ts)}</div></div>
+         <div><div class="mi-label">User</div><div class="mi-val">${_logEsc(r.user || '-')}</div></div>
+         <div><div class="mi-label">BIN</div><div class="mi-val" style="font-family:monospace;color:#a78bfa;">${_logEsc(bin)}</div></div>
+         <div><div class="mi-label">Total Qty</div><div class="mi-val" style="color:${st.color};">${_logEsc(r.qty || 0)}</div></div>
+       </div>
+       ${msg ? `<div style="margin-top:6px;font-size:0.65rem;color:var(--muted);">${_logEsc(msg)}</div>` : ''}`;
+
+    let body;
+    if (items.length) {
+      const sum = items.reduce((a, i) => a + Number(i.qty || 0), 0);
+      body = `<div style="font-size:0.62rem;color:var(--muted);margin-bottom:6px;">${items.length} SKU · total ${sum} pcs</div>
+        <table style="width:100%;border-collapse:collapse;font-size:0.68rem;">
+          <thead><tr style="border-bottom:1px solid var(--border);color:var(--muted);font-size:0.58rem;text-transform:uppercase;">
+            <th style="text-align:left;padding:5px 6px;">SKU</th>
+            <th style="text-align:left;padding:5px 6px;">Nama</th>
+            <th style="text-align:left;padding:5px 6px;">Size US/UK</th>
+            <th style="text-align:left;padding:5px 6px;">BIN</th>
+            ${items.some(i => i.doc) ? '<th style="text-align:left;padding:5px 6px;">No. Dok</th>' : ''}
+            <th style="text-align:center;padding:5px 6px;">Qty</th>
+          </tr></thead>
+          <tbody>${items.map(i => `<tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:5px 6px;font-family:monospace;color:#fb923c;font-weight:600;white-space:nowrap;">${_logEsc(i.sku)}</td>
+            <td style="padding:5px 6px;">${_logEsc(i.name || '-')}</td>
+            <td style="padding:5px 6px;white-space:nowrap;">${_logEsc(i.us || '-')} / ${_logEsc(i.uk || '-')}</td>
+            <td style="padding:5px 6px;font-family:monospace;color:#a78bfa;">${_logEsc(i.bin || '-')}</td>
+            ${items.some(x => x.doc) ? `<td style="padding:5px 6px;font-family:monospace;font-size:0.62rem;">${_logEsc(i.doc || '-')}</td>` : ''}
+            <td style="padding:5px 6px;text-align:center;font-weight:700;">${_logEsc(i.qty || 0)}</td>
+          </tr>`).join('')}</tbody>
+        </table>`;
+    } else if (r.sku && !/^\d+ SKU$/.test(r.sku)) {
+      body = `<table style="width:100%;border-collapse:collapse;font-size:0.7rem;"><tbody>
+          <tr><td style="padding:6px;color:var(--muted);width:90px;">SKU</td><td style="padding:6px;font-family:monospace;color:#fb923c;font-weight:600;">${_logEsc(r.sku)}</td></tr>
+          <tr><td style="padding:6px;color:var(--muted);">BIN</td><td style="padding:6px;font-family:monospace;color:#a78bfa;">${_logEsc(bin)}</td></tr>
+          <tr><td style="padding:6px;color:var(--muted);">Qty</td><td style="padding:6px;font-weight:700;">${_logEsc(r.qty || 0)}</td></tr>
+        </tbody></table>`;
+    } else {
+      body = `<div style="text-align:center;color:var(--muted);padding:20px 8px;font-size:0.72rem;">
+        Rincian SKU tidak tersimpan untuk transaksi ini.<br><span style="font-size:0.62rem;">(Transaksi lama dicatat sebelum fitur detail ada. Transaksi baru akan tersimpan lengkap.)</span></div>`;
+    }
+    document.getElementById('wmsLogModalBody').innerHTML = body;
+    document.getElementById('wmsLogModalBackdrop').classList.add('show');
+  };
+  window.wmsCloseLogModal = () => document.getElementById('wmsLogModalBackdrop').classList.remove('show');
 
   // ── RESET LOG (khusus ADMIN) ──
   // Toko dipilih di dropdown → hapus semua log toko itu. "Semua Toko" → hapus seluruh log.
