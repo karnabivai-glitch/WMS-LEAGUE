@@ -1404,6 +1404,7 @@
         <input id="wmsLogSearch" type="search" oninput="wmsRenderLog()" placeholder="🔍 Cari SKU / nama / article / no. dokumen..." autocomplete="off"
           style="font-size:0.7rem;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);width:280px;max-width:100%;">
         <button id="btnLogActual" onclick="wmsToggleLogActual()" title="Tampilkan posisi barang saat ini saja (bukan riwayat)" style="padding:4px 12px;border-radius:6px;background:var(--bg);color:var(--text);border:1px solid var(--border);font-size:0.65rem;font-weight:700;cursor:pointer;">📍 Posisi Aktual</button>
+        <button id="btnLogExport" onclick="wmsExportLog()" title="Export log detail (per SKU) ke Excel sesuai filter yang aktif" style="padding:4px 12px;border-radius:6px;background:#16a34a;color:#fff;border:none;font-size:0.65rem;font-weight:700;cursor:pointer;">📥 Export Excel</button>
         <button id="btnResetLog" onclick="wmsResetLog()" style="display:none;padding:4px 12px;border-radius:6px;background:#ef4444;color:#fff;border:none;font-size:0.65rem;cursor:pointer;">🗑 Reset Log</button>
         <span id="wmsLogStock" style="margin-left:auto;font-size:0.68rem;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 10px;white-space:nowrap;"></span>
         <span id="wmsLogCount" style="font-size:0.62rem;color:var(--muted);"></span>
@@ -5626,6 +5627,81 @@
         <td style="padding:7px 12px;font-size:0.62rem;color:var(--muted);">${r.user||'-'}</td>
       </tr>`;
     }).join('');
+  };
+
+  // ── EXPORT LOG DETAIL KE EXCEL (per SKU, sesuai filter toko/tipe/pencarian yang aktif) ──
+  window.wmsExportLog = function() {
+    const storeF  = document.getElementById('wmsLogFilterStore')?.value || '';
+    const typeF   = document.getElementById('wmsLogFilterType')?.value || '';
+    const qRaw    = (document.getElementById('wmsLogSearch')?.value || '').trim();
+    const q       = qRaw.toLowerCase();
+    const isAdmin = wmsCurrentUser?.role === 'ADMIN';
+    const myStore = wmsCurrentUser?.store_code || '';
+    const hit = (...vals) => vals.some(v => v != null && String(v).toLowerCase().includes(q));
+
+    let docs = (window._wmsLogRaw || []).slice();
+    if (!isAdmin) docs = docs.filter(r => r.store_code === myStore);
+    if (storeF)   docs = docs.filter(r => r.store_code === storeF);
+    if (typeF)    docs = docs.filter(r => r.type === typeF);
+
+    const fmt = (iso) => {
+      if (!iso) return '';
+      const d = new Date(iso);
+      const p = n => String(n).padStart(2, '0');
+      return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    };
+    const sentence = (type, n, from, to) => {
+      switch (type) {
+        case 'UPLOAD':  return `Stok awal (upload): ${n} pcs di BIN ${from}`;
+        case 'INBOUND':
+        case 'IMPORT':  return `Barang masuk ${n} pcs ke BIN ${from}`;
+        case 'JUAL':    return `Terjual ${n} pcs dari BIN ${from}`;
+        case 'MOVE':    return `Dipindah ${n} pcs dari BIN ${from} ke BIN ${to}`;
+        case 'CYCLE':   return `Hitung ulang: stok di BIN ${from} dikoreksi menjadi ${n} pcs`;
+        default:        return `${type}: ${n} pcs di BIN ${from}`;
+      }
+    };
+
+    const rows = [];
+    docs.forEach(r => {
+      const items = wmsParseLogNote(r.note).items;
+      const isMove = r.type === 'MOVE';
+      if (items.length) {
+        const use = q ? items.filter(i => hit(i.sku, i.name, i.doc)) : items;
+        use.forEach(i => {
+          const n = Number(i.qty || 0);
+          const from = isMove ? (r.bin || '') : (i.bin || r.bin || '');
+          const to   = isMove ? (r.bin_to || '') : '';
+          rows.push({
+            'Waktu': fmt(r.created_at), 'Tipe': r.type, 'Toko': r.store_code || '', 'No. Dokumen': i.doc || '',
+            'SKU': i.sku || '', 'Nama Barang': i.name || '', 'Size US': i.us || '', 'Size UK': i.uk || '',
+            'BIN': from, 'BIN Tujuan': to, 'Qty': n, 'Keterangan': sentence(r.type, n, from, to), 'User': r.user || ''
+          });
+        });
+      } else if (!q || (r.sku && !/^\d+ SKU$/.test(r.sku) && hit(r.sku))) {
+        // Log lama tanpa rincian SKU: ikut diexport satu baris ringkasan (hanya bila tidak sedang mencari)
+        const n = Number(r.qty || 0);
+        rows.push({
+          'Waktu': fmt(r.created_at), 'Tipe': r.type, 'Toko': r.store_code || '', 'No. Dokumen': '',
+          'SKU': r.sku || '', 'Nama Barang': '', 'Size US': '', 'Size UK': '',
+          'BIN': r.bin || '', 'BIN Tujuan': r.bin_to || '', 'Qty': n,
+          'Keterangan': /^\d+ SKU$/.test(r.sku || '') ? 'Rincian SKU tidak tersimpan (log lama)' : sentence(r.type, n, r.bin || '', r.bin_to || ''),
+          'User': r.user || ''
+        });
+      }
+    });
+
+    if (!rows.length) { showToast('⚠️ Tidak ada data log untuk diexport', 'info'); return; }
+    if (typeof XLSX === 'undefined') { showToast('❌ Library Excel belum termuat, coba lagi', 'error'); return; }
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [ {wch:17},{wch:9},{wch:8},{wch:16},{wch:18},{wch:26},{wch:8},{wch:8},{wch:8},{wch:10},{wch:6},{wch:46},{wch:10} ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Log Detail');
+    const d = new Date(), p = n => String(n).padStart(2, '0');
+    const scope = (isAdmin ? storeF : myStore) || 'SEMUA';
+    XLSX.writeFile(wb, `Log_Detail_${scope}_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}.xlsx`);
+    showToast(`✅ ${rows.length} baris log diexport`, 'success');
   };
 
   window.wmsToggleLogActual = function() {
